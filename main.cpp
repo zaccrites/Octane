@@ -7,8 +7,82 @@
 #include <SDL2/SDL_ttf.h>
 
 
+// TODO: Consider OpenAL or PulseAudio instead, to avoid the latency
+// I'm seeing with SDL audio.
+//
+// Don't forget to remove SDL_INIT_AUDIO from SDL_Init!
+//
+
+
 const uint32_t WINDOW_WIDTH = 1024;
 const uint32_t WINDOW_HEIGHT = 768;
+
+
+
+enum class Note
+{
+    C,
+    Cs,
+    D,
+    Eb,
+    E,
+    F,
+    Fs,
+    G,
+    Gs,
+    A,
+    Bb,
+    B
+};
+
+double noteFrequncy(Note note, uint8_t octave)
+{
+    double base;
+    switch (note)
+    {
+        case Note::C:
+            base = 16.35;
+            break;
+        case Note::Cs:
+            base = 17.32;
+            break;
+        case Note::D:
+            base = 18.35;
+            break;
+        case Note::Eb:
+            base = 19.45;
+            break;
+        case Note::E:
+            base = 20.60;
+            break;
+        case Note::F:
+            base = 21.83;
+            break;
+        case Note::Fs:
+            base = 21.83;
+            break;
+        case Note::G:
+            base = 24.50;
+            break;
+        case Note::Gs:
+            base = 25.96;
+            break;
+        case Note::A:
+            base = 27.50;
+            break;
+        case Note::Bb:
+            base = 29.14;
+            break;
+        case Note::B:
+            base = 30.87;
+            break;
+        default:
+            base = 100.00;
+            break;
+    }
+    return base * std::pow(2.0, octave);
+}
+
 
 
 struct Voice
@@ -25,8 +99,59 @@ struct PlaybackUserData
 };
 
 
+
+const uint32_t fs = 44100;
+
+void makeSamples(std::queue<int16_t>& rSampleData, double f) {
+    int numSamples = fs / 10;
+    for (int i = 0; i < numSamples; i++)
+    {
+        double t = static_cast<double>(i) / static_cast<double>(fs);
+        // sampleData[i] = static_cast<int16_t>(0x7fff * std::sin(2 * M_PI * 440.0 * t));
+
+        const double tau { 2 * M_PI };
+
+        const double A = 1.0;
+        const double C = f * tau;
+        const double M = C / 4;
+        // const double I = t * 5;
+        const double I = 0;
+
+
+        auto square = [](double phase) -> double {
+            return std::sin(phase) < 0 ? -1.0 : 1.0;
+        };
+
+        // auto sawtooth = [](double phase) -> double { };
+
+        // auto triangle = [](double phase) -> double {
+        //     phase = std::fmod(phase, 2.0 * M_PI);
+        //     if (phase < M_PI / 2.0) {
+
+        //     }
+        //     else if (phase < M_PI) {
+
+        //     }
+        //     else if (phase < 1.5 * M_PI) {
+
+        //     }
+        //     else {
+
+        //     }
+        // };
+
+        // double value = A * std::sin(C * t + I * std::sin(M * t));
+        double value = A * square(C * t + I * square(M * t));
+
+        rSampleData.push(static_cast<int16_t>(0x7fff * value));
+    }
+}
+
+
+
+
 // TODO: Use a lambda
-void audio_callback (void* pUserdata, uint8_t* pStream, int length)
+void audio_callback(void* pUserdata, uint8_t* pStream, int length)
 {
     PlaybackUserData* pPlaybackData = reinterpret_cast<PlaybackUserData*>(pUserdata);
     for (int i = 0; i < length / sizeof(int16_t); i++)
@@ -44,6 +169,10 @@ void audio_callback (void* pUserdata, uint8_t* pStream, int length)
         *(reinterpret_cast<int16_t*>(pStream) + i) = sample;
     }
 }
+
+
+
+
 
 
 
@@ -85,8 +214,7 @@ int main()
 
     SDL_SetRenderDrawBlendMode(pRenderer, SDL_BLENDMODE_BLEND);
 
-    const uint32_t fs = 44100;
-    const uint32_t numSamples = fs * 120;
+    const uint32_t numSamples = fs * 3;
     // int16_t sampleData[numSamples];
 
 
@@ -97,29 +225,11 @@ int main()
     userdata.voices[3].playing = false;
 
 
-    auto makeSamples = [](std::queue<int16_t>& rSampleData, double f) {
-        for (int i = 0; i < numSamples; i++)
-        {
-            double t = static_cast<double>(i) / static_cast<double>(fs);
-            // sampleData[i] = static_cast<int16_t>(0x7fff * std::sin(2 * M_PI * 440.0 * t));
 
-            const double tau { 2 * M_PI };
-
-            const double A = 1.0;
-            const double C = f * tau;
-            const double M = C / 4;
-            // const double I = t * 5;
-            const double I = 0;
-
-            double value = A * std::sin(C * t + I * std::sin(M * t));
-
-            rSampleData.push(static_cast<int16_t>(0x7fff * value));
-        }
-    };
-    makeSamples(userdata.voices[0].samples, 350.0);
-    makeSamples(userdata.voices[1].samples, 440.0);
-    makeSamples(userdata.voices[2].samples, 220.0);
-    makeSamples(userdata.voices[3].samples, 1000.0);
+    makeSamples(userdata.voices[0].samples, noteFrequncy(Note::C, 4));
+    makeSamples(userdata.voices[1].samples, noteFrequncy(Note::D, 4));
+    makeSamples(userdata.voices[2].samples, noteFrequncy(Note::E, 4));
+    makeSamples(userdata.voices[3].samples, noteFrequncy(Note::F, 4));
 
 
 
@@ -130,7 +240,7 @@ int main()
     want.freq = fs;
     want.format = AUDIO_S16;
     want.channels = 1;
-    want.samples = 128;
+    want.samples = 1024;
     want.callback = audio_callback;
     want.userdata = &userdata;
     device = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
@@ -225,6 +335,26 @@ int main()
         userdata.voices[3].playing = pSdlKeyboardState[SDL_SCANCODE_P];
 
 
+        // This is not sufficient. It sounds like a helicopter.
+        // Presumably the voice is running out of data.
+        // Or the new data has some kind of crossover-like distortion
+        // since the t of the last sample doesn't match the t of the newest
+        // sample of the new data.
+        if (userdata.voices[0].samples.size() < fs / 10)
+            makeSamples(userdata.voices[0].samples, noteFrequncy(Note::C, 4));
+
+        if (userdata.voices[1].samples.size() < fs / 10)
+            makeSamples(userdata.voices[1].samples, noteFrequncy(Note::D, 4));
+
+        if (userdata.voices[2].samples.size() < fs / 10)
+            makeSamples(userdata.voices[2].samples, noteFrequncy(Note::E, 4));
+
+        if (userdata.voices[3].samples.size() < fs / 10)
+            makeSamples(userdata.voices[3].samples, noteFrequncy(Note::F, 4));
+
+
+
+
         // TODO: Is it easier to just serve up more audio on demand
         // using a callback?
         // if (SDL_GetQueuedAudioSize(device) < fs)
@@ -284,6 +414,8 @@ int main()
         {
             drawBlackKey(64 + (3 * WHITE_KEY_WIDTH / 4) + WHITE_KEY_WIDTH * i, 480);
         }
+
+
 
 
 
