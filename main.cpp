@@ -114,7 +114,7 @@ int main()
     tick(); tick(); tick();
 
     // Note: The result is actually 18 bits!
-    int16_t result = synth.o_Result;
+    // int16_t result = synth.o_Result;
     // printf("o_Result = %d \n", result);
 
 
@@ -134,17 +134,13 @@ int main()
         double t = static_cast<double>(i) / static_cast<double>(SAMPLE_RATE);
         double w = twopi * 440.0;
 
-        // First calculate a pure sine wave
-        int32_t perfectSample = std::sin(w * t) * std::numeric_limits<int32_t>::max();
-        // samples[i] = perfectSample;
-
         // Then calculate using Verilog LUT
         uint32_t argraw = static_cast<uint32_t>(w * t * (8192 / twopi));
         synth.i_Arg = argraw % 8192;
         tick();
 
         // Extend 18-bit table to the full range of 32 bits
-       int32_t tableSample = synth.o_Sample32 * (1 << 14);
+       int32_t tableSample = synth.o_Sample32 * (1 << 13);
        samples[i] = tableSample;
 
     }

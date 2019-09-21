@@ -12,7 +12,7 @@ module synth (
 
 
     // TODO: Use PWM instead of outputting the full sample
-    output [17:0] o_Sample,
+    output [18:0] o_Sample,
 
 
     // Sign extend in Verilog because it's easier than C++ :)
@@ -44,7 +44,7 @@ sine_function sin0 (
     .o_Result   (o_Sample)
 );
 
-assign o_Sample32 = {{14{o_Sample[17]}}, o_Sample};
+assign o_Sample32 = {{13{o_Sample[17]}}, o_Sample};
 
 
 

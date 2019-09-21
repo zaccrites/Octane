@@ -4,7 +4,10 @@ import sys
 import math
 
 
-BIT_DEPTH = 18
+# The bit depth is actually 19 bits because I only have to store the positive
+# part of the waveform in the block RAM. The negative part (for which I need
+# the 19th bit) is synthesized on demand.
+BIT_DEPTH = 19
 NUM_SAMPLES = 2 * 1024
 
 # BIT_DEPTH = 9

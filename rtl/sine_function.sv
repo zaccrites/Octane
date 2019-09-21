@@ -9,7 +9,7 @@ module sine_function (
 
     input logic [12:0] i_Argument,
 
-    output logic signed [17:0] o_Result
+    output logic signed [18:0] o_Result
 
     // output o_DataValid
 );
@@ -20,7 +20,7 @@ logic [17:0] r_Table[2047:0];
 logic [10:0] r_Index;
 logic [1:0] r_Negate;
 // logic [1:0] r_DataValid;
-logic [17:0] r_Value;
+logic [18:0] r_Value;
 
 
 
@@ -65,7 +65,7 @@ always_ff @ (posedge i_Clock) begin
 
     // Stage 2: Look up value from table
     r_Negate[1] <= r_Negate[0];
-    r_Value <= r_Table[r_Index];
+    r_Value <= {1'b0, r_Table[r_Index]};
 
     // Stage 3: Output (possibly negated) value
     o_Result <= r_Negate[1] ? ~r_Value : r_Value;
