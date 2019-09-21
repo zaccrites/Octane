@@ -9,6 +9,9 @@ project(softsynth VERSION 0.1.0
 find_package(SDL2 REQUIRED)
 
 
+add_subdirectory(Vmodules)
+
+
 
 add_executable(softsynth
     "main.cpp"
@@ -17,6 +20,8 @@ add_executable(softsynth
 target_link_libraries(softsynth
     ${SDL2_LIBRARIES}
     SDL2_ttf
+
+    Vsynth
 )
 
 
