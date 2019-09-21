@@ -49,7 +49,8 @@ int main()
     }
 
 
-    constexpr uint32_t SAMPLE_RATE = 44100;
+    // constexpr uint32_t SAMPLE_RATE = 44100;
+    constexpr uint32_t SAMPLE_RATE = 65536;
 
 
     // https://wiki.libsdl.org/SDL_AudioSpec
@@ -108,10 +109,10 @@ int main()
 
 
 
-    synth.i_Operand1 = -10;
-    synth.i_Operand2 = 30;
-    tick(); tick(); tick();
-    tick(); tick(); tick();
+    // synth.i_Operand1 = -10;
+    // synth.i_Operand2 = 30;
+    // tick(); tick(); tick();
+    // tick(); tick(); tick();
 
     // Note: The result is actually 18 bits!
     // int16_t result = synth.o_Result;
@@ -125,25 +126,42 @@ int main()
 
     // I guess for now we can just multiply t by 8192 (mod 2048)
     // to digitize it (2048 in the table, with the rest inferred)
-    constexpr double length = 1.0;
+    constexpr double length = 2.0;
     constexpr size_t NUM_SAMPLES = SAMPLE_RATE * length;
     int32_t samples[NUM_SAMPLES];
 
+    FILE* csv = fopen("data.csv", "w");
+    fprintf(csv, "i,sample\n");
     for (size_t i = 0; i < NUM_SAMPLES; i++) {
-        const double twopi = 2.0 * M_PI;
-        double t = static_cast<double>(i) / static_cast<double>(SAMPLE_RATE);
-        double w = twopi * 440.0;
+        // double t = static_cast<double>(i) / static_cast<double>(SAMPLE_RATE);
 
         // Then calculate using Verilog LUT
-        uint32_t argraw = static_cast<uint32_t>(w * t * (8192 / twopi));
-        synth.i_Arg = argraw % 8192;
+        // uint32_t argraw = static_cast<uint32_t>(w * t * (8192 / twopi));
+        // synth.i_Arg = argraw % 8192;
+
+        // synth.i_Frequency = static_cast<uint16_t>(2.0 * M_PI * 440.0);
+        // synth.i_Frequency = static_cast<uint16_t>(440.0);
+        // synth.i_Frequency = static_cast<uint16_t>(1.0);
+
+        if (i < NUM_SAMPLES / 2)
+            // synth.i_Frequency = static_cast<uint16_t>(2048.0 / (M_PI / 2.0));
+            synth.i_Frequency = 440;
+        else
+            // synth.i_Frequency = static_cast<uint16_t>(2.0 * 2048.0 / (M_PI / 2.0));
+            synth.i_Frequency = 880;
+
+        synth.i_Frequency *= 4;
+
         tick();
 
         // Extend 18-bit table to the full range of 32 bits
        int32_t tableSample = synth.o_Sample32 * (1 << 13);
        samples[i] = tableSample;
 
+       if (i < 650)
+            fprintf(csv, "%zu,%d\n", i, tableSample);
     }
+    fclose(csv);
 
     SDL_QueueAudio(device, samples, NUM_SAMPLES * sizeof(samples[0]));
     SDL_PauseAudioDevice(device, 0);
