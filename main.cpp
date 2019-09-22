@@ -126,13 +126,14 @@ int main()
 
     // I guess for now we can just multiply t by 8192 (mod 2048)
     // to digitize it (2048 in the table, with the rest inferred)
-    constexpr double length = 4.0;
+    constexpr double length = 10.0;
     constexpr size_t NUM_SAMPLES = SAMPLE_RATE * length;
     int32_t samples[NUM_SAMPLES];
 
     FILE* csv = fopen("data.csv", "w");
-    fprintf(csv, "i,sample\n");
+    fprintf(csv, "i,sample,op1,op2\n");
     for (size_t i = 0; i < NUM_SAMPLES; i++) {
+    // for (size_t i = 0; i < 100; i++) {
         // double t = static_cast<double>(i) / static_cast<double>(SAMPLE_RATE);
 
         // Then calculate using Verilog LUT
@@ -153,18 +154,44 @@ int main()
             const double a = static_cast<double>(i) / static_cast<double>(NUM_SAMPLES);
             return start * (1.0 - a) + end * a;
         };
-        synth.i_Frequency = makeFreq(sweep(220, 880));
+        // synth.i_Frequency = makeFreq(sweep(220, 880));
+
+
+        auto toFixed = [FRAC_BITS=8](double x) -> uint32_t {
+            return static_cast<uint32_t>(x * (1 << FRAC_BITS) + 0.5);
+        };
+
+
+
+        synth.i_Frequency1 = makeFreq(350);
+        // synth.i_Frequency1 = makeFreq(441);
+        // synth.i_Frequency1 = makeFreq(880);
+        synth.i_Frequency2 = makeFreq(440);
+
+        // Although I'll still have to divide by a power of two to combine
+        // all the voices evenly in the end, so I'll still need to do it eventually.
+        synth.i_Amp1 = toFixed(0.5);
+        synth.i_Amp2 = toFixed(0.5);
+        // It may still be useful to choose mixing level of individual operators though.
 
         tick();
 
-        // Extend 18-bit table to the full range of 32 bits
-       int32_t tableSample = synth.o_Sample32 * (1 << 13);
+        // Extend 24-bit table to the full range of 32 bits
+       int32_t tableSample = synth.o_Sample32 * (1 << 8);
+       // int32_t tableSample = synth.o_Sample32;
        samples[i] = tableSample;
 
-       if (i < 650)
-            fprintf(csv, "%zu,%d\n", i, tableSample);
+       if (i < 2000)
+            fprintf(csv, "%zu,%d,%d,%d\n", i, tableSample,
+                // synth.o_Sample32_1,
+                // synth.o_Sample32_2);
+                synth.o_Sample32_1 * (1 << 8),
+                synth.o_Sample32_2 * (1 << 8));
     }
     fclose(csv);
+
+    // printf("Exiting early \n");
+    // return 0;
 
     SDL_QueueAudio(device, samples, NUM_SAMPLES * sizeof(samples[0]));
     SDL_PauseAudioDevice(device, 0);

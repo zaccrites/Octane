@@ -1,93 +1,120 @@
 
+`include "registers.svh"
+
 module synth (
     input i_Clock,
     input i_Reset,
 
-    // input logic signed [17:0] i_Operand1,
-    // input logic signed [17:0] i_Operand2,
-    // output logic signed [17:0] o_Result,
-
-
 
 
     // Frequency in radians per second
-    input logic [23:0] i_Frequency,
+    input logic [23:0] i_Frequency1,
+    input logic [23:0] i_Frequency2,
+
+    input logic [15:0] i_Amp1,
+    input logic [15:0] i_Amp2,
 
 
 
 
 
     // TODO: Use PWM instead of outputting the full sample
-    output [18:0] o_Sample,
+    output [23:0] o_Sample,
 
 
     // Sign extend in Verilog because it's easier than C++ :)
-    output [31:0] o_Sample32
+    output [31:0] o_Sample32,
+
+
+    output [31:0] o_Sample32_1,
+    output [31:0] o_Sample32_2
+
 );
 
 
-assign o_Sample32 = {{13{o_Sample[17]}}, o_Sample};
+assign o_Sample32 = {{8{o_Sample[23]}}, o_Sample};
+
+
+assign o_Sample32_1 = {{8{w_Operator1Output[23]}}, w_Operator1Output};
+assign o_Sample32_2 = {{8{w_Operator2Output[23]}}, w_Operator2Output};
 
 
 
 
-
-
-
-
-// May have to adjust this, depending on how often it is incremented.
-// At 2^16 Hz, it will roll over in 4 seconds.
-// logic [17:0] r_TimeReg;
-
-
-
-// TODO: Not sure what to do about the unused bits. The multiplier outputs
-// 18, but sine table only can use 13. Just ignore the higher bits directly
-// inside the multiplier module?
+// TODO: This may be cumbersome for multiple voices.
+// Although each voice can likely be its own module anyway.
 //
+logic [23:0] w_Operator1Phase;
+logic [23:0] w_Operator2Phase;
+
+
+OperatorConfiguration_t w_Operator1Config;
+assign w_Operator1Config = i_Frequency1;
+
+OperatorConfiguration_t w_Operator2Config;
+assign w_Operator2Config = i_Frequency2;
+
+
+phase_generator phasegen (
+    .i_Clock          (i_Clock),
+    .i_Reset          (i_Reset),
+    .i_Operator1Config(w_Operator1Config),
+    .i_Operator2Config(w_Operator2Config),
+    .o_Operator1Phase (w_Operator1Phase),
+    .o_Operator2Phase (w_Operator2Phase)
+);
+
+
 // verilator lint_off UNUSED
-logic [23:0] r_PhaseAcc;
+logic [23:0] w_Operator1Output;
+logic [23:0] w_Operator2Output;
 // verilator lint_on UNUSED
 
-
-// multiplier mult0 (
-//     .i_Clock   (i_Clock),
-//     .i_Operand1(r_TimeReg),
-//     .i_Operand2(i_Frequency),
-//     .o_Result  (w_SineArg)
-// );
-
-
-sine_function sin0 (
-    .i_Clock    (i_Clock),
-    // .i_Reset    (i_Reset),
-    .i_Argument(r_PhaseAcc[23:11]),
-    .o_Result   (o_Sample)
+operator op1 (
+    .i_Clock (i_Clock),
+    // .i_Reset (i_Reset),
+    .i_AmplitudeFactor(i_Amp1),
+    .i_Phase (w_Operator1Phase),
+    .o_Output(w_Operator1Output)
 );
 
+operator op2 (
+    .i_Clock (i_Clock),
+    // .i_Reset (i_Reset),
+    .i_AmplitudeFactor(i_Amp2),
+    .i_Phase (w_Operator2Phase),
+    .o_Output(w_Operator2Output)
+);
 
-// Still not really sure why summing the frequency up works to
-// accumulate phase, but this seems to work under the following conditions.
-// I suspect there is additional logic required when these don't line up
-// as well.
-//
-// - Phase accumulator: 24 bits
-// - Frequency values: 24 bits
-// - Frequency values are multiples of 2^-8 Hz
-// - Sample frequency is 2^16 Hz
-//
-logic [23:0] w_PhaseStep;
-assign w_PhaseStep = i_Frequency;
+// TODO: Alternate mode to modulate instead of add
+// verilator lint_off UNUSED
+logic [24:0] w_SummedOutput;
+// // TODO: How to just ignore the last bit? idk
+// // verilator lint_on UNUSED
+// assign w_SummedOutput =
+//     {w_Operator1Output[23], w_Operator1Output[23:1]} +
+//     {w_Operator2Output[23], w_Operator2Output[23:1]};
+// assign o_Sample = w_SummedOutput[24:1];
+// assign o_Sample = w_Operator1Output[23:0] + w_Operator2Output[23:0];
+// assign o_Sample = w_Operator2Output[23:0];
+
+assign o_Sample = w_Operator1Output[23:0] + w_Operator2Output[23:0];
+
+
+// always_comb begin
+
+//     w_SummedOutput =
+//     {w_Operator1Output[23], w_Operator1Output[23:1]}
+
+// end
 
 
 
 
 always_ff @ (posedge i_Clock) begin
     if (i_Reset) begin
-        r_PhaseAcc <= 0;
     end
     else begin
-        r_PhaseAcc <= r_PhaseAcc + w_PhaseStep;
     end
 end
 
