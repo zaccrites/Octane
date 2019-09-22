@@ -6,6 +6,10 @@ module synth (
     input i_Reset,
 
 
+    // Arrangement of the two operators.
+    // If set, Op1 will modulate the carrier Op2
+    input logic i_Arrangement,
+
 
     // Frequency in radians per second
     input logic [23:0] i_Frequency1,
@@ -65,6 +69,15 @@ phase_generator phasegen (
 );
 
 
+
+// signed?
+logic [23:0] w_Operator2Phase_Sum;
+assign w_Operator2Phase_Sum = i_Arrangement
+    ? w_Operator2Phase + w_Operator1Output
+    : w_Operator2Phase;
+
+
+
 // verilator lint_off UNUSED
 logic [23:0] w_Operator1Output;
 logic [23:0] w_Operator2Output;
@@ -82,7 +95,7 @@ operator op2 (
     .i_Clock (i_Clock),
     // .i_Reset (i_Reset),
     .i_AmplitudeFactor(i_Amp2),
-    .i_Phase (w_Operator2Phase),
+    .i_Phase (w_Operator2Phase_Sum),
     .o_Output(w_Operator2Output)
 );
 
@@ -98,7 +111,9 @@ logic [24:0] w_SummedOutput;
 // assign o_Sample = w_Operator1Output[23:0] + w_Operator2Output[23:0];
 // assign o_Sample = w_Operator2Output[23:0];
 
-assign o_Sample = w_Operator1Output[23:0] + w_Operator2Output[23:0];
+assign o_Sample = i_Arrangement
+    ? w_Operator2Output[23:0]
+    : w_Operator1Output[23:0] + w_Operator2Output[23:0];
 
 
 // always_comb begin

@@ -126,9 +126,13 @@ int main()
 
     // I guess for now we can just multiply t by 8192 (mod 2048)
     // to digitize it (2048 in the table, with the rest inferred)
-    constexpr double length = 10.0;
+    constexpr double length = 5.0;
     constexpr size_t NUM_SAMPLES = SAMPLE_RATE * length;
     int32_t samples[NUM_SAMPLES];
+
+
+    synth.i_Arrangement = 1;
+
 
     FILE* csv = fopen("data.csv", "w");
     fprintf(csv, "i,sample,op1,op2\n");
@@ -162,17 +166,57 @@ int main()
         };
 
 
+        // synth.i_Arrangement = 1;
+        // synth.i_Frequency1 = makeFreq(480);
+        // synth.i_Frequency2 = makeFreq(220);
+        // synth.i_Amp1 = toFixed(0.25);
+        // synth.i_Amp2 = toFixed(0.6);
 
-        synth.i_Frequency1 = makeFreq(350);
-        // synth.i_Frequency1 = makeFreq(441);
-        // synth.i_Frequency1 = makeFreq(880);
-        synth.i_Frequency2 = makeFreq(440);
+        // synth.i_Arrangement = 1;
+        // synth.i_Frequency1 = makeFreq(440);
+        // synth.i_Frequency2 = makeFreq(880);
+        // synth.i_Amp1 = toFixed(0.40);
+        // synth.i_Amp2 = toFixed(0.80);
+
+        // synth.i_Arrangement = 1;
+        synth.i_Frequency1 = makeFreq(175);
+        synth.i_Frequency2 = makeFreq(350);
+        synth.i_Amp1 = toFixed(0.20);
+        synth.i_Amp2 = toFixed(0.50);
+
+
+        // For the graph visualization, it would also be nice to be able
+        // to see the plain sine wave of the carrier as well as the modulator.
+
+        // The keyboard interface will provide a fundamental frequency,
+        // and I'll need a "coarse frequency" or whatever, similar to the
+        // DX11 to adjust (including transposition).
+
+
+        // Options for ADSR envelope generation:
+        //
+        // 1) e.g. attack rate given in time to reach maximum
+        // 2) e.g. attack rate given in amount increase per unit time
+        //
+        // Option 2 has some merit, as no division is necessary.
+        // Just add the attack amount to the accumulator until the peak
+        // is reached. Then subtract the decay amount until sustain
+        // is reached. Then hold until key is released, and begin subtracting
+        // amount until reaching zero.
+        //
+        // That means that the higher the attack rate, the faster it is.
+        // Same with the others.
+
+
 
         // Although I'll still have to divide by a power of two to combine
         // all the voices evenly in the end, so I'll still need to do it eventually.
-        synth.i_Amp1 = toFixed(0.5);
-        synth.i_Amp2 = toFixed(0.5);
+        synth.i_Amp1 = toFixed(0.25);
+        synth.i_Amp2 = toFixed(0.6);
         // It may still be useful to choose mixing level of individual operators though.
+
+        // I may be missing out on modulation range because anything over 1.0
+        // here causes the output of Op1 to overflow the 24 bits.
 
         tick();
 
@@ -181,7 +225,7 @@ int main()
        // int32_t tableSample = synth.o_Sample32;
        samples[i] = tableSample;
 
-       if (i < 2000)
+       if (i < 500)
             fprintf(csv, "%zu,%d,%d,%d\n", i, tableSample,
                 // synth.o_Sample32_1,
                 // synth.o_Sample32_2);
@@ -220,6 +264,12 @@ int main()
                         case SDLK_q:
                         {
                             running = false;
+                            break;
+                        }
+
+                        case SDLK_a:
+                        {
+                            synth.i_Arrangement = ! synth.i_Arrangement;
                             break;
                         }
                     }
