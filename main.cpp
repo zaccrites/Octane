@@ -124,113 +124,104 @@ int main()
     // the closest one when building sample buffers on the PC.
     // Or rather, only increment t when appropriate.
 
-    // I guess for now we can just multiply t by 8192 (mod 2048)
-    // to digitize it (2048 in the table, with the rest inferred)
-    constexpr double length = 5.0;
+
+
+
+    // synth.i_Arrangement = 1;
+
+    auto writeRegister = [&synth, &tick](uint8_t registerNumber, int32_t registerValue) {
+        synth.i_RegisterWriteEnable = 1;
+        synth.i_RegisterNumber = registerNumber;
+        synth.i_RegisterValue = registerValue;
+        tick();
+        synth.i_RegisterWriteEnable = 0;
+    };
+
+    auto makeFreq = [](double f) -> uint32_t {
+        // Convert raw Hz to multiple of 2^-8 Hz
+        return static_cast<uint32_t>(f * (1 << 8));
+    };
+
+
+
+
+
+    auto toFixed = [FRAC_BITS=8](double x) -> uint32_t {
+        return static_cast<uint32_t>(x * (1 << FRAC_BITS) + 0.5);
+    };
+
+
+    // TODO
+    // I may be missing out on modulation range because anything over 1.0
+    // here causes the output of Op1 to overflow the 24 bits.
+
+
+    const uint8_t VOICE1_ALGORITHM = 0x00;
+    const uint8_t VOICE1_OP1_AMPLITUDE = 0x01;
+    const uint8_t VOICE1_OP1_FREQUENCY = 0x02;
+    const uint8_t VOICE1_OP2_AMPLITUDE = 0x03;
+    const uint8_t VOICE1_OP2_FREQUENCY = 0x04;
+    const uint8_t VOICE1_KEYON = 0x05;
+
+    const uint8_t VOICE2_ALGORITHM = 0x10;
+    const uint8_t VOICE2_OP1_AMPLITUDE = 0x11;
+    const uint8_t VOICE2_OP1_FREQUENCY = 0x12;
+    const uint8_t VOICE2_OP2_AMPLITUDE = 0x13;
+    const uint8_t VOICE2_OP2_FREQUENCY = 0x14;
+    const uint8_t VOICE2_KEYON = 0x15;
+
+    writeRegister(VOICE1_ALGORITHM, 1);
+    // writeRegister(VOICE1_OP1_AMPLITUDE, toFixed(0.25));
+    writeRegister(VOICE1_OP1_AMPLITUDE, toFixed(1.0 / 6.0));
+    writeRegister(VOICE1_OP1_FREQUENCY, makeFreq(350));
+    // writeRegister(VOICE1_OP2_AMPLITUDE, toFixed(0.25));
+    writeRegister(VOICE1_OP2_AMPLITUDE, toFixed(1.0 / 6.0));
+    writeRegister(VOICE1_OP2_FREQUENCY, makeFreq(440));
+
+    writeRegister(VOICE2_ALGORITHM, 1);
+    writeRegister(VOICE2_OP1_AMPLITUDE, toFixed(2.0 / 6.0));  // muted
+    writeRegister(VOICE2_OP1_FREQUENCY, makeFreq(880));
+    writeRegister(VOICE2_OP2_AMPLITUDE, toFixed(2.0 / 6.0));  // muted
+    writeRegister(VOICE2_OP2_FREQUENCY, makeFreq(700));
+
+    writeRegister(VOICE1_KEYON, 1);
+    writeRegister(VOICE2_KEYON, 1);
+
+
+    // For the graph visualization, it would also be nice to be able
+    // to see the plain sine wave of the carrier as well as the modulator.
+
+    // The keyboard interface will provide a fundamental frequency,
+    // and I'll need a "coarse frequency" or whatever, similar to the
+    // DX11 to adjust (including transposition).
+    //
+    // It's probably more flexible to allow any frequency to be applied
+    // to the operators, and software controlling the synth can abstract
+    // away the "coarse adjust" and key frequency and other such concepts.
+
+    constexpr double length = 2.0;
     constexpr size_t NUM_SAMPLES = SAMPLE_RATE * length;
     int32_t samples[NUM_SAMPLES];
 
-
-    synth.i_Arrangement = 1;
-
-
     FILE* csv = fopen("data.csv", "w");
-    fprintf(csv, "i,sample,op1,op2\n");
+    fprintf(csv, "i,sample\n");
     for (size_t i = 0; i < NUM_SAMPLES; i++) {
-    // for (size_t i = 0; i < 100; i++) {
-        // double t = static_cast<double>(i) / static_cast<double>(SAMPLE_RATE);
-
-        // Then calculate using Verilog LUT
-        // uint32_t argraw = static_cast<uint32_t>(w * t * (8192 / twopi));
-        // synth.i_Arg = argraw % 8192;
-
-        // synth.i_Frequency = static_cast<uint16_t>(2.0 * M_PI * 440.0);
-        // synth.i_Frequency = static_cast<uint16_t>(440.0);
-        // synth.i_Frequency = static_cast<uint16_t>(1.0);
-
-        auto makeFreq = [](double f) -> uint32_t {
-            // Convert raw Hz to multiple of 2^-8 Hz
-            return static_cast<uint32_t>(f * (1 << 8));
-        };
-
 
         auto sweep = [i](double start, double end) -> double {
             const double a = static_cast<double>(i) / static_cast<double>(NUM_SAMPLES);
             return start * (1.0 - a) + end * a;
         };
-        // synth.i_Frequency = makeFreq(sweep(220, 880));
-
-
-        auto toFixed = [FRAC_BITS=8](double x) -> uint32_t {
-            return static_cast<uint32_t>(x * (1 << FRAC_BITS) + 0.5);
-        };
-
-
-        // synth.i_Arrangement = 1;
-        // synth.i_Frequency1 = makeFreq(480);
-        // synth.i_Frequency2 = makeFreq(220);
-        // synth.i_Amp1 = toFixed(0.25);
-        // synth.i_Amp2 = toFixed(0.6);
-
-        // synth.i_Arrangement = 1;
-        // synth.i_Frequency1 = makeFreq(440);
-        // synth.i_Frequency2 = makeFreq(880);
-        // synth.i_Amp1 = toFixed(0.40);
-        // synth.i_Amp2 = toFixed(0.80);
-
-        // synth.i_Arrangement = 1;
-        synth.i_Frequency1 = makeFreq(175);
-        synth.i_Frequency2 = makeFreq(350);
-        synth.i_Amp1 = toFixed(0.20);
-        synth.i_Amp2 = toFixed(0.50);
-
-
-        // For the graph visualization, it would also be nice to be able
-        // to see the plain sine wave of the carrier as well as the modulator.
-
-        // The keyboard interface will provide a fundamental frequency,
-        // and I'll need a "coarse frequency" or whatever, similar to the
-        // DX11 to adjust (including transposition).
-
-
-        // Options for ADSR envelope generation:
-        //
-        // 1) e.g. attack rate given in time to reach maximum
-        // 2) e.g. attack rate given in amount increase per unit time
-        //
-        // Option 2 has some merit, as no division is necessary.
-        // Just add the attack amount to the accumulator until the peak
-        // is reached. Then subtract the decay amount until sustain
-        // is reached. Then hold until key is released, and begin subtracting
-        // amount until reaching zero.
-        //
-        // That means that the higher the attack rate, the faster it is.
-        // Same with the others.
-
-
-
-        // Although I'll still have to divide by a power of two to combine
-        // all the voices evenly in the end, so I'll still need to do it eventually.
-        synth.i_Amp1 = toFixed(0.25);
-        synth.i_Amp2 = toFixed(0.6);
-        // It may still be useful to choose mixing level of individual operators though.
-
-        // I may be missing out on modulation range because anything over 1.0
-        // here causes the output of Op1 to overflow the 24 bits.
 
         tick();
 
         // Extend 24-bit table to the full range of 32 bits
-       int32_t tableSample = synth.o_Sample32 * (1 << 8);
-       // int32_t tableSample = synth.o_Sample32;
-       samples[i] = tableSample;
+        int32_t sample = synth.o_Sample * (1 << 8);
+        samples[i] = sample;
 
-       if (i < 500)
-            fprintf(csv, "%zu,%d,%d,%d\n", i, tableSample,
-                // synth.o_Sample32_1,
-                // synth.o_Sample32_2);
-                synth.o_Sample32_1 * (1 << 8),
-                synth.o_Sample32_2 * (1 << 8));
+        if (i < 1000)
+        {
+            fprintf(csv, "%zu,%d \n", i, sample);
+        }
     }
     fclose(csv);
 
@@ -264,12 +255,6 @@ int main()
                         case SDLK_q:
                         {
                             running = false;
-                            break;
-                        }
-
-                        case SDLK_a:
-                        {
-                            synth.i_Arrangement = ! synth.i_Arrangement;
                             break;
                         }
                     }

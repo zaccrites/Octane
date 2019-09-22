@@ -1,16 +1,10 @@
 
-`include "registers.svh"
-
 module phase_generator (
     input logic i_Clock,
     input logic i_Reset,
-    input OperatorConfiguration_t i_Operator1Config,
-    input OperatorConfiguration_t i_Operator2Config,
-
-    output [23:0] o_Operator1Phase,
-    output [23:0] o_Operator2Phase
+    input logic [23:0] i_Frequency,
+    output [23:0] o_Phase
 );
-
 
 
 // Still not really sure why summing the frequency up works to
@@ -27,12 +21,10 @@ module phase_generator (
 
 always_ff @ (posedge i_Clock) begin
     if (i_Reset) begin
-        o_Operator1Phase <= 0;
-        o_Operator2Phase <= 0;
+        o_Phase <= 0;
     end
     else begin
-        o_Operator1Phase <= o_Operator1Phase + i_Operator1Config.Frequency;
-        o_Operator2Phase <= o_Operator2Phase + i_Operator2Config.Frequency;
+        o_Phase <= o_Phase + i_Frequency;
     end
 end
 

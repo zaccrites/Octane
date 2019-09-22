@@ -1,137 +1,92 @@
 
-`include "registers.svh"
+// `include "registers.svh"
+`include "voice.svh"
 
 module synth (
     input i_Clock,
     input i_Reset,
 
 
-    // Arrangement of the two operators.
-    // If set, Op1 will modulate the carrier Op2
-    input logic i_Arrangement,
-
-
-    // Frequency in radians per second
-    input logic [23:0] i_Frequency1,
-    input logic [23:0] i_Frequency2,
-
-    input logic [15:0] i_Amp1,
-    input logic [15:0] i_Amp2,
-
-
-
+    // TODO: Change this interface into an SPI-like one.
+    // Possibly actually SPI.
+    // TODO: Allow reading registers as well.
+    input logic [7:0] i_RegisterNumber,
+    input logic [23:0] i_RegisterValue,
+    input logic i_RegisterWriteEnable,
 
 
     // TODO: Use PWM instead of outputting the full sample
-    output [23:0] o_Sample,
-
-
-    // Sign extend in Verilog because it's easier than C++ :)
-    output [31:0] o_Sample32,
-
-
-    output [31:0] o_Sample32_1,
-    output [31:0] o_Sample32_2
+    // output [31:0] o_Sample
+    output [23:0] o_Sample
 
 );
 
 
-assign o_Sample32 = {{8{o_Sample[23]}}, o_Sample};
-
-
-assign o_Sample32_1 = {{8{w_Operator1Output[23]}}, w_Operator1Output};
-assign o_Sample32_2 = {{8{w_Operator2Output[23]}}, w_Operator2Output};
-
-
-
-
-// TODO: This may be cumbersome for multiple voices.
-// Although each voice can likely be its own module anyway.
-//
-logic [23:0] w_Operator1Phase;
-logic [23:0] w_Operator2Phase;
-
-
-OperatorConfiguration_t w_Operator1Config;
-assign w_Operator1Config = i_Frequency1;
-
-OperatorConfiguration_t w_Operator2Config;
-assign w_Operator2Config = i_Frequency2;
-
-
-phase_generator phasegen (
-    .i_Clock          (i_Clock),
-    .i_Reset          (i_Reset),
-    .i_Operator1Config(w_Operator1Config),
-    .i_Operator2Config(w_Operator2Config),
-    .o_Operator1Phase (w_Operator1Phase),
-    .o_Operator2Phase (w_Operator2Phase)
-);
-
-
-
-// signed?
-logic [23:0] w_Operator2Phase_Sum;
-assign w_Operator2Phase_Sum = i_Arrangement
-    ? w_Operator2Phase + w_Operator1Output
-    : w_Operator2Phase;
-
-
-
-// verilator lint_off UNUSED
-logic [23:0] w_Operator1Output;
-logic [23:0] w_Operator2Output;
-// verilator lint_on UNUSED
-
-operator op1 (
-    .i_Clock (i_Clock),
-    // .i_Reset (i_Reset),
-    .i_AmplitudeFactor(i_Amp1),
-    .i_Phase (w_Operator1Phase),
-    .o_Output(w_Operator1Output)
-);
-
-operator op2 (
-    .i_Clock (i_Clock),
-    // .i_Reset (i_Reset),
-    .i_AmplitudeFactor(i_Amp2),
-    .i_Phase (w_Operator2Phase_Sum),
-    .o_Output(w_Operator2Output)
-);
-
-// TODO: Alternate mode to modulate instead of add
-// verilator lint_off UNUSED
-logic [24:0] w_SummedOutput;
-// // TODO: How to just ignore the last bit? idk
-// // verilator lint_on UNUSED
-// assign w_SummedOutput =
-//     {w_Operator1Output[23], w_Operator1Output[23:1]} +
-//     {w_Operator2Output[23], w_Operator2Output[23:1]};
-// assign o_Sample = w_SummedOutput[24:1];
-// assign o_Sample = w_Operator1Output[23:0] + w_Operator2Output[23:0];
-// assign o_Sample = w_Operator2Output[23:0];
-
-assign o_Sample = i_Arrangement
-    ? w_Operator2Output[23:0]
-    : w_Operator1Output[23:0] + w_Operator2Output[23:0];
-
-
-// always_comb begin
-
-//     w_SummedOutput =
-//     {w_Operator1Output[23], w_Operator1Output[23:1]}
-
-// end
-
-
-
+VoiceRegisters_t [2:1] r_VoiceRegisters;
 
 always_ff @ (posedge i_Clock) begin
     if (i_Reset) begin
+        // TODO
+        r_VoiceRegisters[1].KeyOn <= 0;
+        r_VoiceRegisters[2].KeyOn <= 0;
     end
-    else begin
+    else if (i_RegisterWriteEnable) begin
+        case (i_RegisterNumber)
+            // TODO: `define or enum these register names
+            // TODO: Optimize lookup tables?
+            // TODO: Delegate this to the Voice module itself? The modules
+            //       can be parameterized with a prefix ID bit sequence.
+
+            // Some of these might make sense to set all at once though.
+            // For example, with a 32-bit value we can set the key-on value
+            // of all voices atomically. That might not be necessary though.
+
+            8'h00: r_VoiceRegisters[1].Algorithm <= i_RegisterValue[0];
+            8'h01: r_VoiceRegisters[1].Operator[1].AmplitudeFactor <= i_RegisterValue[15:0];
+            8'h02: r_VoiceRegisters[1].Operator[1].Frequency <= i_RegisterValue;
+            8'h03: r_VoiceRegisters[1].Operator[2].AmplitudeFactor <= i_RegisterValue[15:0];
+            8'h04: r_VoiceRegisters[1].Operator[2].Frequency <= i_RegisterValue;
+            8'h05: r_VoiceRegisters[1].KeyOn <= i_RegisterValue[0];
+
+            8'h10: r_VoiceRegisters[2].Algorithm <= i_RegisterValue[0];
+            8'h11: r_VoiceRegisters[2].Operator[1].AmplitudeFactor <= i_RegisterValue[15:0];
+            8'h12: r_VoiceRegisters[2].Operator[1].Frequency <= i_RegisterValue;
+            8'h13: r_VoiceRegisters[2].Operator[2].AmplitudeFactor <= i_RegisterValue[15:0];
+            8'h14: r_VoiceRegisters[2].Operator[2].Frequency <= i_RegisterValue;
+            8'h15: r_VoiceRegisters[2].KeyOn <= i_RegisterValue[0];
+
+            default: /* do nothing */;
+        endcase
     end
 end
+
+
+
+
+
+// TODO: Make in a loop?
+voice voice1 (
+    .i_Clock (i_Clock),
+    .i_Reset (i_Reset),
+    .r_Registers(r_VoiceRegisters[1]),
+    .o_Sample(w_Voice1Sample)
+);
+
+voice voice2 (
+    .i_Clock (i_Clock),
+    .i_Reset (i_Reset),
+    .r_Registers(r_VoiceRegisters[2]),
+    .o_Sample(w_Voice2Sample)
+);
+
+logic [23:0] w_Voice1Sample;
+logic [23:0] w_Voice2Sample;
+
+assign o_Sample = w_Voice1Sample + w_Voice2Sample;
+
+
+
+
 
 
 endmodule
