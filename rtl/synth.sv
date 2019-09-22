@@ -79,10 +79,19 @@ voice voice2 (
     .o_Sample(w_Voice2Sample)
 );
 
-logic [23:0] w_Voice1Sample;
-logic [23:0] w_Voice2Sample;
+logic signed [23:0] w_Voice1Sample;
+logic signed [23:0] w_Voice2Sample;
 
-assign o_Sample = w_Voice1Sample + w_Voice2Sample;
+
+// TODO: What's the best way to average the outputs?
+// Should each voice be given an amplitude factor?
+// Or do we rely on the controlling software to ensure that all
+// active operator amplitudes add up to less than 100%?
+// I guess if someone wants to let the values overflow or clip
+// then that's something they might want to do.
+assign o_Sample =
+      w_Voice1Sample / 2
+    + w_Voice2Sample / 2;
 
 
 

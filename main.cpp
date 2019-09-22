@@ -106,29 +106,6 @@ int main()
 
     reset();
 
-
-
-
-    // synth.i_Operand1 = -10;
-    // synth.i_Operand2 = 30;
-    // tick(); tick(); tick();
-    // tick(); tick(); tick();
-
-    // Note: The result is actually 18 bits!
-    // int16_t result = synth.o_Result;
-    // printf("o_Result = %d \n", result);
-
-
-
-    // With only 2048 distinct sine wave samples, we have to find
-    // the closest one when building sample buffers on the PC.
-    // Or rather, only increment t when appropriate.
-
-
-
-
-    // synth.i_Arrangement = 1;
-
     auto writeRegister = [&synth, &tick](uint8_t registerNumber, int32_t registerValue) {
         synth.i_RegisterWriteEnable = 1;
         synth.i_RegisterNumber = registerNumber;
@@ -171,17 +148,19 @@ int main()
     const uint8_t VOICE2_KEYON = 0x15;
 
     writeRegister(VOICE1_ALGORITHM, 1);
-    // writeRegister(VOICE1_OP1_AMPLITUDE, toFixed(0.25));
-    writeRegister(VOICE1_OP1_AMPLITUDE, toFixed(1.0 / 6.0));
+    writeRegister(VOICE1_OP1_AMPLITUDE, toFixed(0.50));
+    // writeRegister(VOICE1_OP1_AMPLITUDE, toFixed(1.0 / 6.0));
     writeRegister(VOICE1_OP1_FREQUENCY, makeFreq(350));
-    // writeRegister(VOICE1_OP2_AMPLITUDE, toFixed(0.25));
-    writeRegister(VOICE1_OP2_AMPLITUDE, toFixed(1.0 / 6.0));
+    writeRegister(VOICE1_OP2_AMPLITUDE, toFixed(0.50));
+    // writeRegister(VOICE1_OP2_AMPLITUDE, toFixed(1.0 / 6.0));
     writeRegister(VOICE1_OP2_FREQUENCY, makeFreq(440));
 
     writeRegister(VOICE2_ALGORITHM, 1);
-    writeRegister(VOICE2_OP1_AMPLITUDE, toFixed(2.0 / 6.0));  // muted
+    writeRegister(VOICE2_OP1_AMPLITUDE, toFixed(0.50));
+    // writeRegister(VOICE2_OP1_AMPLITUDE, toFixed(2.0 / 6.0));
     writeRegister(VOICE2_OP1_FREQUENCY, makeFreq(880));
-    writeRegister(VOICE2_OP2_AMPLITUDE, toFixed(2.0 / 6.0));  // muted
+    writeRegister(VOICE2_OP2_AMPLITUDE, toFixed(0.50));
+    // writeRegister(VOICE2_OP2_AMPLITUDE, toFixed(2.0 / 6.0));
     writeRegister(VOICE2_OP2_FREQUENCY, makeFreq(700));
 
     writeRegister(VOICE1_KEYON, 1);
@@ -212,7 +191,13 @@ int main()
             return start * (1.0 - a) + end * a;
         };
 
-        tick();
+        if (i == NUM_SAMPLES / 2) {
+            writeRegister(VOICE2_KEYON, 0);
+        }
+        else {
+            tick();
+        }
+
 
         // Extend 24-bit table to the full range of 32 bits
         int32_t sample = synth.o_Sample * (1 << 8);
