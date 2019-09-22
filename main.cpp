@@ -126,7 +126,7 @@ int main()
 
     // I guess for now we can just multiply t by 8192 (mod 2048)
     // to digitize it (2048 in the table, with the rest inferred)
-    constexpr double length = 2.0;
+    constexpr double length = 4.0;
     constexpr size_t NUM_SAMPLES = SAMPLE_RATE * length;
     int32_t samples[NUM_SAMPLES];
 
@@ -143,14 +143,17 @@ int main()
         // synth.i_Frequency = static_cast<uint16_t>(440.0);
         // synth.i_Frequency = static_cast<uint16_t>(1.0);
 
-        if (i < NUM_SAMPLES / 2)
-            // synth.i_Frequency = static_cast<uint16_t>(2048.0 / (M_PI / 2.0));
-            synth.i_Frequency = 440;
-        else
-            // synth.i_Frequency = static_cast<uint16_t>(2.0 * 2048.0 / (M_PI / 2.0));
-            synth.i_Frequency = 880;
+        auto makeFreq = [](double f) -> uint32_t {
+            // Convert raw Hz to multiple of 2^-8 Hz
+            return static_cast<uint32_t>(f * (1 << 8));
+        };
 
-        synth.i_Frequency *= 4;
+
+        auto sweep = [i](double start, double end) -> double {
+            const double a = static_cast<double>(i) / static_cast<double>(NUM_SAMPLES);
+            return start * (1.0 - a) + end * a;
+        };
+        synth.i_Frequency = makeFreq(sweep(220, 880));
 
         tick();
 
