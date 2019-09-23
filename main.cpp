@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <limits>
+#include <queue>
 #include <stdio.h>
 
 #include <SDL2/SDL.h>
@@ -77,8 +78,97 @@ const uint32_t WINDOW_WIDTH = 640;
 const uint32_t WINDOW_HEIGHT = 480;
 
 
+
+
+
+class Synth
+{
+public:
+
+    void tick()
+    {
+        m_Synth.i_Clock = 0;
+        m_Synth.eval();
+        m_Synth.i_Clock = 1;
+        m_Synth.eval();
+
+        getSample();
+    }
+
+    void reset()
+    {
+        m_Synth.i_Reset = 1;
+        tick();
+        m_Synth.i_Reset = 0;
+
+        clearSampleBuffer();
+    }
+
+    void writeRegister(uint8_t voiceNum, uint8_t registerNum, int32_t registerValue)
+    {
+        // TODO: Use uint32_t for e.g. setting KeyOn for all voice atomically
+        // TODO: Force user to specify register number explcitly, as I can
+        //   imagine having some global registers in the 00xx area which
+        //   aren't tied to a specific voice.
+
+        m_Synth.i_RegisterWriteEnable = 1;
+        m_Synth.i_RegisterNumber = (voiceNum << 6) | registerNum;
+        m_Synth.i_RegisterValue = registerValue;
+        tick();
+        m_Synth.i_RegisterWriteEnable = 0;
+    }
+
+    void writeSampleBytes(uint8_t* pRawStream, size_t number)
+    {
+        int32_t* pStream = reinterpret_cast<int32_t*>(pRawStream);
+        for (size_t i = 0; i < number / sizeof(int32_t); i++)
+        {
+            if (m_SampleBuffer.empty())
+            {
+                for (int j = 0; j < 16; j++) tick();
+            }
+            pStream[i] = m_SampleBuffer.front();
+            m_SampleBuffer.pop();
+        }
+    }
+
+private:
+    void getSample()
+    {
+        // TODO: Check a "data is valid" flag?
+
+        // Extend 24-bit table to the full range of 32 bits
+        int32_t sample = m_Synth.o_Sample * (1 << 8);
+        m_SampleBuffer.push(sample);
+    }
+
+    void clearSampleBuffer()
+    {
+        // https://stackoverflow.com/a/709161
+        std::queue<int32_t> empty;
+        std::swap(m_SampleBuffer, empty);
+    }
+
+private:
+    Vsynth m_Synth;
+    std::queue<int32_t> m_SampleBuffer;
+
+};
+
+
+
+void sdl_audio_callback(void* userdata, uint8_t* buffer, int length)
+{
+    Synth* pSynth = static_cast<Synth*>(userdata);
+    pSynth->writeSampleBytes(buffer, length);
+}
+
+
 int main()
 {
+
+    Synth synth;
+    synth.reset();
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
@@ -125,16 +215,16 @@ int main()
     want.freq = SAMPLE_RATE;
     want.format = AUDIO_S32;
     want.channels = 1;
-    want.samples = 512;
-    // want.callback = audio_callback;
-    // want.userdata = &userdata;
-    want.callback = NULL;
+    want.samples = 1024;
+    want.callback = sdl_audio_callback;
+    want.userdata = &synth;
     device = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
     if (device == 0)
     {
         std::cerr << "Failed to init SDL audio" << std::endl;
         return 1;
     }
+
 
     // There is a super annoying delay which may make a keyboard impossible
     // to implement using SDL's audio. Apparently OpenAL can be better for
@@ -154,22 +244,6 @@ int main()
 
 
 
-
-    // TODO: Wrap in class
-    Vsynth synth;
-    auto tick = [&synth]() -> void {
-        synth.i_Clock = 0;
-        synth.eval();
-        synth.i_Clock = 1;
-        synth.eval();
-    };
-    auto reset = [&synth, &tick]() -> void {
-        synth.i_Reset = 1;
-        tick();
-        synth.i_Reset = 0;
-    };
-
-    reset();
 
 
 
@@ -199,61 +273,60 @@ int main()
     const uint16_t VOICE_OP2_FREQUENCY = 0x04;
     const uint16_t VOICE_KEYON         = 0x05;
 
-    auto writeRegister = [&synth, &tick](uint8_t voiceNum, uint8_t registerNum, int32_t registerValue) {
-        synth.i_RegisterWriteEnable = 1;
-        synth.i_RegisterNumber = (voiceNum << 6) | registerNum;
-        synth.i_RegisterValue = registerValue;
-        tick();
-        synth.i_RegisterWriteEnable = 0;
-    };
 
-    // writeRegister(1, VOICE_ALGORITHM, 1);
-    // writeRegister(1, VOICE_OP1_AMPLITUDE, toFixed(0.50));
-    // // writeRegister(1, VOICE_OP1_AMPLITUDE, toFixed(1.0 / 6.0));
-    // writeRegister(1, VOICE_OP1_FREQUENCY, makeFreq(350));
-    // writeRegister(1, VOICE_OP2_AMPLITUDE, toFixed(0.50));
-    // // writeRegister(1, VOICE_OP2_AMPLITUDE, toFixed(1.0 / 6.0));
-    // writeRegister(1, VOICE_OP2_FREQUENCY, makeFreq(440));
+    // synth.writeRegister(1, VOICE_ALGORITHM, 1);
+    // synth.writeRegister(1, VOICE_OP1_AMPLITUDE, toFixed(0.50));
+    // // synth.writeRegister(1, VOICE_OP1_AMPLITUDE, toFixed(1.0 / 6.0));
+    // synth.writeRegister(1, VOICE_OP1_FREQUENCY, makeFreq(350));
+    // synth.writeRegister(1, VOICE_OP2_AMPLITUDE, toFixed(0.50));
+    // // synth.writeRegister(1, VOICE_OP2_AMPLITUDE, toFixed(1.0 / 6.0));
+    // synth.writeRegister(1, VOICE_OP2_FREQUENCY, makeFreq(440));
 
-    // writeRegister(2, VOICE_ALGORITHM, 1);
-    // writeRegister(2, VOICE_OP1_AMPLITUDE, toFixed(0.50));
-    // // writeRegister(2, VOICE_OP1_AMPLITUDE, toFixed(2.0 / 6.0));
-    // writeRegister(2, VOICE_OP1_FREQUENCY, makeFreq(880));
-    // writeRegister(2, VOICE_OP2_AMPLITUDE, toFixed(0.50));
-    // // writeRegister(2, VOICE_OP2_AMPLITUDE, toFixed(2.0 / 6.0));
-    // writeRegister(2, VOICE_OP2_FREQUENCY, makeFreq(700));
+    // synth.writeRegister(2, VOICE_ALGORITHM, 1);
+    // synth.writeRegister(2, VOICE_OP1_AMPLITUDE, toFixed(0.50));
+    // // synth.writeRegister(2, VOICE_OP1_AMPLITUDE, toFixed(2.0 / 6.0));
+    // synth.writeRegister(2, VOICE_OP1_FREQUENCY, makeFreq(880));
+    // synth.writeRegister(2, VOICE_OP2_AMPLITUDE, toFixed(0.50));
+    // // synth.writeRegister(2, VOICE_OP2_AMPLITUDE, toFixed(2.0 / 6.0));
+    // synth.writeRegister(2, VOICE_OP2_FREQUENCY, makeFreq(700));
 
-    // writeRegister(VOICE1_KEYON, 1);
-    // writeRegister(VOICE2_KEYON, 1);
+    // synth.writeRegister(VOICE1_KEYON, 1);
+    // synth.writeRegister(VOICE2_KEYON, 1);
 
     for (uint8_t voiceNum = 1; voiceNum <= 8; voiceNum++)
     {
-        writeRegister(voiceNum, VOICE_ALGORITHM, 1);
-        writeRegister(voiceNum, VOICE_OP1_AMPLITUDE, toFixed(1.00));
-        // writeRegister(voiceNum, VOICE_OP1_FREQUENCY, ...);
-        writeRegister(voiceNum, VOICE_OP2_AMPLITUDE, toFixed(0.00));
-        // writeRegister(voiceNum, VOICE_OP2_FREQUENCY, ...);
+        synth.writeRegister(voiceNum, VOICE_ALGORITHM, 0);
 
+        // synth.writeRegister(voiceNum, VOICE_ALGORITHM, 1);
+        synth.writeRegister(voiceNum, VOICE_OP1_AMPLITUDE, toFixed(0.50));
+        // synth.writeRegister(voiceNum, VOICE_OP1_FREQUENCY, makeFreq(440.0 / 4.0 * (1 << voiceNum)));
+        synth.writeRegister(voiceNum, VOICE_OP2_AMPLITUDE, toFixed(0.50));
+        // synth.writeRegister(voiceNum, VOICE_OP2_FREQUENCY, makeFreq(350.0 / 4.0 * (1 << voiceNum)));
 
     }
 
-    // writeRegister(1, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::C, 4)));
-    // writeRegister(2, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::D, 4)));
-    // writeRegister(3, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::E, 4)));
-    // writeRegister(4, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::F, 4)));
-    // writeRegister(5, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::G, 4)));
-    // writeRegister(6, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::A, 5)));
-    // writeRegister(7, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::B, 5)));
-    // writeRegister(8, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::C, 5)));
 
-    writeRegister(1, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::G, 4)));
-    writeRegister(2, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::A, 4)));
-    writeRegister(3, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::B, 4)));
-    writeRegister(4, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::C, 5)));
-    writeRegister(5, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::D, 5)));
-    writeRegister(6, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::E, 5)));
-    writeRegister(7, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::Fs, 5)));
-    writeRegister(8, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::G, 5)));
+    synth.writeRegister(1, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::G, 4)));
+    synth.writeRegister(2, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::A, 4)));
+    synth.writeRegister(3, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::B, 4)));
+    synth.writeRegister(4, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::C, 5)));
+    synth.writeRegister(5, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::D, 5)));
+    synth.writeRegister(6, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::E, 5)));
+    synth.writeRegister(7, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::Fs, 5)));
+    synth.writeRegister(8, VOICE_OP1_FREQUENCY, toFixed(noteFrequency(Note::G, 5)));
+
+    synth.writeRegister(1, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::G, 5)));
+    synth.writeRegister(2, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::A, 5)));
+    synth.writeRegister(3, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::B, 5)));
+    synth.writeRegister(4, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::C, 6)));
+    synth.writeRegister(5, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::D, 6)));
+    synth.writeRegister(6, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::E, 6)));
+    synth.writeRegister(7, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::Fs, 6)));
+    synth.writeRegister(8, VOICE_OP2_FREQUENCY, toFixed(noteFrequency(Note::G, 6)));
+
+
+
+    // synth.writeRegister(1, VOICE_KEYON, 1);
 
     // For the graph visualization, it would also be nice to be able
     // to see the plain sine wave of the carrier as well as the modulator.
@@ -266,51 +339,69 @@ int main()
     // to the operators, and software controlling the synth can abstract
     // away the "coarse adjust" and key frequency and other such concepts.
 
-    constexpr double length = 10.0;
-    constexpr size_t NUM_SAMPLES = SAMPLE_RATE * length;
-    int32_t samples[NUM_SAMPLES];
+    // constexpr double length = 10.0;
+    // constexpr size_t NUM_SAMPLES = SAMPLE_RATE * length;
+    // int32_t samples[NUM_SAMPLES];
 
-    FILE* csv = fopen("data.csv", "w");
-    fprintf(csv, "i,sample\n");
-    for (size_t i = 0; i < NUM_SAMPLES; i++) {
+    // FILE* csv = fopen("data.csv", "w");
+    // fprintf(csv, "i,sample\n");
+    // for (size_t i = 0; i < NUM_SAMPLES; i++) {
 
-        auto sweep = [i](double start, double end) -> double {
-            const double a = static_cast<double>(i) / static_cast<double>(NUM_SAMPLES);
-            return start * (1.0 - a) + end * a;
-        };
+    //     auto sweep = [i](double start, double end) -> double {
+    //         const double a = static_cast<double>(i) / static_cast<double>(NUM_SAMPLES);
+    //         return start * (1.0 - a) + end * a;
+    //     };
 
 
-        bool skip = false;
-        for (uint8_t vi = 0; vi < 8; vi++)
-        {
-            if (i == vi * NUM_SAMPLES / 8)
-            {
+    //     // bool skip = false;
+    //     // for (uint8_t vi = 0; vi < 8; vi++)
+    //     // {
+    //     //     if (i == vi * NUM_SAMPLES / 8)
+    //     //     {
 
-                writeRegister(vi + 1, VOICE_KEYON, 1);
-                skip = true;
-                break;
-            }
-        }
-        if ( ! skip) tick();
+    //     //         writeRegister(vi + 1, VOICE_KEYON, 1);
+    //     //         skip = true;
+    //     //         break;
+    //     //     }
+    //     // }
+    //     // if ( ! skip) tick();
+    //     synth.tick();
 
-        // Extend 24-bit table to the full range of 32 bits
-        int32_t sample = synth.o_Sample * (1 << 8);
-        samples[i] = sample;
+    //     // Extend 24-bit table to the full range of 32 bits
+    //     int32_t sample = synth.o_Sample * (1 << 8);
+    //     samples[i] = sample;
 
-        // if (i < 1000)
-        {
-            fprintf(csv, "%zu,%d \n", i, sample);
-        }
-    }
-    fclose(csv);
+    //     if (i < 1000)
+    //     {
+    //         fprintf(csv, "%zu,%d \n", i, sample);
+    //     }
+    // }
+    // fclose(csv);
 
     // printf("Exiting early \n");
     // return 0;
 
-    SDL_QueueAudio(device, samples, NUM_SAMPLES * sizeof(samples[0]));
+    // SDL_QueueAudio(device, samples, NUM_SAMPLES * sizeof(samples[0]));
+
+
+
     SDL_PauseAudioDevice(device, 0);
 
-
+    // TODO: Keep track of which key is allocated to which voice,
+    // if there are more keys than voices.
+    // bool keyon = false;
+    bool VoiceKeyOn[8];
+    for (int i = 0; i < 8; i++) VoiceKeyOn[i] = false;
+    uint8_t VoiceKey_Scancodes[8] = {
+        SDL_SCANCODE_Q,
+        SDL_SCANCODE_W,
+        SDL_SCANCODE_E,
+        SDL_SCANCODE_R,
+        SDL_SCANCODE_T,
+        SDL_SCANCODE_Y,
+        SDL_SCANCODE_U,
+        SDL_SCANCODE_I,
+    };
 
     bool running = true;
     while (running)
@@ -331,21 +422,43 @@ int main()
                     switch (event.key.keysym.sym)
                     {
                         case SDLK_ESCAPE:
-                        case SDLK_q:
+                        // case SDLK_q:
                         {
                             running = false;
                             break;
                         }
+
+                        // case SDLK_a:
+                        // {
+                        //     keyon = ! keyon;
+                        //     synth.writeRegister(1, VOICE_KEYON, keyon ? 1 : 0);
+                        //     break;
+                        // }
                     }
                     break;
                 }
             }
         }
 
+        SDL_LockAudioDevice(device);
+        const uint8_t* pKeystate = SDL_GetKeyboardState(NULL);
+        for (int i = 0; i < 8; i++)
+        {
+            if (pKeystate[VoiceKey_Scancodes[i]] != VoiceKeyOn[i])
+            {
+                VoiceKeyOn[i] = pKeystate[VoiceKey_Scancodes[i]];
+                synth.writeRegister(i + 1, VOICE_KEYON, VoiceKeyOn[i] ? 1 : 0);
+            }
+        }
+        for (int i = 0; i < 256; i++) synth.tick();
+        SDL_UnlockAudioDevice(device);
+
         SDL_SetRenderDrawColor(pRenderer, 0x64, 0x95, 0xed, 0xff);
         SDL_RenderClear(pRenderer);
         SDL_RenderPresent(pRenderer);
-        SDL_Delay(16);
+
+        // Only delay if there are enough samples in the buffer?
+        SDL_Delay(4);  // ???
     }
 
 

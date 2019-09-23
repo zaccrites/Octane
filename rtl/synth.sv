@@ -98,6 +98,4 @@ assign o_Sample =
     w_VoiceSamples[8] / 8;
 
 
-
-
 endmodule
