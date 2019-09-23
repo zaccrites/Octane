@@ -473,24 +473,23 @@ int main()
     // Next steps:
     /*
 
-        - Output results from Sine wave generator into SDL so I can listen
-         to them. Do they sound right? Is there any crossover distortion?
-        - Refine table generator. Is the function right?
-        - Verify multiplier at boundary values
+        - Implement ADSR envelopes for each operator
+        - Improve the "API". I feel like the modulation index of the original
+          paper is lost somewere in the modulating operator's amplitude
+          or something. Is that right?
+        - Implement feedback for operators
+        - Implement four operators per voice
+        - Either implement more keys on my fake keyboard, or interface
+          with a real keyboard (either through MIDI or some hacked version)
+        - Deal with the various TODOs littering the code.
 
-        - Implement a single "operator" using directly input registers.
+        - Implement PWM operator waveform
+
         - Allow writing registers using SPI-like interface
-        - Implement a two-operator configuration to do FM synthesis
-          (or additive synthesis in second mode, see YM3812).
-
-        - Implement additional voices. Do voices share operator registers
-          or all have their own? The voices will at least have their own
-          fundamental frequency register value.
-
-        - Implement four operators per voice.
+        - Divide real clock so that the sample clock runs slower than
+          the main clock?
 
         - Move from SDL simulation to FPGA using PWM
-
 
         - Still not sure about the configuration interface.
           Something on an external interface would be cool.
