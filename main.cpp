@@ -297,19 +297,19 @@ int main()
 
     for (uint8_t voiceNum = 1; voiceNum <= 8; voiceNum++)
     {
-        synth.writeRegister(voiceNum, VOICE_ALGORITHM, 0);
+        synth.writeRegister(voiceNum, VOICE_ALGORITHM, 1);
 
         // synth.writeRegister(voiceNum, VOICE_ALGORITHM, 1);
         synth.writeRegister(voiceNum, VOICE_OP1_AMPLITUDE, toFixed(0.50));
         // synth.writeRegister(voiceNum, VOICE_OP1_FREQUENCY, makeFreq(440.0 / 4.0 * (1 << voiceNum)));
-        synth.writeRegister(voiceNum, VOICE_OP2_AMPLITUDE, toFixed(0.50));
+        synth.writeRegister(voiceNum, VOICE_OP2_AMPLITUDE, toFixed(0.00));
         // synth.writeRegister(voiceNum, VOICE_OP2_FREQUENCY, makeFreq(350.0 / 4.0 * (1 << voiceNum)));
 
         // Need to change the math-- 0.04 is the only value I found that
         // doesn't sounds terrible
         //
         // Now it's a signed 8 bit number
-        synth.writeRegister(voiceNum, VOICE_OP1_FEEDBACK, 1);
+        synth.writeRegister(voiceNum, VOICE_OP1_FEEDBACK, 256);
         // synth.writeRegister(voiceNum, VOICE_OP2_FEEDBACK, toFixed(0.00));
 
     }

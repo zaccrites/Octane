@@ -16,7 +16,7 @@ typedef struct packed
     logic Algorithm;
 
 
-    logic signed [7:0] Op1Feedback;
+    logic signed [9:0] Op1Feedback;
 
 
     OperatorRegisters_t [2:1] Operator;

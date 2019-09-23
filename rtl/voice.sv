@@ -48,11 +48,11 @@ logic [31:0] r_Product;  // 24 + 8 = 32
 always_ff @ (posedge i_Clock) begin
     // TODO: Pipeline?
     r_Product <= w_Operator1Output * r_Registers.Op1Feedback;
-    // r_Operator1Feedback <= r_Product[31:8];
-    r_Operator1Feedback <= r_Product[23:0];
+    r_Operator1Feedback <= r_Product[31:8];
+    // r_Operator1Feedback <= r_Product[23:0];
 
     if (r_Registers.Op1Feedback != 0 && r_Registers.KeyOn) begin
-        $display("r_Product[31:8] = %d", r_Product[31:8]);
+        // $display("r_Product[31:8] = %d", r_Product[31:8]);
     end
 end
 

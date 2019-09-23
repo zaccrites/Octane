@@ -56,7 +56,7 @@ always_ff @ (posedge i_Clock) begin
                 {voiceID, 6'h04}: r_VoiceRegisters[voiceID].Operator[2].Frequency <= i_RegisterValue;
                 {voiceID, 6'h05}: r_VoiceRegisters[voiceID].KeyOn <= i_RegisterValue[0];
 
-                {voiceID, 6'h06}: r_VoiceRegisters[voiceID].Op1Feedback <= i_RegisterValue[7:0];
+                {voiceID, 6'h06}: r_VoiceRegisters[voiceID].Op1Feedback <= i_RegisterValue[9:0];
 
                 // {voiceID, 6'h06}: r_VoiceRegisters[voiceID].Operator[1].FeedbackFactor <= i_RegisterValue[15:0];
                 // {voiceID, 6'h07}: r_VoiceRegisters[voiceID].Operator[2].FeedbackFactor <= i_RegisterValue[15:0];
