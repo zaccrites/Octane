@@ -482,6 +482,7 @@ int main()
     // Next steps:
     /*
 
+        - Re-add a way to see a waveform graph for debugging purposes.
         - Implement ADSR envelopes for each operator
         - Improve the "API". I feel like the modulation index of the original
           paper is lost somewere in the modulating operator's amplitude
