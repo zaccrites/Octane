@@ -6,6 +6,9 @@ module operator (
     input logic i_Reset,
 
     input OperatorRegisters_t i_Registers,
+
+
+
     input logic signed [23:0] i_ModulatingPhase,
 
     output logic signed [23:0] o_Output

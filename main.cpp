@@ -272,6 +272,8 @@ int main()
     const uint16_t VOICE_OP2_AMPLITUDE = 0x03;
     const uint16_t VOICE_OP2_FREQUENCY = 0x04;
     const uint16_t VOICE_KEYON         = 0x05;
+    const uint16_t VOICE_OP1_FEEDBACK  = 0x06;
+    // const uint16_t VOICE_OP2_FEEDBACK  = 0x07;
 
 
     // synth.writeRegister(1, VOICE_ALGORITHM, 1);
@@ -302,6 +304,13 @@ int main()
         // synth.writeRegister(voiceNum, VOICE_OP1_FREQUENCY, makeFreq(440.0 / 4.0 * (1 << voiceNum)));
         synth.writeRegister(voiceNum, VOICE_OP2_AMPLITUDE, toFixed(0.50));
         // synth.writeRegister(voiceNum, VOICE_OP2_FREQUENCY, makeFreq(350.0 / 4.0 * (1 << voiceNum)));
+
+        // Need to change the math-- 0.04 is the only value I found that
+        // doesn't sounds terrible
+        //
+        // Now it's a signed 8 bit number
+        synth.writeRegister(voiceNum, VOICE_OP1_FEEDBACK, 1);
+        // synth.writeRegister(voiceNum, VOICE_OP2_FEEDBACK, toFixed(0.00));
 
     }
 

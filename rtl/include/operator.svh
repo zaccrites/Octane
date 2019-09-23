@@ -8,7 +8,7 @@ typedef struct packed
 
     // 8 integer bits, 8 fractional bits
     logic signed [15:0] AmplitudeFactor;  // TODO: ADSR
-    // logic signed [15:0] FeedbackFactor;  // TODO: Feedback
+    // logic signed [15:0] FeedbackFactor;
 
     // TODO: Alternative waveforms
 

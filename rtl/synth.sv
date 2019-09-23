@@ -48,12 +48,19 @@ always_ff @ (posedge i_Clock) begin
                 // For example, with a 32-bit value we can set the key-on value
                 // of all voices atomically. That might not be necessary though.
 
+                // TODO: Rearrange the order
                 {voiceID, 6'h00}: r_VoiceRegisters[voiceID].Algorithm <= i_RegisterValue[0];
                 {voiceID, 6'h01}: r_VoiceRegisters[voiceID].Operator[1].AmplitudeFactor <= i_RegisterValue[15:0];
                 {voiceID, 6'h02}: r_VoiceRegisters[voiceID].Operator[1].Frequency <= i_RegisterValue;
                 {voiceID, 6'h03}: r_VoiceRegisters[voiceID].Operator[2].AmplitudeFactor <= i_RegisterValue[15:0];
                 {voiceID, 6'h04}: r_VoiceRegisters[voiceID].Operator[2].Frequency <= i_RegisterValue;
                 {voiceID, 6'h05}: r_VoiceRegisters[voiceID].KeyOn <= i_RegisterValue[0];
+
+                {voiceID, 6'h06}: r_VoiceRegisters[voiceID].Op1Feedback <= i_RegisterValue[7:0];
+
+                // {voiceID, 6'h06}: r_VoiceRegisters[voiceID].Operator[1].FeedbackFactor <= i_RegisterValue[15:0];
+                // {voiceID, 6'h07}: r_VoiceRegisters[voiceID].Operator[2].FeedbackFactor <= i_RegisterValue[15:0];
+
 
                 default: /* do nothing */;
             endcase

@@ -7,7 +7,9 @@ module voice (
 
     input VoiceRegisters_t r_Registers,
 
-    output logic [23:0] o_Sample
+
+
+    output logic signed [23:0] o_Sample
 );
 
 
@@ -19,7 +21,7 @@ operator op1 (
     .i_Clock          (i_Clock),
     .i_Reset          (i_Reset),
     .i_Registers      (r_Registers.Operator[1]),
-    .i_ModulatingPhase(0),  // TODO: Feedback
+    .i_ModulatingPhase(r_Operator1Feedback),
     .o_Output         (w_Operator1Output)
 );
 
@@ -35,6 +37,25 @@ logic signed [23:0] w_Operator1Output;
 logic signed [23:0] w_Operator2Output;
 
 logic signed [23:0] w_Op2ModulatingPhase;
+
+logic signed [23:0] r_Operator1Feedback;
+// TODO: Operator2Feedback
+
+// TODO: Some bits of product not used?
+// verilator lint_off UNUSED
+logic [31:0] r_Product;  // 24 + 8 = 32
+// verilator lint_on UNUSED
+always_ff @ (posedge i_Clock) begin
+    // TODO: Pipeline?
+    r_Product <= w_Operator1Output * r_Registers.Op1Feedback;
+    // r_Operator1Feedback <= r_Product[31:8];
+    r_Operator1Feedback <= r_Product[23:0];
+
+    if (r_Registers.Op1Feedback != 0 && r_Registers.KeyOn) begin
+        $display("r_Product[31:8] = %d", r_Product[31:8]);
+    end
+end
+
 
 always_comb begin
 
