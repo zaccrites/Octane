@@ -153,6 +153,8 @@ class Depfile(object):
         return self.newest_depend > self.oldest_output
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return (self.outputs, self.depends) == (other.outputs, other.depends)
 
     def __ne__(self, other):

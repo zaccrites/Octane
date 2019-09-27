@@ -1,8 +1,8 @@
 
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
-project(softsynth VERSION 0.1.0
-        DESCRIPTION "Software FM synthesizer"
+project(synthetic VERSION 0.1.0
+        DESCRIPTION "FPGA-based FM synthesizer"
         LANGUAGES CXX)
 
 
@@ -13,11 +13,11 @@ add_subdirectory(Vmodules)
 
 
 
-add_executable(softsynth
-    "main.cpp"
+add_executable(synth
+    "src/main.cpp"
 )
 
-target_link_libraries(softsynth
+target_link_libraries(synth
     ${SDL2_LIBRARIES}
     SDL2_ttf
 
@@ -26,7 +26,7 @@ target_link_libraries(softsynth
 
 
 # TODO: Prevent copy-paste of compiler settings to unit_test target
-target_compile_options(softsynth PRIVATE
+target_compile_options(synth PRIVATE
     -std=c++14
     -pedantic
     -Wall
