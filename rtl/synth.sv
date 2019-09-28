@@ -73,8 +73,13 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
+
 integer voiceNumber;
 integer operatorNumber;
+`define VOICE_CONFIG     r_CoreConfig.VoiceConfigs[voiceNumber - 1]
+`define OPERATOR_CONFIG  `VOICE_CONFIG.OperatorConfigs[operatorNumber - 1]
+
+
 always_ff @ (posedge i_Clock) begin
     if (i_Reset) begin
         for (voiceNumber = 1; voiceNumber <= 16; voiceNumber = voiceNumber + 1)
@@ -85,14 +90,15 @@ always_ff @ (posedge i_Clock) begin
     if (i_RegisterWriteEnable) begin
         for (voiceNumber = 1; voiceNumber <= 16; voiceNumber = voiceNumber + 1) begin
             case (i_RegisterNumber)
-                {voiceNumber[3:0], 3'b000, 9'h0000}: r_CoreConfig.VoiceConfigs[voiceNumber - 1].KeyOn <= i_RegisterValue[0];
+                {voiceNumber[3:0], 3'b000, 9'h0000}: `VOICE_CONFIG.KeyOn <= i_RegisterValue[0];
 
                 default: /* do nothing */;
             endcase
 
             for (operatorNumber = 1; operatorNumber <= 6; operatorNumber = operatorNumber + 1) begin
                 case (i_RegisterNumber)
-                    {voiceNumber[3:0], operatorNumber[2:0], 9'h0000}: r_CoreConfig.VoiceConfigs[voiceNumber - 1].OperatorConfigs[operatorNumber - 1].PhaseStep <= i_RegisterValue;
+                    {voiceNumber[3:0], operatorNumber[2:0], 9'h0000}: `OPERATOR_CONFIG.PhaseStep <= i_RegisterValue;
+                    {voiceNumber[3:0], operatorNumber[2:0], 9'h0001}: `OPERATOR_CONFIG.Waveform  <= i_RegisterValue[0];
 
                     default: /* do nothing */;
                 endcase

@@ -99,12 +99,20 @@ int main()
     {
         for (uint16_t operatorNum = 1; operatorNum <= 6; operatorNum++)
         {
-            const uint16_t registerNumber =
-                (voiceNum << 12) | (operatorNum << 9) | 0;
+            uint16_t registerNumber =
+                (voiceNum << 12) | (operatorNum << 9) | 0x0000;
             const uint16_t phaseStep = (voiceNum % 2 == 0)
                 ? phaseStepForFrequency(440.0)
-                : phaseStepForFrequency(350.0);
+                // : phaseStepForFrequency(350.0);
+                : phaseStepForFrequency(220.0);
             synth.writeRegister(registerNumber, phaseStep);
+
+
+            // Use a square wave
+            registerNumber =
+                (voiceNum << 12) | (operatorNum << 9) | 0x0001;
+            synth.writeRegister(registerNumber, 1);
+
         }
     }
 

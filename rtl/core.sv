@@ -62,11 +62,12 @@ logic signed [31:0] r_SineProduct[2:0];
 
 
 
-logic signed [15:0] w_SinResult;
-sine_function sine (
+logic signed [15:0] w_WaveformAmplitude;
+waveform_generator wavegen (
     .i_Clock (i_Clock),
     .i_Phase (r_Phase[15:3]),
-    .o_Result(w_SinResult)
+    .i_Waveform (w_OperatorConfig.Waveform),
+    .o_Amplitude (w_WaveformAmplitude)
 );
 
 
@@ -75,19 +76,20 @@ logic unsigned [15:0] w_ModulationPhase;
 assign w_ModulationPhase = 0;
 
 
-logic unsigned [15:0] w_PhaseStep;
+// TODO: Use e.g. KeyOn
+// verilator lint_off UNUSED
+VoiceConfig_t w_VoiceConfig;
+// verilator lint_on UNUSED
+OperatorConfig_t w_OperatorConfig;
 always_comb begin
-    // w_PhaseStep = w_VoiceNum[0] ? 654 : 1308;
-    // w_PhaseStep = w_VoiceNum[0] ? 654 : 520;
-
-    w_PhaseStep = i_Config.VoiceConfigs[w_VoiceNum].OperatorConfigs[w_OperatorNum].PhaseStep;
+    w_VoiceConfig = i_Config.VoiceConfigs[w_VoiceNum];
+    w_OperatorConfig = w_VoiceConfig.OperatorConfigs[w_OperatorNum];
 end
 
 
 always_ff @ (posedge i_Clock) begin
     // NOTE: With 8 operators, this wouldn't be necessary. The counter could just overflow.
     // 16 voices * 6 operators = 96 cycles
-    // if (i_Reset || r_CycleCounter == 95)
     if (i_Reset || (w_OperatorNum == 5 && w_VoiceNum == 15))
         r_CycleCounter <= 0;
     else
@@ -105,10 +107,11 @@ always_ff @ (posedge i_Clock) begin
 
     // Add incoming frequency to phase accumulator
     // TODO: Is this enough? Do I need to do any math? See above comment
-    // (one clock cycle [possibly more if I need to do some math])
-    r_PhaseAcc[r_CycleCounter] <= r_PhaseAcc[r_CycleCounter] + w_PhaseStep;
-
-    // if (w_VoiceNum == 0) $display("phaseAcc = %d", r_PhaseAcc[w_VoiceNum]);
+    // (one clock cycle [possibly more if I need to do some math for e.g. feedback])
+    //
+    // TODO: Does the operator configuration need to be pipelined as well?
+    // Not for this step, since it's the first stage.
+    r_PhaseAcc[r_CycleCounter] <= r_PhaseAcc[r_CycleCounter] + w_OperatorConfig.PhaseStep;
 
     // Sum output of phase accumulator and modulation phase
     // (one clock cycle)
@@ -128,7 +131,7 @@ always_ff @ (posedge i_Clock) begin
     // Technically the multiplier should be Some Q0.16 number anyway, so
     // it probably has to do with shifting by all of the bits or one
     // to many bits when taking the output or something.
-    r_SineProduct[0] <= w_SinResult * i_EnvelopeLevel;  // TODO: Pipeline envelope and COM in parallel as well
+    r_SineProduct[0] <= w_WaveformAmplitude * i_EnvelopeLevel;  // TODO: Pipeline envelope and COM in parallel as well
     r_SineProduct[1] <= r_SineProduct[0];
     r_SineProduct[2] <= r_SineProduct[1];
     r_Subsample[0] <= r_SineProduct[2][31:16];

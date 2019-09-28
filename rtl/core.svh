@@ -6,6 +6,7 @@
 typedef struct packed
 {
     logic unsigned [15:0] PhaseStep;
+    logic Waveform;
 
 } OperatorConfig_t;
 
