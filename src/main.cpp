@@ -29,18 +29,15 @@ public:
         m_Synth.i_Reset = 1;
         tick();
         m_Synth.i_Reset = 0;
+    }
 
-
-        // TODO: Set via registers
-
-        // Formula:
-        //
-        // phaseStep = 2^N * FS / f
-        // where N is the number of bits of phase accumulation
-        // FS is the sample frequency
-        // and f is the desired tone frequency
-        // m_Synth.i_PhaseStep = 654;  // 440 Hz
-
+    void writeRegister(uint16_t registerNumber, uint16_t registerValue)
+    {
+        m_Synth.i_RegisterNumber = registerNumber;
+        m_Synth.i_RegisterValue = registerValue;
+        m_Synth.i_RegisterWriteEnable = 1;
+        tick();
+        m_Synth.i_RegisterWriteEnable = 0;
     }
 
     void writeSampleBytes(uint8_t* pRawStream, size_t number)
@@ -81,7 +78,36 @@ int main()
     Synth synth;
     synth.reset();
 
+
     const uint32_t SAMPLE_FREQUENCY = 44100;
+
+    auto phaseStepForFrequency = [](double frequency) -> uint16_t {
+        // Formula:
+        // phaseStep = 2^N * f / FS
+        // where N is the number of bits of phase accumulation
+        // FS is the sample frequency
+        // and f is the desired tone frequency
+        return static_cast<uint16_t>(
+            static_cast<double>(1 << 16) *
+            frequency /
+            static_cast<double>(SAMPLE_FREQUENCY)
+        );
+    };
+
+    // Set phase step
+    for (uint16_t voiceNum = 1; voiceNum <= 16; voiceNum++)
+    {
+        for (uint16_t operatorNum = 1; operatorNum <= 6; operatorNum++)
+        {
+            const uint16_t registerNumber =
+                (voiceNum << 12) | (operatorNum << 9) | 0;
+            const uint16_t phaseStep = (voiceNum % 2 == 0)
+                ? phaseStepForFrequency(440.0)
+                : phaseStepForFrequency(350.0);
+            synth.writeRegister(registerNumber, phaseStep);
+        }
+    }
+
 
 
     // TODO: Graphics?
@@ -96,7 +122,7 @@ int main()
 
 
 
-    int x = 0;
+    uint32_t x = 0;
     while (synth.getNumSamplesBuffered() < SAMPLE_FREQUENCY)
     {
         synth.tick();

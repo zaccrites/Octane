@@ -1,10 +1,15 @@
 
-module operator (
+`include "core.svh"
+
+
+module core (
     input logic i_Clock,
     input logic i_Reset,
 
     // Should these be inputs? Or handled internally via registers?
     // input logic unsigned [15:0] i_PhaseStep,
+
+    input CoreConfig_t i_Config,
 
     // verilator lint_off UNUSED
     input logic signed [15:0] i_EnvelopeLevel,
@@ -46,6 +51,9 @@ logic unsigned [15:0] r_Phase;
 logic signed [15:0] r_Subsample [6:0];
 
 
+`include "core.svh"
+
+
 // TODO: The product output is 32 bits, but we only take the top 16 bits at the output
 // logic signed [15:0] r_SineProduct[2:0];
 // verilator lint_off UNUSED
@@ -70,7 +78,9 @@ assign w_ModulationPhase = 0;
 logic unsigned [15:0] w_PhaseStep;
 always_comb begin
     // w_PhaseStep = w_VoiceNum[0] ? 654 : 1308;
-    w_PhaseStep = w_VoiceNum[0] ? 654 : 520;
+    // w_PhaseStep = w_VoiceNum[0] ? 654 : 520;
+
+    w_PhaseStep = i_Config.VoiceConfigs[w_VoiceNum].OperatorConfigs[w_OperatorNum].PhaseStep;
 end
 
 
