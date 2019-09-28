@@ -39,7 +39,7 @@ public:
         // where N is the number of bits of phase accumulation
         // FS is the sample frequency
         // and f is the desired tone frequency
-        m_Synth.i_PhaseStep = 654;  // 440 Hz
+        // m_Synth.i_PhaseStep = 654;  // 440 Hz
 
     }
 

@@ -39,11 +39,13 @@ def main():
     for i, (xi, samplei) in enumerate(zip(x, samples)):
         if i > 0 and samples[i - 1] < 0 and samplei > 0:
             zeroes.append((xi / SAMPLE_FREQ, samplei))
-    x_range = max([zero[0] for zero in zeroes]) - min([zero[0] for zero in zeroes])
-    # y_range = max([zero[1] for zero in zeroes]) - min([zero[1] for zero in zeroes])
-    print(f'VERY approximate frequency is {len(zeroes) / x_range} Hz')
-    print(f'Num zeroes: {len(zeroes)}')
-
+    if zeroes:
+        x_range = max([zero[0] for zero in zeroes]) - min([zero[0] for zero in zeroes])
+        # y_range = max([zero[1] for zero in zeroes]) - min([zero[1] for zero in zeroes])
+        print(f'VERY approximate frequency is {len(zeroes) / x_range} Hz')
+        print(f'Num zeroes: {len(zeroes)}')
+    else:
+        print('No zeroes found')
 
 
     # plt.plot(x, samples, x, op1_output, x, op2_output)
