@@ -8,6 +8,9 @@ typedef struct packed
     logic unsigned [15:0] PhaseStep;
     logic Waveform;
 
+    // TODO: Use a real envelope generator
+    logic unsigned [15:0] EnvelopeLevel;
+
 } OperatorConfig_t;
 
 

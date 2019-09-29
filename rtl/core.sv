@@ -2,33 +2,23 @@
 `include "core.svh"
 
 
+// TODO
+// verilator lint_off UNUSED
+
+
 module core (
     input logic i_Clock,
-    input logic i_Reset,
-
-    // Should these be inputs? Or handled internally via registers?
-    // input logic unsigned [15:0] i_PhaseStep,
+    // input logic i_Reset,
 
     input CoreConfig_t i_Config,
 
-    // verilator lint_off UNUSED
-    input logic signed [15:0] i_EnvelopeLevel,
-    // verilator lint_on UNUSED
-
+    // We output a subsample after performing the algorithm for each
+    // operator for each voice. The complete sample is ready when the final
+    // subsample is output.
     output logic signed [15:0] o_Subsample,
-    output logic o_SubsampleReady,
+    output logic signed o_SubsampleReady,
     output logic o_SampleReady
 );
-
-
-
-
-
-
-
-
-
-
 
 
 // Global registers
@@ -39,112 +29,88 @@ assign w_OperatorNum = r_CycleCounter[6:4];
 assign w_VoiceNum = r_CycleCounter[3:0];
 
 
-
-// Phase must be accumulated independently for each operator for each voice.
-logic unsigned [15:0] r_PhaseAcc [95:0];
-
-// Pipeline registers
-// Bottom few bits of r_Phase not directly used
-// verilator lint_off UNUSED
+// Individual phase accumulators for each operator for each voice
+logic unsigned [15:0] r_PhaseAcc [96];
 logic unsigned [15:0] r_Phase;
-// verilator lint_on UNUSED
-logic signed [15:0] r_Subsample [6:0];
-
-
-`include "core.svh"
-
-
-// TODO: The product output is 32 bits, but we only take the top 16 bits at the output
-// logic signed [15:0] r_SineProduct[2:0];
-// verilator lint_off UNUSED
-logic signed [31:0] r_SineProduct[2:0];
-// verilator lint_on UNUSED
 
 
 
-logic signed [15:0] w_WaveformAmplitude;
+logic signed [15:0] w_RawWaveformAmplitude;
 waveform_generator wavegen (
-    .i_Clock (i_Clock),
-    .i_Phase (r_Phase[15:3]),
-    .i_Waveform (w_OperatorConfig.Waveform),
-    .o_Amplitude (w_WaveformAmplitude)
+    .i_Clock    (i_Clock),
+    .i_Phase    (r_Phase[15:3]),
+    .i_Waveform (r_WaveformType[1]),
+    .o_Amplitude(w_RawWaveformAmplitude)
 );
 
 
-// TODO: Verify that the pipeline is set up correctly for this
-logic unsigned [15:0] w_ModulationPhase;
-assign w_ModulationPhase = 0;
-
-
-// TODO: Use e.g. KeyOn
-// verilator lint_off UNUSED
 VoiceConfig_t w_VoiceConfig;
-// verilator lint_on UNUSED
 OperatorConfig_t w_OperatorConfig;
 always_comb begin
+    o_SubsampleReady = w_OperatorNum == 5;
+    o_SampleReady = o_SubsampleReady && (w_VoiceNum == 15);
+
     w_VoiceConfig = i_Config.VoiceConfigs[w_VoiceNum];
     w_OperatorConfig = w_VoiceConfig.OperatorConfigs[w_OperatorNum];
 end
 
 
+logic r_WaveformType [2];
+logic signed [15:0] r_EnvelopeLevel [5];
+logic signed [31:0] r_WaveformAmplitude [3];  // TODO: ADSR, and COM as well
+
+
+
 always_ff @ (posedge i_Clock) begin
     // NOTE: With 8 operators, this wouldn't be necessary. The counter could just overflow.
-    // 16 voices * 6 operators = 96 cycles
-    if (i_Reset || (w_OperatorNum == 5 && w_VoiceNum == 15))
+    if (w_OperatorNum == 5 && w_VoiceNum == 15)
         r_CycleCounter <= 0;
     else
         r_CycleCounter <= r_CycleCounter + 1;
 
-    // Does anything else in here need a reset?
 
-    // TODO: Do we output to an external unit every 16 cycles which
-    // combines the samples into a single sample to output at the 96th cycle?
-    //
-    // A subsample is ready for each voice during the last operator
-    // A sample is ready when the last subsample is ready
-    o_SubsampleReady <= w_OperatorNum == 5;
-    o_SampleReady <= (w_OperatorNum == 5) && (w_VoiceNum == 15);
 
-    // Add incoming frequency to phase accumulator
-    // TODO: Is this enough? Do I need to do any math? See above comment
-    // (one clock cycle [possibly more if I need to do some math for e.g. feedback])
-    //
-    // TODO: Does the operator configuration need to be pipelined as well?
-    // Not for this step, since it's the first stage.
+
+    // Stage 1: Read config and phase accumulation (one clock cycle)
     r_PhaseAcc[r_CycleCounter] <= r_PhaseAcc[r_CycleCounter] + w_OperatorConfig.PhaseStep;
+    r_EnvelopeLevel[0] <= w_OperatorConfig.EnvelopeLevel;
+    r_WaveformType[0] <= w_OperatorConfig.Waveform;
 
-    // Sum output of phase accumulator and modulation phase
-    // (one clock cycle)
-    r_Phase <= r_PhaseAcc[r_CycleCounter] + w_ModulationPhase;  // TODO: Does w_Voice need to be pipelined as well? Or should the initial phase value itself be pipelined from the first clock cycle instead?
+    // Stage 2: Modulation, including feedback (one clock cycle)
+    r_Phase <= r_PhaseAcc[r_CycleCounter];  // TODO: Modulation and feedback
+    r_EnvelopeLevel[1] <= r_EnvelopeLevel[0];
+    r_WaveformType[1] <= r_WaveformType[0];
 
-    // Sine function table lookup (via module above)
-    // (three clock cycles)
+    // Stage 3: waveform generation via above module (three clock cycles)
+    r_EnvelopeLevel[2] <= r_EnvelopeLevel[1];
+    r_EnvelopeLevel[3] <= r_EnvelopeLevel[2];
+    r_EnvelopeLevel[4] <= r_EnvelopeLevel[3];  // needed?
 
-    // Multiply sine output by scaled envelope level
-    // (four clock cycles)
+    // Stage 4: waveform amplitude envelope (four clock cycles)
+    r_WaveformAmplitude[0] <= w_RawWaveformAmplitude * r_EnvelopeLevel[4];
+    r_WaveformAmplitude[1] <= r_WaveformAmplitude[0];
+    r_WaveformAmplitude[2] <= r_WaveformAmplitude[1];
+    // The output is only half magnitude, so shift left by 1 to get it back.
+    // TODO: Is it worth doing this? We lose one bit of information, and will
+    // be dividing before combining voices or carrier operators anyway.
+    o_Subsample <= {r_WaveformAmplitude[2][30:16], 1'b0};
+    // not really the subsample-- likely to be written to M or F, or used immediately by Selector
 
-    // TODO: Why is the output from -0.5 and +0.5, instead of -1.0 and +1.0
-    // when i_EnvelopeLevel is 0x7fff? Why does it go crazy when given 0xffff,
-    // instead of just inverting sign? It seems like it's doing unsigned
-    // multiplication instead, even though all parts of the operation are signed.
-    //
-    // Technically the multiplier should be Some Q0.16 number anyway, so
-    // it probably has to do with shifting by all of the bits or one
-    // to many bits when taking the output or something.
-    r_SineProduct[0] <= w_WaveformAmplitude * i_EnvelopeLevel;  // TODO: Pipeline envelope and COM in parallel as well
-    r_SineProduct[1] <= r_SineProduct[0];
-    r_SineProduct[2] <= r_SineProduct[1];
-    r_Subsample[0] <= r_SineProduct[2][31:16];
 
-    // Stall for 8 clock cycles
-    r_Subsample[1] <= r_Subsample[0];
-    r_Subsample[2] <= r_Subsample[1];
-    r_Subsample[3] <= r_Subsample[2];
-    r_Subsample[4] <= r_Subsample[3];
-    r_Subsample[5] <= r_Subsample[4];
-    r_Subsample[6] <= r_Subsample[5];
-    o_Subsample    <= r_Subsample[6];
+    // Output is still VERY small (less than 0.1)
+
+
+
+    // Stage 5: stall
+    // TODO
+
+
+    // Subsample is only valid once the algorithm is finished for each voice
+
+
 
 end
+
+
 
 endmodule

@@ -40,6 +40,23 @@ public:
         m_Synth.i_RegisterWriteEnable = 0;
     }
 
+    void writeOperatorRegister(uint16_t voiceNum, uint16_t operatorNum, uint16_t parameter, uint16_t value)
+    {
+        // FUTURE: This may need to be reworked if I ever want e.g.
+        // 8 operators and 32 voices, as Voice-level configuration
+        // won't be able to go in operator slot 0 any more with only 3 bits.
+        const uint16_t registerNumber =
+            ((voiceNum & 0x001f) << 11) |        // 5 bit voice
+            ((operatorNum & 0x0007) << 8) |      // 3 bit operator
+            (parameter & 0x00ff);                // 8 bit parameter
+        writeRegister(registerNumber, value);
+    }
+
+    void writeVoiceRegister(uint16_t voiceNum, uint16_t parameter, uint16_t value)
+    {
+        writeOperatorRegister(voiceNum, 0, parameter, value);
+    }
+
     void writeSampleBytes(uint8_t* pRawStream, size_t number)
     {
         while (m_SampleBuffer.size() < number)
@@ -66,6 +83,17 @@ public:
         return m_SampleBuffer.size();
     }
 
+public:
+    static const uint16_t VOICE_PARAM_KEYON  { 0x00 };
+
+    static const uint16_t OP_PARAM_PHASE_STEP  { 0x00 };
+    static const uint16_t OP_PARAM_WAVEFORM    { 0x01 };
+    static const uint16_t OP_PARAM_ENVELOPE_LEVEL  { 0x02 };
+
+
+    static const uint16_t OP_WAVEFORM_SINE  { 0x0000 };
+    static const uint16_t OP_WAVEFORM_SQUARE { 0x0001 };
+
 private:
     Vsynth m_Synth;
     std::queue<int16_t> m_SampleBuffer;
@@ -73,11 +101,32 @@ private:
 };
 
 
+
+// Q0.16
+int16_t toFixed(double x) {
+    // Not sure how to handle this properly (when there are no integer bits
+    // but I want the possible values to go up to 1.000).
+    // Very slightly less than 100% is okay I guess.
+    // if (x >= 1.0) return 0x7fff;
+
+    auto result = static_cast<int16_t>(x * 0x7fff);
+    // printf("Calculated fixed result of %u for input of %f \n", result, x);
+    return result;
+}
+
+
 int main()
 {
     Synth synth;
     synth.reset();
 
+
+
+
+
+    // auto toFixed = [FRAC_BITS=16](double x) -> uint16_t {
+    //     return static_cast<uint16_t>(x * (1 << FRAC_BITS) + 0.5);
+    // };
 
     const uint32_t SAMPLE_FREQUENCY = 44100;
 
@@ -99,21 +148,64 @@ int main()
     {
         for (uint16_t operatorNum = 1; operatorNum <= 6; operatorNum++)
         {
-            uint16_t registerNumber =
-                (voiceNum << 12) | (operatorNum << 9) | 0x0000;
-            const uint16_t phaseStep = (voiceNum % 2 == 0)
-                ? phaseStepForFrequency(440.0)
-                // : phaseStepForFrequency(350.0);
-                : phaseStepForFrequency(220.0);
-            synth.writeRegister(registerNumber, phaseStep);
+            uint16_t phaseStep;
+            uint16_t outputLevel;
+
+            // phaseStep = phaseStepForFrequency(440.0);
+            // outputLevel = toFixed(1.0);
+
+            // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
+
+            if (voiceNum == 16)
+            {
+                phaseStep = phaseStepForFrequency(1000.0);
+                outputLevel = toFixed(1.0 / 64.0);
+            }
+            else if (voiceNum > 12)
+            {
+                phaseStep = phaseStepForFrequency(350.0);
+                outputLevel = toFixed(1.0 / 1.0);
+            } else
+            if (voiceNum % 2 == 0)
+            {
+                phaseStep = phaseStepForFrequency(440.0);
+                outputLevel = toFixed(1.0 / 1.0);
+
+            // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SQUARE);
+
+            }
+            else
+            {
+                phaseStep = phaseStepForFrequency(220.0);
+                // phaseStep = phaseStepForFrequency(350.0);
+                // phaseStep = phaseStepForFrequency(220.0);
+                // outputLevel = toFixed(1.0 / 1.0);
+                outputLevel = toFixed(0.0);
 
 
-            // Use a square wave
-            registerNumber =
-                (voiceNum << 12) | (operatorNum << 9) | 0x0001;
-            synth.writeRegister(registerNumber, 1);
+                // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
 
+            }
+
+            if (voiceNum <= 2 && operatorNum <= 2)
+                printf("[%u.%u] phaseStep = %u, outputLevel = %u \n", voiceNum, operatorNum, phaseStep, outputLevel);
+
+            // if (operatorNum % 2 == 0)
+            // {
+            //     outputLevel = toFixed(1.000);
+            // }
+            // else
+            // {
+            //     outputLevel = toFixed(0.100);
+            // }
+
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ENVELOPE_LEVEL, outputLevel);
+
+            // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
         }
+
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
     }
 
 
@@ -152,6 +244,8 @@ int main()
         samples.pop();
 
         if (i < 1000)
+        // if (i < 300)
+        // if (250 <= i && 300 >= i)
             fprintf(csv, "%zu,%d\n", i, sample);
         i += 1;
     }

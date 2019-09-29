@@ -38,6 +38,9 @@ target_compile_options(synth PRIVATE
     -Wold-style-cast
     -Wfloat-equal
 
+    -Werror=return-type
+    -Werror=sometimes-uninitialized
+
     -fdiagnostics-color
 
     -O2
