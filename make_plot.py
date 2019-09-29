@@ -70,7 +70,8 @@ def main():
     plt.savefig('data.png')
 
 
-    print(min(samples), max(samples))
+    print(f'Min: {min(samples):.04f}')
+    print(f'Max: {max(samples):.04f}')
 
 
 

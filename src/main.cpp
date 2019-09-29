@@ -85,6 +85,7 @@ public:
 
 public:
     static const uint16_t VOICE_PARAM_KEYON  { 0x00 };
+    static const uint16_t VOICE_PARAM_ALGORITHM  { 0x01 };
 
     static const uint16_t OP_PARAM_PHASE_STEP  { 0x00 };
     static const uint16_t OP_PARAM_WAVEFORM    { 0x01 };
@@ -150,61 +151,34 @@ int main()
         {
             uint16_t phaseStep;
             uint16_t outputLevel;
-
-            // phaseStep = phaseStepForFrequency(440.0);
-            // outputLevel = toFixed(1.0);
-
-            // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
-
-            if (voiceNum == 16)
+            if (voiceNum != 15 || operatorNum < 5)
             {
+                outputLevel = toFixed(0.0);
                 phaseStep = phaseStepForFrequency(1000.0);
-                outputLevel = toFixed(1.0 / 64.0);
-            }
-            else if (voiceNum > 12)
-            {
-                phaseStep = phaseStepForFrequency(350.0);
-                outputLevel = toFixed(1.0 / 1.0);
-            } else
-            if (voiceNum % 2 == 0)
-            {
-                phaseStep = phaseStepForFrequency(440.0);
-                outputLevel = toFixed(1.0 / 1.0);
-
-            // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SQUARE);
-
             }
             else
             {
-                phaseStep = phaseStepForFrequency(220.0);
-                // phaseStep = phaseStepForFrequency(350.0);
-                // phaseStep = phaseStepForFrequency(220.0);
-                // outputLevel = toFixed(1.0 / 1.0);
-                outputLevel = toFixed(0.0);
-
-
-                // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
-
+                if (operatorNum == 5)
+                {
+                    // Modulator
+                    outputLevel = toFixed(1.0);
+                    phaseStep = phaseStepForFrequency(440.0);
+                }
+                else
+                {
+                    // Carrier
+                    outputLevel = toFixed(1.0);
+                    phaseStep = phaseStepForFrequency(220.0);
+                }
             }
 
-            if (voiceNum <= 2 && operatorNum <= 2)
-                printf("[%u.%u] phaseStep = %u, outputLevel = %u \n", voiceNum, operatorNum, phaseStep, outputLevel);
-
-            // if (operatorNum % 2 == 0)
-            // {
-            //     outputLevel = toFixed(1.000);
-            // }
-            // else
-            // {
-            //     outputLevel = toFixed(0.100);
-            // }
-
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ENVELOPE_LEVEL, outputLevel);
-
-            // synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
         }
 
+        const uint16_t algorithmNumber = 1;
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
     }
 
@@ -243,7 +217,7 @@ int main()
         int16_t sample = samples.front();
         samples.pop();
 
-        if (i < 1000)
+        if (i < 400)
         // if (i < 300)
         // if (250 <= i && 300 >= i)
             fprintf(csv, "%zu,%d\n", i, sample);

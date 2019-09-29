@@ -88,6 +88,7 @@ always_ff @ (posedge i_Clock) begin
         for (voiceNumber = 1; voiceNumber <= 16; voiceNumber = voiceNumber + 1) begin
             case (i_RegisterNumber)
                 {voiceNumber[4:0], 3'b000, 8'h00}: `VOICE_CONFIG.KeyOn <= i_RegisterValue[0];
+                {voiceNumber[4:0], 3'b000, 8'h01}: `VOICE_CONFIG.Algorithm <= i_RegisterValue[5:0];
 
                 default: /* do nothing */;
             endcase
@@ -104,7 +105,6 @@ always_ff @ (posedge i_Clock) begin
             end
 
         end
-            // 16'h0100: r_CoreConfig.VoiceConfigs[0].OperatorConfigs[0].PhaseStep <= i_RegisterValue[];
     end
 
 
