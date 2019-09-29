@@ -10,7 +10,7 @@ module algorithm_rom (
 );
 
 logic [4:0] r_ROM [512];
-initial $readmemh("rtl/algorithm_rom.hex", r_ROM);
+initial $readmemh("roms/algorithm_rom.hex", r_ROM);
 
 logic [4:0] r_ControlWord;
 assign o_FREN = r_ControlWord[0];

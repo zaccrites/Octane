@@ -41,7 +41,7 @@ module waveform_generator (
 // We'd end up with 17 bits, which I'm not sure is useful.
 // Alternatively, can we step down to a 14 bit table and
 // synthesize a 15th bit to save some block RAM? Do we need to?
-initial $readmemh("rtl/sine_function.hex", r_SineTable);
+initial $readmemh("roms/sine_rom.hex", r_SineTable);
 logic unsigned [14:0] r_SineTable[2047:0];
 logic unsigned [10:0] r_SineTableIndex;
 logic [1:0]  r_NegateSine;
