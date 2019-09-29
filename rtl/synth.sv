@@ -58,7 +58,10 @@ always_ff @ (posedge i_Clock) begin
     end
     else if (w_SubsampleReady) begin
         r_SampleBuffer <= r_SampleBuffer + w_SignExtendedSubsample;
-        // $display("Got subsample!");
+
+        if (w_SignExtendedSubsample != 0) begin
+            // $display("Got subsample = %d", w_SignExtendedSubsample);
+        end
     end
 
     if (w_SampleReady) begin

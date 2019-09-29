@@ -151,26 +151,42 @@ int main()
         {
             uint16_t phaseStep;
             uint16_t outputLevel;
-            if (voiceNum != 15 || operatorNum < 5)
-            {
-                outputLevel = toFixed(0.0);
-                phaseStep = phaseStepForFrequency(1000.0);
-            }
-            else
-            {
-                if (operatorNum == 5)
-                {
-                    // Modulator
-                    outputLevel = toFixed(1.0);
-                    phaseStep = phaseStepForFrequency(440.0);
-                }
-                else
-                {
-                    // Carrier
-                    outputLevel = toFixed(1.0);
-                    phaseStep = phaseStepForFrequency(220.0);
-                }
-            }
+
+            phaseStep = phaseStepForFrequency(440.0);
+            // outputLevel = toFixed(1.0);
+            outputLevel = toFixed(0.5);
+
+            // if (voiceNum == 15)
+            // {
+            //     if (operatorNum == 5)
+            //     {
+            //         // Modulator
+            //         outputLevel = toFixed(0.0);
+            //         phaseStep = phaseStepForFrequency(220.0);
+            //     }
+            //     else if (operatorNum == 6)
+            //     {
+            //         // Carrier
+            //         outputLevel = toFixed(0.0);
+            //         phaseStep = phaseStepForFrequency(440.0);
+            //     }
+            //     else
+            //     {
+            //         // Disabled
+            //         outputLevel = toFixed(0.0);
+            //         phaseStep = phaseStepForFrequency(1000.0);
+            //     }
+            // }
+            // else
+            // {
+
+            //     // I suspect a pipeline bug is why they're all zero
+            //     // outputLevel = toFixed(0.1 / 8.0);
+            //     phaseStep = phaseStepForFrequency(600.0 + 20.0 * (voiceNum - 1));
+
+            //     outputLevel = toFixed(0.0);
+            //     // phaseStep = phaseStepForFrequency(1000.0);
+            // }
 
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
@@ -217,7 +233,7 @@ int main()
         int16_t sample = samples.front();
         samples.pop();
 
-        if (i < 400)
+        // if (i < 1000)
         // if (i < 300)
         // if (250 <= i && 300 >= i)
             fprintf(csv, "%zu,%d\n", i, sample);
@@ -248,7 +264,7 @@ int main()
     }
 
     SDL_PauseAudioDevice(device, 0);
-    SDL_Delay(2000);
+    SDL_Delay(1000);
 
     SDL_CloseAudio();
     SDL_Quit();
