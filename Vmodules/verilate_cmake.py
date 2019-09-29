@@ -153,7 +153,7 @@ class Depfile(object):
         return self.newest_depend > self.oldest_output
 
     def __eq__(self, other):
-        if other is None:
+        if not isinstance(other, self.__class__):
             return False
         return (self.outputs, self.depends) == (other.outputs, other.depends)
 
@@ -185,7 +185,7 @@ def run_verilator(verilator_args, output_dir):
     except FileExistsError:
         pass
 
-    cmd = ['verilator_bin', *verilator_args, '--Mdir', output_dir]
+    cmd = ['verilator_bin', *verilator_args, '--MMD', '--Mdir', output_dir]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
     stdout = stdout.decode('utf-8')
@@ -199,7 +199,10 @@ def run_verilator(verilator_args, output_dir):
 def verilate_source_files(args):
     output_dir = args.verilator_output_dir
     verilator_args = [
-        '-Wall', '-cc', '--MMD',
+        '-Wall',
+        '-Werror-width',
+        '-Werror-implicit',
+        '-Werror-pinmissing',
         *[f'-I{path}' for path in args.verilog_include_paths],
         '-cc', args.verilog_module,
     ]
@@ -354,9 +357,15 @@ def main():
                 depfile.needs_regen,
             ]
             if any(cmake_dirty_criteria):
-                # TODO: Is this not working?
-                with open(args.cmake_module_path, 'w') as f:
-                    f.write(content)
+                # TODO: Find a better way to prevent CMake from re-running every time.
+                needs_update = True
+                if os.path.exists(args.cmake_module_path):
+                    with open(args.cmake_module_path) as f:
+                        if f.read() == content:
+                            needs_update = False
+                if needs_update:
+                    with open(args.cmake_module_path, 'w') as f:
+                        f.write(content)
             else:
                 print(f'-- {args.cmake_module_path} up-to-date.')
 
