@@ -35,25 +35,35 @@ def main():
     freq_labels = freq_labels / 2
 
     # Normalize output for relative freuqency contributions to overall spectrum
-    yf = yf / max(yf)
+    if max(yf) != 0:
+        yf = yf / max(yf)
 
+
+    if len(sys.argv) == 3:
+        sample_start = int(sys.argv[1])
+        sample_end = int(sys.argv[2])
+    elif len(sys.argv) == 2:
+        sample_start = 0
+        sample_end = int(sys.argv[1])
+    else:
+        sample_start = 0
+        sample_end = 1000
 
     fig, axes = plt.subplots(2, figsize=(10, 10))
     #
-    NUM_OUTPUT_SAMPLES = 1000
-    axes[0].set_title('Samples')
-    axes[0].plot(x[:NUM_OUTPUT_SAMPLES], samples[:NUM_OUTPUT_SAMPLES])
+    axes[0].set_title('Time Domain')
+    axes[0].plot(x[sample_start:sample_end], samples[sample_start:sample_end])
     axes[0].set_xlabel('Sample Number')
     axes[0].set_ylabel('Amplitude')
     #
-    axes[1].set_title('FFT')
-    axes[1].plot(freq_labels, yf, 'r')
-    axes[1].set_xlim([0, 1000])
+    axes[1].set_title('Frequency Domain')
+    axes[1].semilogx(freq_labels, yf, 'r')
+    axes[1].set_xlim([1, 20000])
     axes[1].set_xlabel('Frequency [Hz]')
     axes[1].set_ylabel('Relative Strength')
     #
     for ax in axes:
-        ax.grid(True)
+        ax.grid(True, which='both', ls='-', color='0.65')
     #
     plt.suptitle('Synthesizer Output')
     plt.savefig('data.png')
@@ -62,8 +72,9 @@ def main():
     print(f'Max: {max(samples):.04f}')
 
     # peak frequency from FFT
-    peak_freq = max(zip(yf, freq_labels))
-    print(f'{peak_freq[1]:.02f} Hz')
+    if max(yf) != 0:
+        peak_freq = max(zip(yf, freq_labels))
+        print(f'{peak_freq[1]:.02f} Hz')
 
 
 if __name__ == '__main__':
