@@ -9,6 +9,7 @@
 
 module core (
     input logic i_Clock,
+    input logic i_Reset,
     input CoreConfig_t i_Config,
 
     output logic signed [15:0] o_Subsample,
@@ -28,13 +29,6 @@ waveform_generator wavegen (
 
 
 
-logic unsigned [6:0] r_CycleCounter;
-logic unsigned [2:0] w_OperatorNum;
-logic unsigned [3:0] w_VoiceNum;
-assign w_OperatorNum = r_CycleCounter[6:4];
-assign w_VoiceNum = r_CycleCounter[3:0];
-
-logic unsigned [15:0] r_PhaseAcc [96];
 
 
 // TODO: KeyOn, etc.
@@ -81,10 +75,93 @@ assign w_FREN = r_AlgorithmControlWord[0];
 
 
 
-// Main Waveform Branch
+typedef enum logic [2:0] {
+    MUTE,
+    ATTACK,
+    DECAY,
+    SUSTAIN,
+    RELEASE
+} EnvelopeState_t;
+EnvelopeState_t r_EnvelopeState [96];
+
+// Calculate ADSR envelope
+// TODO: Rename these registers
+logic unsigned [16:0] r_L [96];
+logic unsigned [7:0] r_AdsrClockCounter;
+always_ff @ (posedge i_Clock) begin
+    if (r_CycleCounter == 0) begin
+        if (r_AdsrClockCounter[7])
+            r_AdsrClockCounter <= 0;
+        else
+            r_AdsrClockCounter <= r_AdsrClockCounter + 1;
+    end
+
+    // TODO: Optimize this -- use a single bit if possible
+    if (r_AdsrClockCounter[7]) begin
+        // $display("Triggered on [%0d - %0d.%0d]", r_CycleCounter, w_VoiceNum, w_OperatorNum);
+
+        case (r_EnvelopeState[r_CycleCounter])
+            default: begin
+                // Including MUTE
+                r_L[r_CycleCounter] <= 0;
+                if (w_VoiceConfig.KeyOn) begin
+                    r_EnvelopeState[r_CycleCounter] <= ATTACK;
+                    if (w_OperatorConfig.AttackLevel != 0) $display("[%0d - %0d.%0d] moving to ATTACK", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1);
+                end
+            end
+
+            ATTACK: begin
+                r_L[r_CycleCounter] <= r_L[r_CycleCounter] + w_OperatorConfig.AttackRate;
+                if ( ! w_VoiceConfig.KeyOn)
+                    r_EnvelopeState[r_CycleCounter] <= RELEASE;
+                else if (r_L[r_CycleCounter] >= {1'b0, w_OperatorConfig.AttackLevel}) begin
+                    r_EnvelopeState[r_CycleCounter] <= DECAY;
+                    if (w_OperatorConfig.AttackRate != 0) $display("[%0d - %0d.%0d] (+%0d) moving to DECAY", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.AttackRate);
+                end
+            end
+
+            DECAY: begin
+                r_L[r_CycleCounter] <= r_L[r_CycleCounter] - w_OperatorConfig.DecayRate;
+                if ( ! w_VoiceConfig.KeyOn)
+                    r_EnvelopeState[r_CycleCounter] <= RELEASE;
+                else if (r_L[r_CycleCounter] <= {1'b0, w_OperatorConfig.SustainLevel}) begin
+                    r_EnvelopeState[r_CycleCounter] <= SUSTAIN;
+                    if (w_OperatorConfig.DecayRate != 0) $display("[%0d - %0d.%0d] (-%0d) moving to SUSTAIN", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.DecayRate);
+                end
+            end
+
+            SUSTAIN: begin
+                r_L[r_CycleCounter] <= {1'b0, w_OperatorConfig.SustainLevel};
+                if ( ! w_VoiceConfig.KeyOn)
+                    r_EnvelopeState[r_CycleCounter] <= RELEASE;
+            end
+
+            RELEASE: begin
+                r_L[r_CycleCounter] <= r_L[r_CycleCounter] - w_OperatorConfig.ReleaseRate;
+                if (r_L[r_CycleCounter][16]) begin  // if L < 0
+                    r_EnvelopeState[r_CycleCounter] <= MUTE;
+                    if (w_OperatorConfig.ReleaseRate != 0) $display("[%0d - %0d.%0d] (-%0d) moving to MUTE", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.ReleaseRate);
+                end
+            end
+        endcase
+    end
+end
+
+
+
+
+
+logic unsigned [6:0] r_CycleCounter;
+logic unsigned [2:0] w_OperatorNum;
+logic unsigned [3:0] w_VoiceNum;
+assign w_OperatorNum = r_CycleCounter[6:4];
+assign w_VoiceNum = r_CycleCounter[3:0];
+
+logic unsigned [15:0] r_PhaseAcc [96];
+
 always_ff @ (posedge i_Clock) begin
     // NOTE: With 8 operators, this wouldn't be necessary. The counter could just overflow.
-    if (r_CycleCounter == 95)
+    if (i_Reset || r_CycleCounter == 95)
         r_CycleCounter <= 0;
     else
         r_CycleCounter <= r_CycleCounter + 1;
@@ -92,10 +169,17 @@ always_ff @ (posedge i_Clock) begin
     // Stage 1-2 (secondary branch): multi-carrier amplitude compensation (four clock cycles)
     // Note that the first line here really occurs at the same time as the other
     // Stage 1 loads. The multiplication starts immediately.
-    r_EnvelopeLevelProduct[0] <= w_OperatorConfig.EnvelopeLevel * w_VoiceConfig.AmplitudeAdjust;
+    // r_EnvelopeLevelProduct[0] <= w_OperatorConfig.AttackLevel * w_VoiceConfig.AmplitudeAdjust;
+    r_EnvelopeLevelProduct[0] <= r_L[r_CycleCounter] * w_VoiceConfig.AmplitudeAdjust;
     r_EnvelopeLevelProduct[1] <= r_EnvelopeLevelProduct[0];
     r_EnvelopeLevelProduct[2] <= r_EnvelopeLevelProduct[1];
     r_EnvelopeLevel <= {r_EnvelopeLevelProduct[2][30:16], 1'b0};
+
+
+    if (w_VoiceNum == 1 && w_OperatorNum == 5) begin
+        // $display("r_L[%0d] = %d", r_CycleCounter, r_L[r_CycleCounter]);
+    end
+
 
     // Stage 1: accumulate and modulate phase (1 cycle)
     r_PhaseAcc[r_CycleCounter] <= r_PhaseAcc[r_CycleCounter] + w_OperatorConfig.PhaseStep;

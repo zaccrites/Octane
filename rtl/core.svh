@@ -15,8 +15,12 @@ typedef struct packed
     logic unsigned [15:0] PhaseStep;
     logic Waveform;
 
-    // TODO: Use a real envelope generator
-    logic unsigned [15:0] EnvelopeLevel;
+    // TODO: Use 8 bits instead?
+    logic unsigned [15:0] AttackLevel;
+    logic unsigned [15:0] SustainLevel;
+    logic unsigned [15:0] AttackRate;
+    logic unsigned [15:0] DecayRate;
+    logic unsigned [15:0] ReleaseRate;
 
 } OperatorConfig_t;
 

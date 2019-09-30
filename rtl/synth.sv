@@ -32,7 +32,7 @@ logic w_SampleReady;
 logic w_SubsampleReady;
 core core0 (
     .i_Clock        (i_Clock),
-    // .i_Reset        (i_Reset),
+    .i_Reset        (i_Reset),
     .i_Config        (r_CoreConfig),
     .o_Subsample       (w_Subsample),
     .o_SubsampleReady (w_SubsampleReady),
@@ -101,8 +101,12 @@ always_ff @ (posedge i_Clock) begin
                 case (i_RegisterNumber)
                     {voiceNumber[4:0], operatorNumber[2:0], 8'h00}: `OPERATOR_CONFIG.PhaseStep <= i_RegisterValue;
                     {voiceNumber[4:0], operatorNumber[2:0], 8'h01}: `OPERATOR_CONFIG.Waveform  <= i_RegisterValue[0];
-                    {voiceNumber[4:0], operatorNumber[2:0], 8'h02}: `OPERATOR_CONFIG.EnvelopeLevel  <= i_RegisterValue;
 
+                    {voiceNumber[4:0], operatorNumber[2:0], 8'h03}: `OPERATOR_CONFIG.AttackLevel  <= i_RegisterValue;
+                    {voiceNumber[4:0], operatorNumber[2:0], 8'h04}: `OPERATOR_CONFIG.SustainLevel  <= i_RegisterValue;
+                    {voiceNumber[4:0], operatorNumber[2:0], 8'h05}: `OPERATOR_CONFIG.AttackRate  <= i_RegisterValue;
+                    {voiceNumber[4:0], operatorNumber[2:0], 8'h06}: `OPERATOR_CONFIG.DecayRate  <= i_RegisterValue;
+                    {voiceNumber[4:0], operatorNumber[2:0], 8'h07}: `OPERATOR_CONFIG.ReleaseRate  <= i_RegisterValue;
 
                     default: /* do nothing */;
                 endcase

@@ -90,7 +90,12 @@ public:
 
     static const uint16_t OP_PARAM_PHASE_STEP  { 0x00 };
     static const uint16_t OP_PARAM_WAVEFORM    { 0x01 };
-    static const uint16_t OP_PARAM_ENVELOPE_LEVEL  { 0x02 };
+
+    static const uint16_t OP_PARAM_ATTACK_LEVEL  { 0x03 };
+    static const uint16_t OP_PARAM_SUSTAIN_LEVEL  { 0x04 };
+    static const uint16_t OP_PARAM_ATTACK_RATE  { 0x05 };
+    static const uint16_t OP_PARAM_DECAY_RATE  { 0x06 };
+    static const uint16_t OP_PARAM_RELEASE_RATE  { 0x07 };
 
 
     static const uint16_t OP_WAVEFORM_SINE  { 0x0000 };
@@ -117,18 +122,83 @@ int16_t toFixed(double x) {
 }
 
 
+uint16_t carriersForAlgorithm(uint16_t algorithmNumber)
+{
+    switch (algorithmNumber)
+    {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            return 2;
+
+        case 5:
+        case 6:
+            return 3;
+
+        case 7:
+        case 8:
+        case 9:
+            return 2;
+
+        case 10:
+        case 11:
+            return 2;
+
+        case 12:
+        case 13:
+            return 2;
+
+        case 14:
+        case 15:
+            return 2;
+
+        case 16:
+        case 17:
+        case 18:
+            return 1;
+
+        case 19:
+        case 20:
+            return 3;
+
+        case 21:
+        case 22:
+        case 23:
+            return 4;
+
+        case 24:
+        case 25:
+            return 5;
+
+        case 26:
+        case 27:
+            return 3;
+
+        case 28:
+            return 3;
+
+        case 29:
+        case 30:
+            return 4;
+
+        case 31:
+            return 5;
+
+        case 32:
+            return 6;
+
+
+        default:
+            return 1;
+    }
+}
+
+
 int main()
 {
     Synth synth;
     synth.reset();
-
-
-
-
-
-    // auto toFixed = [FRAC_BITS=16](double x) -> uint16_t {
-    //     return static_cast<uint16_t>(x * (1 << FRAC_BITS) + 0.5);
-    // };
 
     const uint32_t SAMPLE_FREQUENCY = 44100;
 
@@ -150,8 +220,22 @@ int main()
     {
         for (uint16_t operatorNum = 1; operatorNum <= 6; operatorNum++)
         {
+            auto setEnvelope = [&synth, voiceNum, operatorNum](
+                double attackLevel,
+                double sustainLevel,
+                double attackRate,
+                double decayRate,
+                double releaseRate
+            ) {
+                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ATTACK_LEVEL, toFixed(attackLevel));
+                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_SUSTAIN_LEVEL, toFixed(sustainLevel));
+                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ATTACK_RATE, toFixed(attackRate));
+                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_DECAY_RATE, toFixed(decayRate));
+                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_RELEASE_RATE, toFixed(releaseRate));
+            };
+
+
             uint16_t phaseStep;
-            uint16_t outputLevel;
 
             if (voiceNum == 1)
             {
@@ -159,32 +243,50 @@ int main()
                 {
                 case 5:
                     phaseStep = phaseStepForFrequency(220.0);
-                    outputLevel = toFixed(1.0);
+                    setEnvelope(
+                        1.0,  // attack level
+                        0.2,  // sustain level
+                        0.001,  // attack rate
+                        0.05,  // decay rate
+                        0.005   // release rate
+                    );
                     break;
 
                 case 6:
                     phaseStep = phaseStepForFrequency(440.0);
-                    outputLevel = toFixed(1.0);
+                    setEnvelope(
+                        1.0,  // attack level
+                        0.7,  // sustain level
+                        0.05,  // attack rate
+                        0.0005,  // decay rate
+                        0.005   // release rate
+                    );
                     break;
 
 
-                case 2:
-                    phaseStep = phaseStepForFrequency(30.0);
-                    outputLevel = toFixed(0.5);
+                // case 2:
+                //     phaseStep = phaseStepForFrequency(30.0);
+                //     outputLevel = toFixed(0.5);
 
-                case 3:
-                    phaseStep = phaseStepForFrequency(175.0);
-                    outputLevel = toFixed(1.0);
-                    break;
+                // case 3:
+                //     phaseStep = phaseStepForFrequency(175.0);
+                //     outputLevel = toFixed(1.0);
+                //     break;
 
-                case 4:
-                    phaseStep = phaseStepForFrequency(350.0);
-                    outputLevel = toFixed(1.0);
-                    break;
+                // case 4:
+                //     phaseStep = phaseStepForFrequency(350.0);
+                //     outputLevel = toFixed(1.0);
+                //     break;
 
                 default:
                     phaseStep = phaseStepForFrequency(1000.0);
-                    outputLevel = toFixed(0.0);
+                    setEnvelope(
+                        0.0,  // attack level
+                        0.0,  // sustain level
+                        0.0,  // attack rate
+                        0.0,  // decay rate
+                        0.0   // release rate
+                    );
                     break;
 
                 }
@@ -193,19 +295,35 @@ int main()
             else
             {
                 phaseStep = phaseStepForFrequency(1000.0);
-                outputLevel = toFixed(0.0);
+                setEnvelope(
+                    0.0,  // attack level
+                    0.0,  // sustain level
+                    0.0,  // attack rate
+                    0.0,  // decay rate
+                    0.0   // release rate
+                );
             }
 
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
-            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ENVELOPE_LEVEL, outputLevel);
         }
 
         const uint16_t algorithmNumber = 1;
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
 
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / 2.0));
+        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / carriersForAlgorithm(algorithmNumber)));
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0));
+
+
+        if (voiceNum == 1)
+        {
+            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
+        }
+        else
+        {
+            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, false);
+        }
+
     }
 
 
@@ -219,18 +337,17 @@ int main()
     }
 
 
-    uint32_t x = 0;
-    while (synth.getNumSamplesBuffered() < SAMPLE_FREQUENCY)
+    unsigned seconds = 3;
+    while (synth.getNumSamplesBuffered() < SAMPLE_FREQUENCY * seconds)
     {
-        synth.tick();
 
-        if (x > SAMPLE_FREQUENCY * 100)
+        if (synth.getNumSamplesBuffered() > SAMPLE_FREQUENCY * (seconds - 1))
         {
-            printf("Exceeded clock %d, aborting \n", x);
+            synth.writeVoiceRegister(1, Synth::VOICE_PARAM_KEYON, false);
         }
-        x += 1;
+
+        synth.tick();
     }
-    printf("it took %d clocks \n", x);
 
     size_t i = 0;
     auto samples = synth.cloneSampleBuffer();
@@ -271,7 +388,7 @@ int main()
     }
 
     SDL_PauseAudioDevice(device, 0);
-    SDL_Delay(1500);
+    SDL_Delay(seconds * 1000 + 500);
 
     SDL_CloseAudio();
     SDL_Quit();
