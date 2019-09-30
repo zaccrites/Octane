@@ -60,7 +60,7 @@ logic signed [31:0] r_WaveformAmplitudeProduct [3];  // TODO: ADSR and COM
 //
 logic signed [15:0] r_WaveformAmplitude [11];
 //
-logic unsigned [6:0] r_CycleNumber [16];  // TODO: Do I really need this?
+logic unsigned [6:0] r_CycleNumber [17];  // TODO: Do I really need this?
 // I suspect it could be replaced with some subtraction and would save a few LUTs
 
 
@@ -81,7 +81,7 @@ assign w_FREN = r_AlgorithmControlWord[0];
 
 
 logic signed [15:0] r_M [16];
-logic signed [15:0] r_ModulationPhase;
+logic signed [15:0] w_ModulationPhase;
 
 // TODO
 // verilator lint_off UNUSED
@@ -99,11 +99,19 @@ always_ff @ (posedge i_Clock) begin
 
     // Stage 1: accumulate and modulate phase (1 cycle)
     r_PhaseAcc[r_CycleCounter] <= r_PhaseAcc[r_CycleCounter] + w_OperatorConfig.PhaseStep;
-    r_Phase <= r_PhaseAcc[r_CycleCounter];
-    // r_Phase <= r_PhaseAcc[r_CycleCounter] + r_ModulationPhase;
+    // r_Phase <= r_PhaseAcc[r_CycleCounter];
+    r_Phase <= r_PhaseAcc[r_CycleCounter] + w_ModulationPhase;
     r_EnvelopeLevel[0] <= w_OperatorConfig.EnvelopeLevel;
     r_WaveformType <= w_OperatorConfig.Waveform;
     r_CycleNumber[0] <= r_CycleCounter;
+
+    if (w_OperatorConfig.EnvelopeLevel != 0 && w_ModulationPhase != 0) begin
+        // $display("r_CycleCounter = %d | %0d.%0d  modulates with %d  for a total of %d",
+        //     r_CycleCounter,
+        //     r_CycleCounter[3:0], r_CycleCounter[6:4],
+        //     w_ModulationPhase,
+        //     r_PhaseAcc[r_CycleCounter] + w_ModulationPhase);
+    end
 
     // if (r_CycleNumber[0] == 0) $display("phase = %d", r_Phase);
 
@@ -131,6 +139,8 @@ always_ff @ (posedge i_Clock) begin
     r_CycleNumber[6] <= r_CycleNumber[5];
     r_CycleNumber[7] <= r_CycleNumber[6];
 
+
+
     // if (r_CycleNumber[7] == 0) $display("amp = %d", r_WaveformAmplitude[0]);
 
 
@@ -150,7 +160,7 @@ always_ff @ (posedge i_Clock) begin
     r_CycleNumber[13] <= r_CycleNumber[12];
     r_CycleNumber[14] <= r_CycleNumber[13];
 
-    // Stage 5: Algorithm ROM lookup (2 clock cycles)
+    // Stage 5: Algorithm ROM lookup (1 clock cycle)
     // Determine which operator was activate at the start of the pipeline
     // by subtracting a constant number of clock cycles from the counter.
     //
@@ -165,28 +175,69 @@ always_ff @ (posedge i_Clock) begin
     r_AlgorithmControlWord <= r_AlgorithmROM[{w_VoiceConfig.Algorithm, r_CycleNumber[14][6:4]}];
     r_CycleNumber[15] <= r_CycleNumber[14];
     r_WaveformAmplitude[8] <= r_WaveformAmplitude[7];
-    r_WaveformAmplitude[9] <= r_WaveformAmplitude[8];
+
+
+    // if (r_CycleNumber[15][3:0] == 0 && r_CycleNumber[15][6:4] >= 4) begin
+    //     $display("[%0d.%0d] amplitude: %d",
+    //         r_CycleNumber[14][3:0], r_CycleNumber[14][6:4],
+    //         r_WaveformAmplitude[7]);
+    // end
+
 
     // Stage 6: Latch result into Selector, M, and F registers.
-    case (w_SEL)
-        `SEL_NONE               : r_ModulationPhase <= 0;
-        `SEL_PREVIOUS           : r_ModulationPhase <= r_WaveformAmplitude[9];
-        `SEL_MREG               : r_ModulationPhase <= r_M[r_CycleNumber[15][3:0]];
-        `SEL_MREG_PLUS_PREVIOUS : r_ModulationPhase <= r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[9];
-        // `SEL_FREG               : r_ModulationPhase <= r_F[r_CycleNumber[15][3:0]];
-        default                 : r_ModulationPhase <= 0;
-    endcase
-    if (w_MREN) r_M[r_CycleNumber[15][3:0]] <= r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[9];
-    if (w_FREN) r_F[r_CycleNumber[15][3:0]] <= r_WaveformAmplitude[9];
+    // case (w_SEL)
+    //     `SEL_NONE               : r_ModulationPhase <= 0;
+    //     `SEL_PREVIOUS           : r_ModulationPhase <= r_WaveformAmplitude[8];
+    //     `SEL_MREG               : r_ModulationPhase <= r_M[r_CycleNumber[15][3:0]];
+    //     `SEL_MREG_PLUS_PREVIOUS : r_ModulationPhase <= r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8];
+    //     // `SEL_FREG               : r_ModulationPhase <= r_F[r_CycleNumber[15][3:0]];
+    //     default                 : r_ModulationPhase <= 0;
+    // endcase
+    if (w_MREN) r_M[r_CycleNumber[15][3:0]] <= r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8];
+    if (w_FREN) r_F[r_CycleNumber[15][3:0]] <= r_WaveformAmplitude[8];
     //
     // If this is the last operator, send the output subsampler ready signal too.
-    o_Subsample <= r_WaveformAmplitude[9];
+    o_Subsample <= r_WaveformAmplitude[8];
     o_SubsampleReady <= r_CycleNumber[15][6:4] == 5;
     o_SampleReady <= r_CycleNumber[15] == 95;
 
-    if (r_CycleNumber[15] == 0) $display("amp = %d", r_WaveformAmplitude[9]);
+    // TODO: Really SEL controls what the NEXT operator will use as its modulation, so these are all a little behind
+
+    if (r_WaveformAmplitude[8] != 0) begin
+        // $display("r_CycleNumber[15] = %d | %0d.%0d  => %d",
+        //     r_CycleNumber[15],
+        //     r_CycleNumber[15][3:0], r_CycleNumber[15][6:4],
+        //     r_WaveformAmplitude[8]);
+    end
+
+    if (r_CycleNumber[15][6:4] == 4 && r_CycleNumber[15][3:0] == 0) begin
+        // // $display("amp = %d", r_WaveformAmplitude[8]);
+
+        // case (w_SEL)
+        //     `SEL_NONE               : $display("  Modulating using NONE (%d)", 0);
+        //     `SEL_PREVIOUS           : $display("  Modulating using PREV (%d)", r_WaveformAmplitude[8]);
+        //     `SEL_MREG               : $display("  Modulating using MREG (%d)", r_M[r_CycleNumber[15][3:0]]);
+        //     `SEL_MREG_PLUS_PREVIOUS : $display("  Modulating using MR+P (%d)", r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8]);
+        //     // `SEL_FREG               : $display("  Modulating using FREG (%d)", r_F[r_CycleNumber[15][3:0]]);
+        //     default                 : $display("  Modulating using ???? (%d)", 0);
+        // endcase
+    end
 
 
+
+end
+
+
+always_comb begin
+
+    case (w_SEL)
+        `SEL_NONE               : w_ModulationPhase = 0;
+        `SEL_PREVIOUS           : w_ModulationPhase = r_WaveformAmplitude[8];
+        `SEL_MREG               : w_ModulationPhase = r_M[r_CycleNumber[15][3:0]];
+        `SEL_MREG_PLUS_PREVIOUS : w_ModulationPhase = r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8];
+        // `SEL_FREG               : w_ModulationPhase = r_F[r_CycleNumber[15][3:0]];
+        default                 : w_ModulationPhase = 0;
+    endcase
 
 end
 

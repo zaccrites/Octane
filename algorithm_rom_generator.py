@@ -280,13 +280,24 @@ def main():
         print(f'// Algorithm {algorithm_number}')
         print(f'// ---------------------------------------------------')
         for step_number, step in enumerate(algorithm, 1):
+            next_step = algorithm[step_number % len(algorithm)]
+
             address = ((algorithm_number - 1) << 3) | (step_number - 1)
             value = (
-                (int(step.sel) << 2) |
+                (int(next_step.sel) << 2) |
                 (int(step.mren) << 1) |
                 (int(step.fren) << 0)
             )
-            print(f'@{address:04x}   {value:04x}    // Operator {step_number}')
+            line = (
+                f'@{address:04x}   {value:04x}    '
+                f'// Operator {step_number} : '
+                f'NEXT_OP_SEL={next_step.sel.name.upper()}'
+            )
+            if step.mren:
+                line += ', MREN'
+            if step.fren:
+                line += ', FREN'
+            print(line)
         print(f'// ---------------------------------------------------\n')
 
 

@@ -152,9 +152,45 @@ int main()
             uint16_t phaseStep;
             uint16_t outputLevel;
 
-            phaseStep = phaseStepForFrequency(440.0);
-            // outputLevel = toFixed(1.0);
-            outputLevel = toFixed(0.5);
+            if (voiceNum == 1)
+            {
+                if (operatorNum == 5)
+                {
+                    phaseStep = phaseStepForFrequency(220.0);
+                    outputLevel = toFixed(1.0);
+                }
+                else if (operatorNum == 6)
+                {
+                    phaseStep = phaseStepForFrequency(440.0);
+                    outputLevel = toFixed(1.0);
+                }
+                else
+                {
+                    phaseStep = phaseStepForFrequency(1000.0);
+                    outputLevel = toFixed(0.0);
+                }
+            }
+            else
+            {
+                // phaseStep = phaseStepForFrequency(110.0);
+                // if (operatorNum == 5)
+                // {
+                //     outputLevel = toFixed(0.5);
+                // }
+                // else
+                // {
+                //     outputLevel = toFixed(0.0);
+                // }
+
+                phaseStep = phaseStepForFrequency(1000.0);
+                outputLevel = toFixed(0.0);
+            }
+
+
+            // phaseStep = phaseStepForFrequency(100.0 * voiceNum);
+            // outputLevel = toFixed(1.0 / 16.0);
+
+
 
             // if (voiceNum == 15)
             // {
