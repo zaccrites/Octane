@@ -41,9 +41,6 @@ logic unsigned [15:0] r_PhaseAcc [96];
 VoiceConfig_t w_VoiceConfig;
 OperatorConfig_t w_OperatorConfig;
 always_comb begin
-    // o_SubsampleReady = w_OperatorNum == 5;
-    // o_SampleReady = o_SubsampleReady && (w_VoiceNum == 15);
-
     w_VoiceConfig = i_Config.VoiceConfigs[w_VoiceNum];
     w_OperatorConfig = w_VoiceConfig.OperatorConfigs[w_OperatorNum];
 end
@@ -52,19 +49,20 @@ end
 
 // Pipeline Registers
 //
+logic signed [15:0] r_M [16];
+logic signed [15:0] r_F [16];
 logic unsigned [15:0] r_Phase;
-//
 logic r_WaveformType;
-//
+logic [5:0] r_Algorithm [10];
 logic signed [15:0] r_EnvelopeLevel;
 logic signed [31:0] r_EnvelopeLevelProduct [3];  // TODO: ADSR
-//
 logic signed [31:0] r_WaveformAmplitudeProduct [3];
-//
 logic signed [15:0] r_WaveformAmplitude [11];
-//
 logic unsigned [6:0] r_CycleNumber [17];  // TODO: Do I really need this?
 // I suspect it could be replaced with some subtraction and would save a few LUTs
+
+
+logic signed [15:0] w_ModulationPhase;
 
 
 // Algorithm Control
@@ -83,13 +81,6 @@ assign w_FREN = r_AlgorithmControlWord[0];
 
 
 
-logic signed [15:0] r_M [16];
-logic signed [15:0] r_F [16];
-logic signed [15:0] w_ModulationPhase;
-
-
-
-
 // Main Waveform Branch
 always_ff @ (posedge i_Clock) begin
     // NOTE: With 8 operators, this wouldn't be necessary. The counter could just overflow.
@@ -98,44 +89,35 @@ always_ff @ (posedge i_Clock) begin
     else
         r_CycleCounter <= r_CycleCounter + 1;
 
-
-
-    // TODO: Where to put this?
+    // Stage 1-2 (secondary branch): multi-carrier amplitude compensation (four clock cycles)
+    // Note that the first line here really occurs at the same time as the other
+    // Stage 1 loads. The multiplication starts immediately.
     r_EnvelopeLevelProduct[0] <= w_OperatorConfig.EnvelopeLevel * w_VoiceConfig.AmplitudeAdjust;
     r_EnvelopeLevelProduct[1] <= r_EnvelopeLevelProduct[0];
     r_EnvelopeLevelProduct[2] <= r_EnvelopeLevelProduct[1];
     r_EnvelopeLevel <= {r_EnvelopeLevelProduct[2][30:16], 1'b0};
 
-
-
-
     // Stage 1: accumulate and modulate phase (1 cycle)
     r_PhaseAcc[r_CycleCounter] <= r_PhaseAcc[r_CycleCounter] + w_OperatorConfig.PhaseStep;
     r_Phase <= r_PhaseAcc[r_CycleCounter] + w_ModulationPhase;
-    // r_EnvelopeLevel[0] <= w_OperatorConfig.EnvelopeLevel;
     r_WaveformType <= w_OperatorConfig.Waveform;
     r_CycleNumber[0] <= r_CycleCounter;
-
+    r_Algorithm[0] <= w_VoiceConfig.Algorithm;
 
     // Stage 2: waveform generation (3 cycles)
     //  (the magic is done in the waveform_generator module)
-    // r_EnvelopeLevel[1] <= r_EnvelopeLevel[0];
-    // r_EnvelopeLevel[2] <= r_EnvelopeLevel[1];
-    // r_EnvelopeLevel[3] <= r_EnvelopeLevel[2];
     r_CycleNumber[1] <= r_CycleNumber[0];
     r_CycleNumber[2] <= r_CycleNumber[1];
     r_CycleNumber[3] <= r_CycleNumber[2];
+    r_Algorithm[1] <= r_Algorithm[0];
+    r_Algorithm[2] <= r_Algorithm[1];
+    r_Algorithm[3] <= r_Algorithm[2];
 
     // Stage 3: waveform amplitude (four clock cycles)
-
-
     r_WaveformAmplitudeProduct[0] <= w_RawWaveformAmplitude * r_EnvelopeLevel;
     r_WaveformAmplitudeProduct[1] <= r_WaveformAmplitudeProduct[0];
     r_WaveformAmplitudeProduct[2] <= r_WaveformAmplitudeProduct[1];
-
     r_WaveformAmplitude[0] <= {r_WaveformAmplitudeProduct[2][30:16], 1'b0};
-    // r_WaveformAmplitude[0] <= {r_WaveformAmplitudeProduct[2][31:16]};
-
     // The output is only half magnitude, so shift left by 1 to get it back.
     // TODO: Is it worth doing this? We lose one bit of information, and will
     // be dividing before combining voices or carrier operators anyway.
@@ -143,11 +125,9 @@ always_ff @ (posedge i_Clock) begin
     r_CycleNumber[5] <= r_CycleNumber[4];
     r_CycleNumber[6] <= r_CycleNumber[5];
     r_CycleNumber[7] <= r_CycleNumber[6];
-
-
-
-    // if (r_CycleNumber[7] == 0) $display("amp = %d", r_WaveformAmplitude[0]);
-
+    r_Algorithm[4] <= r_Algorithm[3];
+    r_Algorithm[5] <= r_Algorithm[4];
+    r_Algorithm[6] <= r_Algorithm[5];
 
     // Stage 4: stall to provide the sample just-in-time to modulate the next operator
     r_WaveformAmplitude[1] <= r_WaveformAmplitude[0];
@@ -164,40 +144,14 @@ always_ff @ (posedge i_Clock) begin
     r_CycleNumber[12] <= r_CycleNumber[11];
     r_CycleNumber[13] <= r_CycleNumber[12];
     r_CycleNumber[14] <= r_CycleNumber[13];
+    r_Algorithm[7] <= r_Algorithm[6];
+    r_Algorithm[8] <= r_Algorithm[7];
+    r_Algorithm[9] <= r_Algorithm[8];
 
     // Stage 5: Algorithm ROM lookup (1 clock cycle)
-    // Determine which operator was activate at the start of the pipeline
-    // by subtracting a constant number of clock cycles from the counter.
-    //
-    // TODO: Use algorithm directly here is likely a bug, since the voice
-    // won't be the same as the currently active one.
-    // I may have to pipeline the algorithm number.
-    //
-    // Another option is to do this calculation before stalling, then
-    // just pipeline the computed value and the control signals (and e.g. the index into r_M and r_F)
-    //
-    // r_AlgorithmRomIndex <= {};
-    r_AlgorithmControlWord <= r_AlgorithmROM[{w_VoiceConfig.Algorithm, r_CycleNumber[14][6:4]}];
+    r_AlgorithmControlWord <= r_AlgorithmROM[{r_Algorithm[9], r_CycleNumber[14][6:4]}];
     r_CycleNumber[15] <= r_CycleNumber[14];
     r_WaveformAmplitude[8] <= r_WaveformAmplitude[7];
-
-
-    // if (r_CycleNumber[15][3:0] == 0 && r_CycleNumber[15][6:4] >= 4) begin
-    //     $display("[%0d.%0d] amplitude: %d",
-    //         r_CycleNumber[14][3:0], r_CycleNumber[14][6:4],
-    //         r_WaveformAmplitude[7]);
-    // end
-
-
-    // Stage 6: Latch result into Selector, M, and F registers.
-    // case (w_SEL)
-    //     `SEL_NONE               : r_ModulationPhase <= 0;
-    //     `SEL_PREVIOUS           : r_ModulationPhase <= r_WaveformAmplitude[8];
-    //     `SEL_MREG               : r_ModulationPhase <= r_M[r_CycleNumber[15][3:0]];
-    //     `SEL_MREG_PLUS_PREVIOUS : r_ModulationPhase <= r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8];
-    //     // `SEL_FREG               : r_ModulationPhase <= r_F[r_CycleNumber[15][3:0]];
-    //     default                 : r_ModulationPhase <= 0;
-    // endcase
 
     // Reset M for the first operator
     if (r_CycleNumber[15][6:4] == 0) begin
@@ -206,35 +160,17 @@ always_ff @ (posedge i_Clock) begin
     else if (w_MREN)  begin
         r_M[r_CycleNumber[15][3:0]] <= r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8];
     end
-
-
     if (w_FREN) r_F[r_CycleNumber[15][3:0]] <= r_WaveformAmplitude[8];
-    //
+
     // If this is the last operator, send the output subsampler ready signal too.
     o_Subsample <= r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8];
     o_SubsampleReady <= r_CycleNumber[15][6:4] == 5;
     o_SampleReady <= r_CycleNumber[15] == 95;
 
-    if (r_CycleNumber[15][6:4] == 4 && r_CycleNumber[15][3:0] == 0) begin
-        // // $display("amp = %d", r_WaveformAmplitude[8]);
-
-        // case (w_SEL)
-        //     `SEL_NONE               : $display("  Modulating using NONE (%d)", 0);
-        //     `SEL_PREVIOUS           : $display("  Modulating using PREV (%d)", r_WaveformAmplitude[8]);
-        //     `SEL_MREG               : $display("  Modulating using MREG (%d)", r_M[r_CycleNumber[15][3:0]]);
-        //     `SEL_MREG_PLUS_PREVIOUS : $display("  Modulating using MR+P (%d)", r_M[r_CycleNumber[15][3:0]] + r_WaveformAmplitude[8]);
-        //     // `SEL_FREG               : $display("  Modulating using FREG (%d)", r_F[r_CycleNumber[15][3:0]]);
-        //     default                 : $display("  Modulating using ???? (%d)", 0);
-        // endcase
-    end
-
-
-
 end
 
 
 always_comb begin
-
     case (w_SEL)
         `SEL_NONE               : w_ModulationPhase = 0;
         `SEL_PREVIOUS           : w_ModulationPhase = r_WaveformAmplitude[8];
@@ -243,7 +179,6 @@ always_comb begin
         // `SEL_FREG               : w_ModulationPhase = r_F[r_CycleNumber[15][3:0]];
         default                 : w_ModulationPhase = 0;
     endcase
-
 end
 
 

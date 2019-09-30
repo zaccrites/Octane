@@ -153,7 +153,7 @@ int main()
             uint16_t phaseStep;
             uint16_t outputLevel;
 
-            if (voiceNum == 1 || true)
+            if (voiceNum == 1)
             {
                 switch (operatorNum)
                 {
@@ -192,57 +192,9 @@ int main()
             }
             else
             {
-                // phaseStep = phaseStepForFrequency(110.0);
-                // if (operatorNum == 5)
-                // {
-                //     outputLevel = toFixed(0.5);
-                // }
-                // else
-                // {
-                //     outputLevel = toFixed(0.0);
-                // }
-
                 phaseStep = phaseStepForFrequency(1000.0);
                 outputLevel = toFixed(0.0);
             }
-
-
-            // phaseStep = phaseStepForFrequency(100.0 * voiceNum);
-            // outputLevel = toFixed(1.0 / 16.0);
-
-
-
-            // if (voiceNum == 15)
-            // {
-            //     if (operatorNum == 5)
-            //     {
-            //         // Modulator
-            //         outputLevel = toFixed(0.0);
-            //         phaseStep = phaseStepForFrequency(220.0);
-            //     }
-            //     else if (operatorNum == 6)
-            //     {
-            //         // Carrier
-            //         outputLevel = toFixed(0.0);
-            //         phaseStep = phaseStepForFrequency(440.0);
-            //     }
-            //     else
-            //     {
-            //         // Disabled
-            //         outputLevel = toFixed(0.0);
-            //         phaseStep = phaseStepForFrequency(1000.0);
-            //     }
-            // }
-            // else
-            // {
-
-            //     // I suspect a pipeline bug is why they're all zero
-            //     // outputLevel = toFixed(0.1 / 8.0);
-            //     phaseStep = phaseStepForFrequency(600.0 + 20.0 * (voiceNum - 1));
-
-            //     outputLevel = toFixed(0.0);
-            //     // phaseStep = phaseStepForFrequency(1000.0);
-            // }
 
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
             synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
@@ -265,9 +217,6 @@ int main()
         std::cerr << "Failed to init SDL" << std::endl;
         return 1;
     }
-
-
-
 
 
     uint32_t x = 0;
