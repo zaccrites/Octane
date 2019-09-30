@@ -30,8 +30,8 @@ add_executable(synth
 # in-source.
 add_custom_command(
     OUTPUT "${CMAKE_SOURCE_DIR}/roms/sine_rom.hex"
-    COMMAND python "sine_rom_generator.py" > "${CMAKE_SOURCE_DIR}/roms/sine_rom.hex"
-    DEPENDS sine_rom_generator.py
+    COMMAND python "tools/sine_rom_generator.py" > "${CMAKE_SOURCE_DIR}/roms/sine_rom.hex"
+    DEPENDS tools/sine_rom_generator.py
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Generating sine table ROM"
     VERBATIM
@@ -39,8 +39,8 @@ add_custom_command(
 
 add_custom_command(
     OUTPUT "${CMAKE_SOURCE_DIR}/roms/algorithm_rom.hex"
-    COMMAND python "algorithm_rom_generator.py" > "${CMAKE_SOURCE_DIR}/roms/algorithm_rom.hex"
-    DEPENDS algorithm_rom_generator.py
+    COMMAND python "tools/algorithm_rom_generator.py" > "${CMAKE_SOURCE_DIR}/roms/algorithm_rom.hex"
+    DEPENDS tools/algorithm_rom_generator.py
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Generating algorithm ROM"
     VERBATIM
