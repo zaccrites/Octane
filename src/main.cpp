@@ -86,6 +86,7 @@ public:
 public:
     static const uint16_t VOICE_PARAM_KEYON  { 0x00 };
     static const uint16_t VOICE_PARAM_ALGORITHM  { 0x01 };
+    static const uint16_t VOICE_PARAM_AMPLITUDE_ADJUST { 0x02 };
 
     static const uint16_t OP_PARAM_PHASE_STEP  { 0x00 };
     static const uint16_t OP_PARAM_WAVEFORM    { 0x01 };
@@ -152,23 +153,42 @@ int main()
             uint16_t phaseStep;
             uint16_t outputLevel;
 
-            if (voiceNum == 1)
+            if (voiceNum == 1 || true)
             {
-                if (operatorNum == 5)
+                switch (operatorNum)
                 {
+                case 5:
                     phaseStep = phaseStepForFrequency(220.0);
                     outputLevel = toFixed(1.0);
-                }
-                else if (operatorNum == 6)
-                {
+                    break;
+
+                case 6:
                     phaseStep = phaseStepForFrequency(440.0);
                     outputLevel = toFixed(1.0);
-                }
-                else
-                {
+                    break;
+
+
+                case 2:
+                    phaseStep = phaseStepForFrequency(30.0);
+                    outputLevel = toFixed(0.5);
+
+                case 3:
+                    phaseStep = phaseStepForFrequency(175.0);
+                    outputLevel = toFixed(1.0);
+                    break;
+
+                case 4:
+                    phaseStep = phaseStepForFrequency(350.0);
+                    outputLevel = toFixed(1.0);
+                    break;
+
+                default:
                     phaseStep = phaseStepForFrequency(1000.0);
                     outputLevel = toFixed(0.0);
+                    break;
+
                 }
+
             }
             else
             {
@@ -232,6 +252,8 @@ int main()
         const uint16_t algorithmNumber = 1;
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
+
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / 2.0));
     }
 
 
@@ -300,7 +322,7 @@ int main()
     }
 
     SDL_PauseAudioDevice(device, 0);
-    SDL_Delay(1000);
+    SDL_Delay(1500);
 
     SDL_CloseAudio();
     SDL_Quit();

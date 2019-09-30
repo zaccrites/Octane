@@ -26,6 +26,10 @@ typedef struct packed
     logic KeyOn;
     logic [5:0] Algorithm;
 
+    // Used to reduce per-carrier amplitude when there are multiple
+    // carrier operators in the selected algorithm.
+    logic unsigned [15:0] AmplitudeAdjust;
+
     // TODO: KeyOn time for e.g. envelopes
 
     OperatorConfig_t [5:0] OperatorConfigs;

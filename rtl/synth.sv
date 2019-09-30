@@ -92,6 +92,7 @@ always_ff @ (posedge i_Clock) begin
             case (i_RegisterNumber)
                 {voiceNumber[4:0], 3'b000, 8'h00}: `VOICE_CONFIG.KeyOn <= i_RegisterValue[0];
                 {voiceNumber[4:0], 3'b000, 8'h01}: `VOICE_CONFIG.Algorithm <= i_RegisterValue[5:0];
+                {voiceNumber[4:0], 3'b000, 8'h02}: `VOICE_CONFIG.AmplitudeAdjust <= i_RegisterValue;
 
                 default: /* do nothing */;
             endcase
