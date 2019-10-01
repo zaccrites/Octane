@@ -12,6 +12,33 @@ find_package(SDL2 REQUIRED)
 add_subdirectory(Vmodules)
 
 
+add_executable(tcp_server_test
+    "src/tcp_server_test.cpp"
+)
+target_compile_options(tcp_server_test PRIVATE
+    -std=c++14
+    -pedantic
+    -Wall
+    -Wextra
+    # -Werror
+    -Weffc++
+    -Wshadow
+    -Wcast-qual
+    -Wold-style-cast
+    -Wfloat-equal
+
+    -Werror=return-type
+    -Werror=sometimes-uninitialized
+
+    -fdiagnostics-color
+
+    -O2
+    # -g
+
+)
+
+
+
 
 add_executable(synth
     "src/main.cpp"
