@@ -26,17 +26,26 @@ CMAKE_TEMPLATE = r'''
 # DO NOT EDIT!
 
 
-add_library(V{{ verilog_module_name }}
+add_library({{ cmake_target_name }}
     {% for filename in generated_source_files -%}
     "{{ filename }}"
     {% endfor -%}
     "{{ verilator_include_dir }}/verilated.cpp"
 )
 
-target_include_directories(V{{ verilog_module_name }}
+target_include_directories({{ cmake_target_name }}
     SYSTEM PUBLIC
         "{{ verilator_output_dir }}"
         "{{ verilator_include_dir }}"
+)
+
+target_compile_options({{ cmake_target_name }} PRIVATE
+    # Apparently -Os can have better performance than -O3 for Verilator
+    # modules due to fitting better in the instruction cache.
+    -Os
+
+    # Useful in case the generated C++ code has any compile errors (it is possible).
+    -fdiagnostics-color
 )
 
 add_custom_command(
@@ -338,6 +347,7 @@ def main():
         depfile = get_depfile()
         parameters = {
             **common_parameters,
+            'cmake_target_name': f'V{module_name}',
             'outputs': sorted(depfile.outputs),
             'depends': sorted(depfile.depends),
             'generated_source_files': sorted(depfile.outputs_of_extension('.cpp')),

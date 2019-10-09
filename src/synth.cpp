@@ -49,9 +49,11 @@ void Synth::writeRegister(uint16_t registerNumber, uint16_t value)
     m_Synth.i_RegisterWriteEnable = 0;
 }
 
-
+#include <chrono>
 void Synth::writeSampleBytes(uint8_t* pRawStream, size_t number)
 {
+    auto startTime = std::chrono::system_clock::now();
+
     int16_t* pStream = reinterpret_cast<int16_t*>(pRawStream);
     size_t samplesNeeded = number / sizeof(pStream[0]);
     while (m_SampleBuffer.size() < samplesNeeded)
@@ -64,6 +66,16 @@ void Synth::writeSampleBytes(uint8_t* pRawStream, size_t number)
         pStream[i] = m_SampleBuffer.front();
         m_SampleBuffer.pop_front();
     }
+
+    auto endTime = std::chrono::system_clock::now();
+    std::chrono::duration<double> duration = endTime - startTime;
+    double actualMs = duration.count() * 1000.0;
+    double maxMs = static_cast<double>(samplesNeeded) / 44100.0;
+
+    printf("It took %.4f ms to get %zu samples (%.1f%% of available time)\n",
+        actualMs,
+        samplesNeeded,
+        actualMs / maxMs);
 }
 
 

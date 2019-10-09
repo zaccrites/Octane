@@ -185,7 +185,7 @@ int main()
 
 
     auto& rBuffer = synth.getSampleBuffer();
-    while (rBuffer.size() < SAMPLE_FREQUENCY * 10)
+    while (rBuffer.size() < SAMPLE_FREQUENCY * 1)
     {
         synth.tick();
     }
