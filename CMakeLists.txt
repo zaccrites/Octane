@@ -42,6 +42,8 @@ target_compile_options(tcp_server_test PRIVATE
 
 add_executable(synth
     "src/main.cpp"
+    "src/synth.cpp"
+    "src/server.cpp"
 
 
     # TODO: Add these somewhere else?
@@ -96,6 +98,7 @@ target_compile_options(synth PRIVATE
     -Wfloat-equal
 
     -Werror=return-type
+    -Werror=uninitialized
     -Werror=sometimes-uninitialized
 
     -fdiagnostics-color
