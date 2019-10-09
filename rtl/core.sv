@@ -92,65 +92,65 @@ always_ff @ (posedge i_Clock) begin
 
     // TODO: Use the more advanced ADSR envelope shape from the DX7
 
-    r_L[r_CycleCounter] <= 'hffff;
+    // r_L[r_CycleCounter] <= 'hffff;
 
 
-    // if (r_CycleCounter == 0) begin
-    //     if (r_AdsrClockCounter[7])
-    //         r_AdsrClockCounter <= 0;
-    //     else
-    //         r_AdsrClockCounter <= r_AdsrClockCounter + 1;
-    // end
+    if (r_CycleCounter == 0) begin
+        if (r_AdsrClockCounter[7])
+            r_AdsrClockCounter <= 0;
+        else
+            r_AdsrClockCounter <= r_AdsrClockCounter + 1;
+    end
 
-    // // TODO: Optimize this -- use a single bit if possible
-    // if (r_AdsrClockCounter[7]) begin
-    //     // $display("Triggered on [%0d - %0d.%0d]", r_CycleCounter, w_VoiceNum, w_OperatorNum);
+    // TODO: Optimize this -- use a single bit if possible
+    if (r_AdsrClockCounter[7]) begin
+        // $display("Triggered on [%0d - %0d.%0d]", r_CycleCounter, w_VoiceNum, w_OperatorNum);
 
-    //     case (r_EnvelopeState[r_CycleCounter])
-    //         default: begin
-    //             // Including MUTE
-    //             r_L[r_CycleCounter] <= 0;
-    //             if (w_VoiceConfig.KeyOn) begin
-    //                 r_EnvelopeState[r_CycleCounter] <= ATTACK;
-    //                 if (w_OperatorConfig.AttackLevel != 0) $display("[%0d - %0d.%0d] moving to ATTACK", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1);
-    //             end
-    //         end
+        case (r_EnvelopeState[r_CycleCounter])
+            default: begin
+                // Including MUTE
+                r_L[r_CycleCounter] <= 0;
+                if (w_VoiceConfig.KeyOn) begin
+                    r_EnvelopeState[r_CycleCounter] <= ATTACK;
+                    if (w_OperatorConfig.AttackLevel != 0) $display("[%0d - %0d.%0d] moving to ATTACK", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1);
+                end
+            end
 
-    //         ATTACK: begin
-    //             r_L[r_CycleCounter] <= r_L[r_CycleCounter] + w_OperatorConfig.AttackRate;
-    //             if ( ! w_VoiceConfig.KeyOn)
-    //                 r_EnvelopeState[r_CycleCounter] <= RELEASE;
-    //             else if (r_L[r_CycleCounter] >= {1'b0, w_OperatorConfig.AttackLevel}) begin
-    //                 r_EnvelopeState[r_CycleCounter] <= DECAY;
-    //                 if (w_OperatorConfig.AttackRate != 0) $display("[%0d - %0d.%0d] (+%0d) moving to DECAY", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.AttackRate);
-    //             end
-    //         end
+            ATTACK: begin
+                r_L[r_CycleCounter] <= r_L[r_CycleCounter] + w_OperatorConfig.AttackRate;
+                if ( ! w_VoiceConfig.KeyOn)
+                    r_EnvelopeState[r_CycleCounter] <= RELEASE;
+                else if (r_L[r_CycleCounter] >= {1'b0, w_OperatorConfig.AttackLevel}) begin
+                    r_EnvelopeState[r_CycleCounter] <= DECAY;
+                    if (w_OperatorConfig.AttackRate != 0) $display("[%0d - %0d.%0d] (+%0d) moving to DECAY", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.AttackRate);
+                end
+            end
 
-    //         DECAY: begin
-    //             r_L[r_CycleCounter] <= r_L[r_CycleCounter] - w_OperatorConfig.DecayRate;
-    //             if ( ! w_VoiceConfig.KeyOn)
-    //                 r_EnvelopeState[r_CycleCounter] <= RELEASE;
-    //             else if (r_L[r_CycleCounter] <= {1'b0, w_OperatorConfig.SustainLevel}) begin
-    //                 r_EnvelopeState[r_CycleCounter] <= SUSTAIN;
-    //                 if (w_OperatorConfig.DecayRate != 0) $display("[%0d - %0d.%0d] (-%0d) moving to SUSTAIN", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.DecayRate);
-    //             end
-    //         end
+            DECAY: begin
+                r_L[r_CycleCounter] <= r_L[r_CycleCounter] - w_OperatorConfig.DecayRate;
+                if ( ! w_VoiceConfig.KeyOn)
+                    r_EnvelopeState[r_CycleCounter] <= RELEASE;
+                else if (r_L[r_CycleCounter] <= {1'b0, w_OperatorConfig.SustainLevel}) begin
+                    r_EnvelopeState[r_CycleCounter] <= SUSTAIN;
+                    if (w_OperatorConfig.DecayRate != 0) $display("[%0d - %0d.%0d] (-%0d) moving to SUSTAIN", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.DecayRate);
+                end
+            end
 
-    //         SUSTAIN: begin
-    //             r_L[r_CycleCounter] <= {1'b0, w_OperatorConfig.SustainLevel};
-    //             if ( ! w_VoiceConfig.KeyOn)
-    //                 r_EnvelopeState[r_CycleCounter] <= RELEASE;
-    //         end
+            SUSTAIN: begin
+                r_L[r_CycleCounter] <= {1'b0, w_OperatorConfig.SustainLevel};
+                if ( ! w_VoiceConfig.KeyOn)
+                    r_EnvelopeState[r_CycleCounter] <= RELEASE;
+            end
 
-    //         RELEASE: begin
-    //             r_L[r_CycleCounter] <= r_L[r_CycleCounter] - w_OperatorConfig.ReleaseRate;
-    //             if (r_L[r_CycleCounter][16]) begin  // if L < 0
-    //                 r_EnvelopeState[r_CycleCounter] <= MUTE;
-    //                 if (w_OperatorConfig.ReleaseRate != 0) $display("[%0d - %0d.%0d] (-%0d) moving to MUTE", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.ReleaseRate);
-    //             end
-    //         end
-    //     endcase
-    // end
+            RELEASE: begin
+                r_L[r_CycleCounter] <= r_L[r_CycleCounter] - w_OperatorConfig.ReleaseRate;
+                if (r_L[r_CycleCounter][16]) begin  // if L < 0
+                    r_EnvelopeState[r_CycleCounter] <= MUTE;
+                    if (w_OperatorConfig.ReleaseRate != 0) $display("[%0d - %0d.%0d] (-%0d) moving to MUTE", r_CycleCounter, w_VoiceNum+1, w_OperatorNum+1, w_OperatorConfig.ReleaseRate);
+                end
+            end
+        endcase
+    end
 end
 
 

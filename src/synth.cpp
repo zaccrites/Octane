@@ -25,8 +25,9 @@ void Synth::tick()
 
     if (m_Synth.o_SampleReady)
     {
-        m_SampleBuffer.push_front(m_Synth.o_Sample);
-        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, m_Synth.o_Sample);
+        int16_t sample = m_Synth.o_Sample;
+        m_SampleBuffer.push_front(sample);
+        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
     }
 }
 
@@ -51,13 +52,14 @@ void Synth::writeRegister(uint16_t registerNumber, uint16_t value)
 
 void Synth::writeSampleBytes(uint8_t* pRawStream, size_t number)
 {
-    while (m_SampleBuffer.size() < number)
+    int16_t* pStream = reinterpret_cast<int16_t*>(pRawStream);
+    size_t samplesNeeded = number / sizeof(pStream[0]);
+    while (m_SampleBuffer.size() < samplesNeeded)
     {
         tick();
     }
 
-    int16_t* pStream = reinterpret_cast<int16_t*>(pRawStream);
-    for (size_t i = 0; i < number / sizeof(int16_t); i++)
+    for (size_t i = 0; i < samplesNeeded; i++)
     {
         pStream[i] = m_SampleBuffer.front();
         m_SampleBuffer.pop_front();

@@ -30,6 +30,23 @@ public:
         return m_SampleBuffer;
     }
 
+public:
+    static const uint16_t VOICE_PARAM_KEYON  { 0x00 };
+    static const uint16_t VOICE_PARAM_ALGORITHM  { 0x01 };
+    static const uint16_t VOICE_PARAM_AMPLITUDE_ADJUST { 0x02 };
+
+    static const uint16_t OP_PARAM_PHASE_STEP  { 0x00 };
+    static const uint16_t OP_PARAM_WAVEFORM    { 0x01 };
+
+    static const uint16_t OP_PARAM_ATTACK_LEVEL  { 0x03 };
+    static const uint16_t OP_PARAM_SUSTAIN_LEVEL  { 0x04 };
+    static const uint16_t OP_PARAM_ATTACK_RATE  { 0x05 };
+    static const uint16_t OP_PARAM_DECAY_RATE  { 0x06 };
+    static const uint16_t OP_PARAM_RELEASE_RATE  { 0x07 };
+
+
+    static const uint16_t OP_WAVEFORM_SINE  { 0x0000 };
+    static const uint16_t OP_WAVEFORM_SQUARE { 0x0001 };
 
 private:
     Vsynth m_Synth;
