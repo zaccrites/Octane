@@ -58,8 +58,8 @@
         {
             "comment": "Operator 5",
 
-            "attack_level": 255,
-            "sustain_level": 255,
+            "attack_level": 0,
+            "sustain_level": 128,
             "attack_rate": 255,
             "decay_rate": 255,
             "release_rate": 255,

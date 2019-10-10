@@ -70,7 +70,7 @@ add_custom_command(
         "{{ filename }}"
         {% endfor %}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "Running Verilator on \"{{ verilog_module_path }}\""
+    COMMENT "Verilating {{ verilog_module_path }}"
     VERBATIM
 )
 

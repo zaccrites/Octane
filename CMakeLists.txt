@@ -6,6 +6,7 @@ project(synthetic VERSION 0.1.0
         LANGUAGES CXX)
 
 
+# TODO: Remove this dependency and just emit WAVE files directly.
 find_package(SDL2 REQUIRED)
 
 
@@ -16,6 +17,7 @@ add_subdirectory(Vmodules)
 add_executable(synth
     "src/main.cpp"
     "src/synth.cpp"
+    "src/PatchConfig.cpp"
 
     # TODO: Add these somewhere else?
     "roms/sine_rom.hex"
