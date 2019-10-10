@@ -43,6 +43,7 @@ target_compile_options({{ cmake_target_name }} PRIVATE
     # Apparently -Os can have better performance than -O3 for Verilator
     # modules due to fitting better in the instruction cache.
     -Os
+    # -O3
 
     # Useful in case the generated C++ code has any compile errors (it is possible).
     -fdiagnostics-color

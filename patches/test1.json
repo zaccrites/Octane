@@ -1,0 +1,83 @@
+{
+    "name": "Test Patch 1",
+    "algorithm": 2,
+    "comment": "",
+    "lfo": {
+        "comment": "TODO"
+    },
+    "operators": [
+        {
+            "comment": "Operator 1",
+
+            "attack_level": 0,
+            "sustain_level": 0,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 1.00
+        },
+        {
+            "comment": "Operator 2",
+
+            "attack_level": 0,
+            "sustain_level": 0,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 1.00
+        },
+        {
+            "comment": "Operator 3",
+
+            "attack_level": 0,
+            "sustain_level": 0,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 1.00
+        },
+        {
+            "comment": "Operator 4",
+
+            "attack_level": 0,
+            "sustain_level": 0,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 1.00
+        },
+
+        {
+            "comment": "Operator 5",
+
+            "attack_level": 255,
+            "sustain_level": 255,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 2.00
+        },
+        {
+            "comment": "Operator 6",
+
+            "attack_level": 255,
+            "sustain_level": 255,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 1.00
+        }
+    ]
+}

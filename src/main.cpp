@@ -1,15 +1,21 @@
 
 #include <printf.h>
 #include <iostream>
+#include <fstream>
 
 #include <SDL2/SDL.h>
 
 #include "synth.hpp"
-#include "server.hpp"
+// #include "server.hpp"
 
 #include <thread>
 #include <chrono>
 #include <atomic>
+
+
+// TODO: Extract JSON handling to its own file to avoid having to build this
+// over and over. Perhaps create a PatchConfig and OperatorConfig class.
+#include <nlohmann/json.hpp>
 
 
 
@@ -31,21 +37,95 @@ int16_t toFixed(double x) {
 
 volatile size_t req = 0;  // TODO: Remove
 
+uint16_t carriersForAlgorithm(uint16_t algorithmNumber)
+{
+    switch (algorithmNumber)
+    {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            return 2;
+
+        case 5:
+        case 6:
+            return 3;
+
+        case 7:
+        case 8:
+        case 9:
+            return 2;
+
+        case 10:
+        case 11:
+            return 2;
+
+        case 12:
+        case 13:
+            return 2;
+
+        case 14:
+        case 15:
+            return 2;
+
+        case 16:
+        case 17:
+        case 18:
+            return 1;
+
+        case 19:
+        case 20:
+            return 3;
+
+        case 21:
+        case 22:
+        case 23:
+            return 4;
+
+        case 24:
+        case 25:
+            return 5;
+
+        case 26:
+        case 27:
+            return 3;
+
+        case 28:
+            return 3;
+
+        case 29:
+        case 30:
+            return 4;
+
+        case 31:
+            return 5;
+
+        case 32:
+            return 6;
+
+
+        default:
+            return 1;
+    }
+}
+
+
+
 
 int main()
 {
     Synth synth;
     synth.reset();
 
-    Server server;
-    std::atomic<bool> serverRunning { true };
-    std::thread serverThread { [&server, &serverRunning]() {
-        printf("Server start\n");
-        // server.start();
-        std::this_thread::sleep_for(std::chrono::milliseconds(20000));
-        printf("Server over \n");
-        serverRunning = false;
-    } };
+    // Server server;
+    // std::atomic<bool> serverRunning { true };
+    // std::thread serverThread { [&server, &serverRunning]() {
+    //     printf("Server start\n");
+    //     // server.start();
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(20000));
+    //     printf("Server over \n");
+    //     serverRunning = false;
+    // } };
 
 
     auto phaseStepForFrequency = [](double frequency) -> uint16_t {
@@ -62,114 +142,107 @@ int main()
     };
 
 
+    // TODO:
+    //  - Fixed operator frequency
+    //  - Pitch wheel
+    //  - Pitch envelope
+    //  - Transposition, feedback, etc.
+    //  - LFO
+    //  - Keyboard splitting/scaling
+    //  - More advanced ADSR envelope shape
+
+    std::ifstream patchConfigFile { "patches/test1.json" };
+    nlohmann::json patchConfig;
+    patchConfigFile >> patchConfig;
+
+    // printf("Setting up patch \"%s\" \n", patchConfig["name"]);
+    std::cout << "Setting up patch " << patchConfig["name"] << std::endl;
+
+    // TODO: Input validation
+
+
+
+
+    double noteBaseFrequency = 440.0;
+
     // Set phase step
-    for (uint16_t voiceNum = 1; voiceNum <= 16; voiceNum++)
+    for (uint16_t operatorNum = 1; operatorNum <= 6; operatorNum++)
     {
-        for (uint16_t operatorNum = 1; operatorNum <= 6; operatorNum++)
+        auto operatorConfig = patchConfig["operators"][operatorNum - 1];
+
+        for (uint16_t voiceNum = 1; voiceNum <= 16; voiceNum++)
         {
-            auto setEnvelope = [&synth, voiceNum, operatorNum](
-                double attackLevel,
-                double sustainLevel,
-                double attackRate,
-                double decayRate,
-                double releaseRate
-            ) {
-                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ATTACK_LEVEL, toFixed(attackLevel));
-                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_SUSTAIN_LEVEL, toFixed(sustainLevel));
-                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ATTACK_RATE, toFixed(attackRate));
-                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_DECAY_RATE, toFixed(decayRate));
-                synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_RELEASE_RATE, toFixed(releaseRate));
-            };
+            // TODO: Input validation. If a key is misspelled then you get
+            // a C++ exception about how "type must be number, but is null"
+            auto attackLevel = operatorConfig["attack_level"].get<uint8_t>();
+            auto sustainLevel = operatorConfig["sustain_level"].get<uint8_t>();
+            auto attackRate = operatorConfig["attack_rate"].get<uint8_t>();
+            auto decayRate = operatorConfig["decay_rate"].get<uint8_t>();
+            auto releaseRate = operatorConfig["release_rate"].get<uint8_t>();
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ATTACK_LEVEL, attackLevel << 7);
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_SUSTAIN_LEVEL, sustainLevel << 7);
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_ATTACK_RATE, attackRate << 7);
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_DECAY_RATE, decayRate << 7);
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_RELEASE_RATE, releaseRate << 7);
 
 
-            uint16_t phaseStep;
 
-            if (voiceNum == 1  || true)
+            auto frequencyRatio = operatorConfig["frequency_ratio"].get<double>();
+            uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * frequencyRatio);
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
+
+            uint16_t waveform;
+            if (operatorConfig["waveform"] == "sine")
             {
-                switch (operatorNum)
-                {
-                case 5:
-                    phaseStep = phaseStepForFrequency(220.0);
-                    setEnvelope(
-                        1.0,  // attack level
-                        0.2,  // sustain level
-                        0.001,  // attack rate
-                        0.05,  // decay rate
-                        0.005   // release rate
-                    );
-                    break;
-
-                case 6:
-                    phaseStep = phaseStepForFrequency(440.0);
-                    setEnvelope(
-                        1.0,  // attack level
-                        0.7,  // sustain level
-                        0.05,  // attack rate
-                        0.0005,  // decay rate
-                        0.005   // release rate
-                    );
-                    break;
-
-
-                // case 2:
-                //     phaseStep = phaseStepForFrequency(30.0);
-                //     outputLevel = toFixed(0.5);
-
-                // case 3:
-                //     phaseStep = phaseStepForFrequency(175.0);
-                //     outputLevel = toFixed(1.0);
-                //     break;
-
-                // case 4:
-                //     phaseStep = phaseStepForFrequency(350.0);
-                //     outputLevel = toFixed(1.0);
-                //     break;
-
-                default:
-                    phaseStep = phaseStepForFrequency(1000.0);
-                    setEnvelope(
-                        0.0,  // attack level
-                        0.0,  // sustain level
-                        0.0,  // attack rate
-                        0.0,  // decay rate
-                        0.0   // release rate
-                    );
-                    break;
-
-                }
-
+                waveform = Synth::OP_WAVEFORM_SINE;
             }
             else
             {
-                phaseStep = phaseStepForFrequency(1000.0);
-                setEnvelope(
-                    0.0,  // attack level
-                    0.0,  // sustain level
-                    0.0,  // attack rate
-                    0.0,  // decay rate
-                    0.0   // release rate
-                );
+                waveform = Synth::OP_WAVEFORM_SQUARE;
+            }
+            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, waveform);
+
+
+            // case 5:
+            //     phaseStep = phaseStepForFrequency(220.0);
+            //     setEnvelope(
+            //         1.0,  // attack level
+            //         0.2,  // sustain level
+            //         0.001,  // attack rate
+            //         0.05,  // decay rate
+            //         0.005   // release rate
+            //     );
+            //     break;
+
+            // case 6:
+            //     phaseStep = phaseStepForFrequency(440.0);
+            //     setEnvelope(
+            //         1.0,  // attack level
+            //         0.7,  // sustain level
+            //         0.05,  // attack rate
+            //         0.0005,  // decay rate
+            //         0.005   // release rate
+            //     );
+            //     break;
+
+
+            auto algorithmNumber = patchConfig["algorithm"].get<uint16_t>();
+            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
+            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / carriersForAlgorithm(algorithmNumber)));
+            // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0));
+
+
+            if (voiceNum == 1)
+            {
+                synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
+            }
+            else
+            {
+                synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, false);
             }
 
-            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_WAVEFORM, Synth::OP_WAVEFORM_SINE);
-            synth.writeOperatorRegister(voiceNum, operatorNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
         }
 
-        const uint16_t algorithmNumber = 1;
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
-
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / carriersForAlgorithm(algorithmNumber)));
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0));
-
-
-        if (voiceNum == 1)
-        {
-            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
-        }
-        else
-        {
-            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, false);
-        }
 
     }
 
@@ -184,8 +257,9 @@ int main()
     }
 
 
+    uint32_t seconds = 3;
     auto& rBuffer = synth.getSampleBuffer();
-    while (rBuffer.size() < SAMPLE_FREQUENCY * 1)
+    while (rBuffer.size() < SAMPLE_FREQUENCY * seconds)
     {
         synth.tick();
     }
@@ -220,20 +294,23 @@ int main()
     // for (int t = 0; t < seconds * 1000; t += SLEEP_PERIOD)
     const uint32_t SLEEP_PERIOD = 10;
 
-    while (serverRunning)
-    {
-        Command command;
-        while (server.getCommand(command))
-        {
-            printf("Setting register %04x to %04x \n", command.registerNumber, command.registerValue);
-            synth.writeRegister(command.registerNumber, command.registerValue);
-        }
+    // while (serverRunning)
+    // {
+    //     Command command;
+    //     while (server.getCommand(command))
+    //     {
+    //         printf("Setting register %04x to %04x \n", command.registerNumber, command.registerValue);
+    //         synth.writeRegister(command.registerNumber, command.registerValue);
+    //     }
 
-        // Should really time above and delay by extra time
-        // std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_PERIOD));
-        SDL_Delay(10);
-    }
-    serverThread.join();
+    //     // Should really time above and delay by extra time
+    //     // std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_PERIOD));
+    //     SDL_Delay(10);
+    // }
+    // serverThread.join();
+
+    // TODO
+    SDL_Delay(seconds * 1000);
 
     SDL_CloseAudio();
     SDL_Quit();

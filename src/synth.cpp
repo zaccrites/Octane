@@ -72,10 +72,10 @@ void Synth::writeSampleBytes(uint8_t* pRawStream, size_t number)
     double actualMs = duration.count() * 1000.0;
     double maxMs = static_cast<double>(samplesNeeded) / 44100.0;
 
-    printf("It took %.4f ms to get %zu samples (%.1f%% of available time)\n",
-        actualMs,
-        samplesNeeded,
-        actualMs / maxMs);
+    // printf("It took %.4f ms to get %zu samples (%.1f%% of available time)\n",
+    //     actualMs,
+    //     samplesNeeded,
+    //     actualMs / maxMs);
 }
 
 
