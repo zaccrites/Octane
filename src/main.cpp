@@ -32,67 +32,34 @@ int16_t toFixed(double x) {
 }
 
 
-volatile size_t req = 0;  // TODO: Remove
+uint16_t phaseStepForFrequency(double frequency) {
+    // Formula:
+    // phaseStep = 2^N * f / FS
+    // where N is the number of bits of phase accumulation
+    // FS is the sample frequency
+    // and f is the desired tone frequency
+    return static_cast<uint16_t>(
+        static_cast<double>(1 << 16) *
+        frequency /
+        static_cast<double>(SAMPLE_FREQUENCY)
+    );
+};
 
 
-
-
-
-
-int main()
+int main(int argc, char** argv)
 {
+    if (argc < 2)
+    {
+        std::cerr << "ERROR: Must provide path to patch config file" << std::endl;
+        return 1;
+    }
+
+    auto patchConfig = PatchConfig::load(argv[1]);
+    std::cout << "Setting up patch " << patchConfig.getName() << std::endl;
+
     Synth synth;
     synth.reset();
 
-    // Server server;
-    // std::atomic<bool> serverRunning { true };
-    // std::thread serverThread { [&server, &serverRunning]() {
-    //     printf("Server start\n");
-    //     // server.start();
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(20000));
-    //     printf("Server over \n");
-    //     serverRunning = false;
-    // } };
-
-
-    auto phaseStepForFrequency = [](double frequency) -> uint16_t {
-        // Formula:
-        // phaseStep = 2^N * f / FS
-        // where N is the number of bits of phase accumulation
-        // FS is the sample frequency
-        // and f is the desired tone frequency
-        return static_cast<uint16_t>(
-            static_cast<double>(1 << 16) *
-            frequency /
-            static_cast<double>(SAMPLE_FREQUENCY)
-        );
-    };
-
-
-
-    auto patchConfig = PatchConfig::load("patches/test1.json");
-
-    // printf("Setting up patch \"%s\" \n", patchConfig["name"]);
-    std::cout << "Setting up patch " << patchConfig.getName() << std::endl;
-    // std::cout << "Setting up patch " << patchConfig["name"] << std::endl;
-
-    // TODO: Input validation
-
-
-    // With a single operator we still get the crazy glitch at the start,
-    // but you can't hear it.
-    // Besides, this other glitch lasts way longer and only shows up
-    // when modulating.
-
-    // One option would be to implement a second version in software
-    // using std::sin, floating point, etc. and compare the simulated
-    // version against it.
-
-
-    for (int voiceNum = 1; voiceNum <= 16; voiceNum++)
-    {
-
-    }
 
     double noteBaseFrequency = 440.0;
 
@@ -132,43 +99,12 @@ int main()
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
 
-
-
-
-    //         // case 5:
-    //         //     phaseStep = phaseStepForFrequency(220.0);
-    //         //     setEnvelope(
-    //         //         1.0,  // attack level
-    //         //         0.2,  // sustain level
-    //         //         0.001,  // attack rate
-    //         //         0.05,  // decay rate
-    //         //         0.005   // release rate
-    //         //     );
-    //         //     break;
-
-    //         // case 6:
-    //         //     phaseStep = phaseStepForFrequency(440.0);
-    //         //     setEnvelope(
-    //         //         1.0,  // attack level
-    //         //         0.7,  // sustain level
-    //         //         0.05,  // attack rate
-    //         //         0.0005,  // decay rate
-    //         //         0.005   // release rate
-    //         //     );
-    //         //     break;
-
             if (voiceNum == 1)
             {
                 synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
             }
-
-
         }
-
     }
-
-
-
 
     // TODO: Graphics?
     // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
@@ -185,8 +121,6 @@ int main()
     {
         synth.tick();
     }
-
-
 
     // https://wiki.libsdl.org/SDL_AudioSpec
     SDL_AudioSpec want, have;
@@ -211,26 +145,6 @@ int main()
 
     SDL_PauseAudioDevice(device, 0);
 
-    // SDL_Delay(seconds * 1000 + 500);
-    // while (true)
-    // for (int t = 0; t < seconds * 1000; t += SLEEP_PERIOD)
-    const uint32_t SLEEP_PERIOD = 10;
-
-    // while (serverRunning)
-    // {
-    //     Command command;
-    //     while (server.getCommand(command))
-    //     {
-    //         printf("Setting register %04x to %04x \n", command.registerNumber, command.registerValue);
-    //         synth.writeRegister(command.registerNumber, command.registerValue);
-    //     }
-
-    //     // Should really time above and delay by extra time
-    //     // std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_PERIOD));
-    //     SDL_Delay(10);
-    // }
-    // serverThread.join();
-
     // TODO
     SDL_Delay(static_cast<uint32_t>(seconds * 1000));
 
@@ -238,5 +152,4 @@ int main()
     SDL_Quit();
 
     return 0;
-
 }

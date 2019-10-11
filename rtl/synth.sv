@@ -83,7 +83,7 @@ integer operatorNumber;
 always_ff @ (posedge i_Clock) begin
     if (i_Reset) begin
         for (voiceNumber = 1; voiceNumber <= 16; voiceNumber = voiceNumber + 1)
-            r_CoreConfig.VoiceConfigs[voiceNumber - 1].KeyOn <= 0;
+            `VOICE_CONFIG.KeyOn <= 0;
     end
 
 
