@@ -123,7 +123,7 @@ public:
     RawOperatorConfig getOp(int opNum)
     {
         assert(1 <= opNum && opNum <= 6);
-        auto option = m_Json["operators"][opNum];
+        auto option = m_Json["operators"][opNum - 1];
         return RawOperatorConfig { option };
     }
 
