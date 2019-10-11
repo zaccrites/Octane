@@ -7,7 +7,8 @@ Synth::Synth() :
     m_Synth {},
     m_SampleBuffer {},
     m_SampleCounter {0},
-    m_DataFile { fopen("data.csv", "w") }
+    m_DataFile { fopen("data.csv", "w") },
+    m_t {0.0}
 {
 }
 
@@ -16,6 +17,7 @@ Synth::~Synth()
     fclose(m_DataFile);
 }
 
+#include <cmath>
 void Synth::tick()
 {
     m_Synth.i_Clock = 0;
@@ -27,8 +29,25 @@ void Synth::tick()
     {
         int16_t sample = m_Synth.o_Sample;
         m_SampleBuffer.push_front(sample);
-        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
+
+        // TODO: Generate an "expected" sample as well
+        int16_t expectedSample = static_cast<int16_t>(
+            0x7fff *
+            std::sin(
+                2.0 * M_PI * 440.0 * m_t
+                + std::sin(2.0 * M_PI * 880.0 * m_t)
+            )
+            / 16.0
+        );
+
+        fprintf(m_DataFile, "%zu,%d,%d\n", m_SampleCounter++, sample, expectedSample);
     }
+
+    // We execute 96 clock cycles for each audio sample (at 44.1 kHz),
+    // so our running clock frequency is 4.2336 MHz (period = 232.6 ns).
+    // Note that adding additional operators, voices, or increasing the
+    // audio sampling rate will increase the running frequency.
+    m_t += 1.0 / (96 * 44.1e3);
 }
 
 
@@ -37,6 +56,8 @@ void Synth::reset()
     m_Synth.i_Reset = 1;
     tick();
     m_Synth.i_Reset = 0;
+
+    m_t = 0.0;
 }
 
 

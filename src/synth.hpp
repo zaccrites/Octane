@@ -55,6 +55,10 @@ private:
     size_t m_SampleCounter;
     FILE* m_DataFile;
 
+
+    /// Time elapsed since last reset
+    double m_t;
+
 };
 
 
