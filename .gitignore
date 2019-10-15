@@ -3,6 +3,8 @@ data.csv
 data.png
 *.ttf
 
+# *.mid
+
 *.sublime-workspace
 .DS_Store
 

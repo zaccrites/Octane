@@ -8,6 +8,29 @@ HOST = 'localhost'
 PORT = 5001
 
 
+# Note that python-rtmidi can be used to communicate directly over
+# a MIDI port if desired (instead of a network interface)
+import mido
+
+# For Pokemon Gold MIDI music files:
+# https://www.khinsider.com/midi/gameboy/pokemon-gold
+mid = mido.MidiFile('opening.mid')
+for i, midi_msg in enumerate(mid.play()):
+    # import pdb; pdb.set_trace()
+    print(i, midi_msg)
+sys.exit(0)
+
+# Instead of an interactive keyboard, I guess just send messages and have
+# the simulator prepare a complete song.
+
+# Can either parse MIDI files for existing songs to replicate,
+# or send custom sequences to test e.g. operator combinations
+# with values as compared to KQ Dixie
+
+
+
+
+
 def set_registers(assignments):
     commands = []
     for reg_number, value in assignments:

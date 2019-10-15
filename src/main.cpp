@@ -61,10 +61,16 @@ int main(int argc, char** argv)
     synth.reset();
 
 
-    double noteBaseFrequency = 440.0;
 
     for (uint16_t voiceNum = 1; voiceNum <= 16; voiceNum++)
     {
+        double noteBaseFrequency = 440.0;
+        if (voiceNum == 2)
+        {
+            noteBaseFrequency = 150.0;
+        }
+
+
         auto algorithmNumber = patchConfig.getAlgorithm();
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / patchConfig.getNumCarriers()));
@@ -98,11 +104,11 @@ int main(int argc, char** argv)
 
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
+        }
 
-            if (voiceNum == 1)
-            {
-                synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
-            }
+        if (voiceNum == 1 || voiceNum == 2)
+        {
+            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
         }
     }
 
