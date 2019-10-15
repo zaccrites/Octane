@@ -8,7 +8,7 @@ module waveform_generator (
     // 1 - Square wave (TODO: configurable PWM)
     input logic i_Waveform,
 
-    output logic signed [15:0] o_Amplitude
+    output logic signed [15:0] o_Value
 );
 
 // Each waveform should take three clock cycles!
@@ -44,9 +44,15 @@ module waveform_generator (
 initial $readmemh("roms/sine_rom.hex", r_SineTable);
 logic unsigned [14:0] r_SineTable[2047:0];
 logic unsigned [10:0] r_SineTableIndex;
-logic [1:0]  r_NegateSine;
+
+logic r_NegateSine [2];
+
+/// Quarter-wave sine amplitude
 logic unsigned [15:0] r_SineAmplitude;
-logic signed [15:0] w_SineAmplitude;
+
+/// Full-wave sine value (signed amplitude)
+logic signed [15:0] w_SineValue;
+
 
 always_ff @ (posedge i_Clock) begin
     // Stage 1: Compute Index and Negate Flag
@@ -58,14 +64,14 @@ always_ff @ (posedge i_Clock) begin
     r_SineAmplitude <= {1'b0, r_SineTable[r_SineTableIndex]};
 end
 // Negate the value, if necessary, before output.
-assign w_SineAmplitude = r_NegateSine[1] ? ~r_SineAmplitude : r_SineAmplitude;
+assign w_SineValue = r_NegateSine[1] ? ~r_SineAmplitude : r_SineAmplitude;
 
 
 // Stage 3: Output the computed value
 always_ff @ (posedge i_Clock) begin
     case (i_Waveform)
-        0 : o_Amplitude <= w_SineAmplitude;
-        1 : o_Amplitude <= w_SineAmplitude[15] ? 16'h8000 : 16'h7fff;  // Square wave
+        0 : o_Value <= w_SineValue;
+        1 : o_Value <= w_SineValue[15] ? 16'h8000 : 16'h7fff;  // Square wave
     endcase
 end
 

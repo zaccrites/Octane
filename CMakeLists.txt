@@ -76,12 +76,15 @@ target_compile_options(synth PRIVATE
 
     -Werror=return-type
     -Werror=uninitialized
-    -Werror=sometimes-uninitialized
+    # -Werror=sometimes-uninitialized
 
     -fdiagnostics-color
 
-    -O2
-    # -g
+    # -O2
+
+    -g
+    -Og
+    -rdynamic
 
 )
 

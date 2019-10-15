@@ -1,14 +1,14 @@
 {
-	"folders":
-	[
-		{
-			"path": ".",
+    "folders":
+    [
+        {
+            "path": ".",
             "folder_exclude_patterns": [
                 "vendor"
             ]
-		},
-		{
-			"path": "/Users/zaccrites/Code/synth_OLD"
-		}
-	]
+        },
+        {
+            "path": "../synth_OLD"
+        }
+    ]
 }

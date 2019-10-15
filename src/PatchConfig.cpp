@@ -19,7 +19,7 @@ class RawOperatorConfig
 {
 public:
 
-    RawOperatorConfig(json& rawJson) : m_Json {rawJson}
+    RawOperatorConfig(json& rawJson) : m_Json(rawJson)
     {
     }
 
@@ -122,9 +122,8 @@ public:
 
     RawOperatorConfig getOp(int opNum)
     {
-        assert(1 <= opNum && opNum <= 6);
-        auto option = m_Json["operators"][opNum - 1];
-        return RawOperatorConfig { option };
+        assert(0 <= opNum && opNum < 6);
+        return RawOperatorConfig { m_Json["operators"][opNum] };
     }
 
 
@@ -143,7 +142,7 @@ PatchConfig PatchConfig::load(const char* path)
     config.m_Algorithm = rawConfig.getAlgorithm();
     config.m_Name = rawConfig.getName();
 
-    for (int opNum = 1; opNum <= 6; opNum++)
+    for (int opNum = 0; opNum < 6; opNum++)
     {
         auto rawOpConfig = rawConfig.getOp(opNum);
         auto& opConfig = config.getOperatorConfig(opNum);
@@ -164,7 +163,7 @@ PatchConfig PatchConfig::load(const char* path)
 
 
 
-
+// TODO: Zero-based index these too
 uint16_t PatchConfig::getNumCarriers() const
 {
     switch (m_Algorithm)

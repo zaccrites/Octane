@@ -43,11 +43,11 @@ void Synth::tick()
         fprintf(m_DataFile, "%zu,%d,%d\n", m_SampleCounter++, sample, expectedSample);
     }
 
-    // We execute 96 clock cycles for each audio sample (at 44.1 kHz),
-    // so our running clock frequency is 4.2336 MHz (period = 232.6 ns).
+    // We execute 256 clock cycles for each audio sample (at 44.1 kHz),
+    // so our running clock frequency is 11.2896 MHz (period = 88.577 ns).
     // Note that adding additional operators, voices, or increasing the
     // audio sampling rate will increase the running frequency.
-    m_t += 1.0 / (96 * 44.1e3);
+    m_t += 1.0 / (256 * 44.1e3);
 }
 
 
@@ -61,7 +61,7 @@ void Synth::reset()
 }
 
 
-void Synth::writeRegister(uint16_t registerNumber, uint16_t value)
+void Synth::writeRegister(uint16_t registerNumber, uint8_t value)
 {
     m_Synth.i_RegisterNumber = registerNumber;
     m_Synth.i_RegisterValue = value;
@@ -100,20 +100,15 @@ void Synth::writeSampleBytes(uint8_t* pRawStream, size_t number)
 }
 
 
-void Synth::writeOperatorRegister(uint16_t voiceNum, uint16_t operatorNum, uint16_t parameter, uint16_t value)
+void Synth::writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint8_t value)
 {
-    // FUTURE: This may need to be reworked if I ever want e.g.
-    // 8 operators and 32 voices, as Voice-level configuration
-    // won't be able to go in operator slot 0 any more with only 3 bits.
-    const uint16_t registerNumber =
-        ((voiceNum & 0x001f) << 11) |        // 5 bit voice
-        ((operatorNum & 0x0007) << 8) |      // 3 bit operator
-        (parameter & 0x00ff);                // 8 bit parameter
+    const uint16_t registerNumber = (0b11 << 14) | (parameter << 8) | (operatorNum << 5) | voiceNum;
     writeRegister(registerNumber, value);
 }
 
 
-void Synth::writeVoiceRegister(uint16_t voiceNum, uint16_t parameter, uint16_t value)
+void Synth::writeVoiceRegister(uint8_t voiceNum, uint8_t parameter, uint8_t value)
 {
-    writeOperatorRegister(voiceNum, 0, parameter, value);
+    const uint16_t registerNumber = (0b10 << 14) | (parameter << 8) | voiceNum;
+    writeRegister(registerNumber, value);
 }

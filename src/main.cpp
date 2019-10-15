@@ -43,11 +43,55 @@ uint16_t phaseStepForFrequency(double frequency) {
         frequency /
         static_cast<double>(SAMPLE_FREQUENCY)
     );
-};
+}
+
+
+
+// https://stackoverflow.com/a/3356421
+#include <stdexcept>
+#include <execinfo.h>
+void terminate_handler()
+{
+    // On using addr2line:
+    // https://stackoverflow.com/a/51597989
+    //
+    // Example: addr2line -afC -e ../synth-build/synth +0x69af
+
+    std::cerr << "Printing stack trace of uncaught exception: \n";
+    std::exception_ptr eptr = std::current_exception();
+    try
+    {
+        // assert(eptr);
+        std::rethrow_exception(eptr);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "what(): " << e.what() << "\n";
+    }
+    std::cerr << "------------------------------------------------------------"
+              << std::endl;
+
+    void *trace_elems[20];
+    int trace_elem_count = backtrace(trace_elems, 20);
+    char **stack_syms = backtrace_symbols(trace_elems, trace_elem_count);
+    for (int i = 0; i < trace_elem_count; i++)
+    {
+        std::cout << stack_syms[trace_elem_count - i - 1] << std::endl;
+    }
+    free(stack_syms);
+
+    std::cerr << "------------------------------------------------------------"
+              << std::endl;
+
+    exit(1);
+}
+
 
 
 int main(int argc, char** argv)
 {
+    std::set_terminate(terminate_handler);
+
     if (argc < 2)
     {
         std::cerr << "ERROR: Must provide path to patch config file" << std::endl;
@@ -62,7 +106,7 @@ int main(int argc, char** argv)
 
 
 
-    for (uint16_t voiceNum = 1; voiceNum <= 16; voiceNum++)
+    for (uint16_t voiceNum = 0; voiceNum < 16; voiceNum++)
     {
         double noteBaseFrequency = 440.0;
         if (voiceNum == 2)
@@ -73,37 +117,38 @@ int main(int argc, char** argv)
 
         auto algorithmNumber = patchConfig.getAlgorithm();
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / patchConfig.getNumCarriers()));
+        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / patchConfig.getNumCarriers()));
         // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0));
 
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, false);
 
-        for (uint16_t opNum = 1; opNum <= 6; opNum++)
+        for (uint16_t opNum = 0; opNum < 6; opNum++)
         {
             auto opConfig = patchConfig.getOperatorConfig(opNum);
 
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ATTACK_LEVEL, opConfig.getAttackLevel());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_SUSTAIN_LEVEL, opConfig.getSustainLevel());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ATTACK_RATE, opConfig.getAttackRate());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_DECAY_RATE, opConfig.getDecayRate());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_RELEASE_RATE, opConfig.getReleaseRate());
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ATTACK_LEVEL, opConfig.getAttackLevel());
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_SUSTAIN_LEVEL, opConfig.getSustainLevel());
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ATTACK_RATE, opConfig.getAttackRate());
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_DECAY_RATE, opConfig.getDecayRate());
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_RELEASE_RATE, opConfig.getReleaseRate());
 
-            uint16_t waveform;
-            switch (opConfig.getWaveform())
-            {
-                case OperatorConfig::Waveform::Square:
-                    waveform = Synth::OP_WAVEFORM_SQUARE;
-                    break;
+            // uint16_t waveform;
+            // switch (opConfig.getWaveform())
+            // {
+            //     case OperatorConfig::Waveform::Square:
+            //         waveform = Synth::OP_WAVEFORM_SQUARE;
+            //         break;
 
-                case OperatorConfig::Waveform::Sine:
-                default:
-                    waveform = Synth::OP_WAVEFORM_SINE;
-                    break;
-            }
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_WAVEFORM, waveform);
+            //     case OperatorConfig::Waveform::Sine:
+            //     default:
+            //         waveform = Synth::OP_WAVEFORM_SINE;
+            //         break;
+            // }
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_WAVEFORM, waveform);
 
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_HIGH, phaseStep >> 8);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_LOW, phaseStep & 0xff);
         }
 
         if (voiceNum == 1 || voiceNum == 2)
