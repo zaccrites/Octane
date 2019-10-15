@@ -55,21 +55,23 @@ public:
         }
     }
 
-    uint16_t getAttackLevel() { return getAdsrValue("attack_level", 255); }
-    uint16_t getSustainLevel() { return getAdsrValue("sustain_level", 255); }
-    uint16_t getAttackRate() { return getAdsrValue("attack_rate", 255); }
-    uint16_t getDecayRate() { return getAdsrValue("decay_rate", 255); }
-    uint16_t getReleaseRate() { return getAdsrValue("release_rate", 255); }
+
+    // TODO: Use L1-4 and R1-4 instead
+
+    // uint8_t getAttackLevel() { return getAdsrValue("attack_level", 255); }
+    // uint8_t getSustainLevel() { return getAdsrValue("sustain_level", 255); }
+    // uint8_t getAttackRate() { return getAdsrValue("attack_rate", 255); }
+    // uint8_t getDecayRate() { return getAdsrValue("decay_rate", 255); }
+    // uint8_t getReleaseRate() { return getAdsrValue("release_rate", 255); }
 
 
 private:
 
-    uint16_t getAdsrValue(const char* key, uint8_t defaultValue)
+    uint8_t getAdsrValue(const char* key, uint8_t defaultValue)
     {
         auto option = m_Json[key];
         uint8_t rawValue = option.is_number() ? option.get<uint8_t>() : defaultValue;
-        // Convert unsigned 8 bit to "signed" 7 bit
-        return rawValue << 7;
+        return rawValue;
     }
 
 
@@ -122,7 +124,7 @@ public:
 
     RawOperatorConfig getOp(int opNum)
     {
-        assert(0 <= opNum && opNum < 6);
+        assert(0 <= opNum && opNum < 8);
         return RawOperatorConfig { m_Json["operators"][opNum] };
     }
 
@@ -142,18 +144,19 @@ PatchConfig PatchConfig::load(const char* path)
     config.m_Algorithm = rawConfig.getAlgorithm();
     config.m_Name = rawConfig.getName();
 
-    for (int opNum = 0; opNum < 6; opNum++)
+    for (int opNum = 0; opNum < 8; opNum++)
     {
         auto rawOpConfig = rawConfig.getOp(opNum);
         auto& opConfig = config.getOperatorConfig(opNum);
 
         opConfig.m_Waveform = rawOpConfig.getWaveform();
         opConfig.m_FrequencyRatio = rawOpConfig.getFrequencyRatio();
-        opConfig.m_AttackLevel = rawOpConfig.getAttackLevel();
-        opConfig.m_SustainLevel = rawOpConfig.getSustainLevel();
-        opConfig.m_AttackRate = rawOpConfig.getAttackRate();
-        opConfig.m_DecayRate = rawOpConfig.getDecayRate();
-        opConfig.m_ReleaseRate = rawOpConfig.getReleaseRate();
+
+        // opConfig.m_AttackLevel = rawOpConfig.getAttackLevel();
+        // opConfig.m_SustainLevel = rawOpConfig.getSustainLevel();
+        // opConfig.m_AttackRate = rawOpConfig.getAttackRate();
+        // opConfig.m_DecayRate = rawOpConfig.getDecayRate();
+        // opConfig.m_ReleaseRate = rawOpConfig.getReleaseRate();
     }
 
     return config;

@@ -121,9 +121,10 @@ logic signed [15:0] r_WaveformValue [27];
 
 
 
+logic signed [15:0] r_Subsample;
 logic r_SubsampleReady;
 
-// Sample generation
+// Subsample generation
 integer i;
 always_ff @ (posedge i_Clock) begin
 
@@ -145,9 +146,10 @@ always_ff @ (posedge i_Clock) begin
     r_Phase <= r_PhaseAcc[r_CycleNumber[0]];  // TODO: Modulation with feedback
 
     // if (r_CycleNumber[0][4:0] == 0) begin
-    //     $display("r_PhaseStep[%d] = %d", r_CycleNumber[0], r_PhaseStep[r_CycleNumber[0]]);
-    //     $display("r_PhaseAcc[%d] = %d", r_CycleNumber[0], r_PhaseAcc[r_CycleNumber[0]]);
-    // end
+    begin
+        // $display("r_PhaseStep[%d] = %d", r_CycleNumber[0], r_PhaseStep[r_CycleNumber[0]]);
+        // $display("r_PhaseAcc[%d] = %d", r_CycleNumber[0], r_PhaseAcc[r_CycleNumber[0]]);
+    end
 
     // Stage 2: waveform generation
     //  (see waveform_generator module)
@@ -176,16 +178,44 @@ always_ff @ (posedge i_Clock) begin
 
 
 
+    r_Subsample <= r_WaveformValue[25];
 
-    // r_SubsampleReady <= r_CycleNumber[31][7:5] == 3'd7;
-    r_SubsampleReady <= r_CycleNumber[31] == 8'd255;
+    r_SubsampleReady <= r_CycleNumber[31][7:5] == 3'd7;
     o_SampleReady <= r_CycleNumber[31] == 8'd255;
 
-
-    o_Sample <= r_WaveformValue[25];
+    if (r_CycleNumber[31][7:5] == 3'd7) begin
+        // $display("r_CycleNumber[31] == %d", r_CycleNumber[31]);
+    end
 
 
 end
+
+
+
+// Subsample combination and output
+
+logic signed [20:0] r_SampleBuffer;
+logic signed [20:0] w_SignExtendedSubsample;
+assign w_SignExtendedSubsample = {{5{r_Subsample[15]}}, r_Subsample};
+
+logic r_StartingNewSample;
+always_ff @ (posedge i_Clock) begin
+
+    r_StartingNewSample <= o_SampleReady;
+    if (i_Reset || r_StartingNewSample) begin
+        r_SampleBuffer <= w_SignExtendedSubsample;
+    end
+    else if (r_SubsampleReady) begin
+        r_SampleBuffer <= r_SampleBuffer + w_SignExtendedSubsample;
+        // $display("%d", w_SignExtendedSubsample);
+    end
+
+    if (o_SampleReady) begin
+        o_Sample <= r_SampleBuffer[20:5];
+    end
+
+end
+
 
 
 

@@ -52,7 +52,7 @@
             "release_rate": 255,
 
             "waveform": "sine",
-            "frequency_ratio": 4.00
+            "frequency_ratio": 1.00
         },
 
         {
@@ -65,7 +65,7 @@
             "release_rate": 255,
 
             "waveform": "sine",
-            "frequency_ratio": 2.05
+            "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 6",
@@ -78,6 +78,32 @@
 
             "waveform": "sine",
             "frequency_ratio": 1.00
+        },
+
+        {
+            "comment": "Operator 7",
+
+            "attack_level": 0,
+            "sustain_level": 128,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 1.00
+        },
+        {
+            "comment": "Operator 8",
+
+            "attack_level": 255,
+            "sustain_level": 255,
+            "attack_rate": 255,
+            "decay_rate": 255,
+            "release_rate": 255,
+
+            "waveform": "sine",
+            "frequency_ratio": 0.5
         }
+
     ]
 }
