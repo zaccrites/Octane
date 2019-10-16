@@ -83,11 +83,20 @@ def main():
         axes[get_index(0)].set_xlabel('Sample Number')
         axes[get_index(0)].set_ylabel('Amplitude')
 
+        # TODO: Make this a command-line option for easier debugging
         axes[get_index(1)].set_title(f'Frequency Domain ({name})')
-        axes[get_index(1)].semilogx(freq_labels, sample_fft, 'r')
-        axes[get_index(1)].set_xlim([1, 20000])
         axes[get_index(1)].set_xlabel('Frequency [Hz]')
         axes[get_index(1)].set_ylabel('Relative Strength')
+        #
+        use_linear_fft_plot = True
+        if use_linear_fft_plot:
+            import matplotlib.ticker as plticker
+            axes[get_index(1)].plot(freq_labels, sample_fft, 'r')
+            axes[get_index(1)].set_xlim([0, 33 * 100])
+            axes[get_index(1)].xaxis.set_major_locator(plticker.MultipleLocator(base=200.0))
+        else:
+            axes[get_index(1)].semilogx(freq_labels, sample_fft, 'r')
+            axes[get_index(1)].set_xlim([1, 20000])
 
         for ax in axes.flat:
             ax.grid(True, which='both', ls='-', color='0.65')

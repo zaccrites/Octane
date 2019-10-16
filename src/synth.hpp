@@ -33,6 +33,11 @@ public:
         return m_SampleBuffer;
     }
 
+    Vsynth& getRawModel()
+    {
+        return m_Synth;
+    }
+
 public:
     static const uint8_t VOICE_PARAM_NOTEON  { 0x00 };
     static const uint8_t VOICE_PARAM_ALGORITHM  { 0x01 };

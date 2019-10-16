@@ -6,13 +6,6 @@
 #include <SDL2/SDL.h>
 
 #include "synth.hpp"
-// #include "server.hpp"
-
-#include <thread>
-#include <chrono>
-#include <atomic>
-
-
 #include "PatchConfig.hpp"
 
 
@@ -105,14 +98,26 @@ int main(int argc, char** argv)
     synth.reset();
 
 
-
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
-        double noteBaseFrequency = 440.0;
-        // if (voiceNum == 2)
-        // {
-        //     noteBaseFrequency = 150.0;
-        // }
+        double noteBaseFrequency;
+        switch (voiceNum)
+        {
+            case 0:
+                noteBaseFrequency = 100.0;
+                break;
+            case 1:
+                noteBaseFrequency = 200.0;
+                break;
+            case 31:
+                noteBaseFrequency = 1000.0;
+                break;
+            default:
+                noteBaseFrequency = 2000.0;
+                break;
+        }
+        // noteBaseFrequency = 100.0 * (voiceNum + 1);
+        noteBaseFrequency = 1000.0;
 
 
         auto algorithmNumber = patchConfig.getAlgorithm();
@@ -136,11 +141,15 @@ int main(int argc, char** argv)
         {
             auto opConfig = patchConfig.getOperatorConfig(opNum);
 
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ATTACK_LEVEL, opConfig.getAttackLevel());
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_SUSTAIN_LEVEL, opConfig.getSustainLevel());
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ATTACK_RATE, opConfig.getAttackRate());
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_DECAY_RATE, opConfig.getDecayRate());
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_RELEASE_RATE, opConfig.getReleaseRate());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L1, opConfig.getEnvelopeL1());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L2, opConfig.getEnvelopeL2());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L3, opConfig.getEnvelopeL3());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L4, opConfig.getEnvelopeL4());
+
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R1, opConfig.getEnvelopeR1());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R2, opConfig.getEnvelopeR2());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R3, opConfig.getEnvelopeR3());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R4, opConfig.getEnvelopeR4());
 
             // uint16_t waveform;
             // switch (opConfig.getWaveform())
@@ -157,16 +166,45 @@ int main(int argc, char** argv)
             // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_WAVEFORM, waveform);
 
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
-            // printf("phaseStep = %f \n", opConfig.getFrequencyRatio());
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_HIGH, phaseStep >> 8);
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_LOW, phaseStep & 0xff);
         }
+    }
 
-        // if (voiceNum == 1 || voiceNum == 2)
+    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+    {
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, true);
+    }
+
+
+    printf("Registers: \n");
+    printf("Phase Step: \n");
+    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+    {
+        if ( ! (voiceNum == 0 || voiceNum == 31)) continue;
+
+        const bool noteOn = synth.getRawModel().synth__DOT__r_NoteOn[voiceNum];
+        printf("  %d NoteOn = %d \n", voiceNum, noteOn);
+
+        for (uint8_t opNum = 0; opNum < 8; opNum++)
         {
-            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, true);
+            const uint8_t index = (opNum << 5) | voiceNum;
+            const uint16_t phaseStep = synth.getRawModel().synth__DOT__r_PhaseStep[index];
+            printf("  %d.%d phaseStep = 0x%04x \n", voiceNum, opNum, phaseStep);
         }
     }
+
+
+    double seconds = 1.0;
+    auto& rBuffer = synth.getSampleBuffer();
+
+    while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
+    {
+        synth.tick();
+    }
+
+
+    #if 0
 
     // TODO: Graphics?
     // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
@@ -174,14 +212,6 @@ int main(int argc, char** argv)
     {
         std::cerr << "Failed to init SDL" << std::endl;
         return 1;
-    }
-
-
-    double seconds = 3.0;
-    auto& rBuffer = synth.getSampleBuffer();
-    while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
-    {
-        synth.tick();
     }
 
     // https://wiki.libsdl.org/SDL_AudioSpec
@@ -205,13 +235,14 @@ int main(int argc, char** argv)
     }
 
 
-    SDL_PauseAudioDevice(device, 0);
-
     // TODO
-    SDL_Delay(static_cast<uint32_t>(seconds * 1000));
+    // SDL_PauseAudioDevice(device, 0);
+    // SDL_Delay(static_cast<uint32_t>(seconds * 1000));
 
     SDL_CloseAudio();
     SDL_Quit();
+
+    #endif
 
     return 0;
 }

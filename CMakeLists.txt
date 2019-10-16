@@ -68,7 +68,7 @@ target_compile_options(synth PRIVATE
     -Wall
     -Wextra
     # -Werror
-    -Weffc++
+    # -Weffc++
     -Wshadow
     -Wcast-qual
     -Wold-style-cast

@@ -25,22 +25,23 @@ public:
     Waveform getWaveform() const { return m_Waveform; }
     double getFrequencyRatio() const { return m_FrequencyRatio; }
 
-    uint8_t getAttackLevel() const { return m_AttackLevel; }
-    uint8_t getSustainLevel() const { return m_SustainLevel; }
-    uint8_t getAttackRate() const { return m_AttackRate; }
-    uint8_t getDecayRate() const { return m_DecayRate; }
-    uint8_t getReleaseRate() const { return m_ReleaseRate; }
+    uint8_t getEnvelopeL1() const { return m_EnvelopeLevels[0]; }
+    uint8_t getEnvelopeL2() const { return m_EnvelopeLevels[1]; }
+    uint8_t getEnvelopeL3() const { return m_EnvelopeLevels[2]; }
+    uint8_t getEnvelopeL4() const { return m_EnvelopeLevels[3]; }
+
+    uint8_t getEnvelopeR1() const { return m_EnvelopeRates[0]; }
+    uint8_t getEnvelopeR2() const { return m_EnvelopeRates[1]; }
+    uint8_t getEnvelopeR3() const { return m_EnvelopeRates[2]; }
+    uint8_t getEnvelopeR4() const { return m_EnvelopeRates[3]; }
 
 private:
     Waveform m_Waveform;
     double m_FrequencyRatio;  // TODO: Use fixed point instead
     // What about coarse vs fine vs detune? I imagine these are just abstractions over an octave/step/fine-grained percentage change of frequency.
 
-    uint8_t m_AttackLevel;
-    uint8_t m_SustainLevel;
-    uint8_t m_AttackRate;
-    uint8_t m_DecayRate;
-    uint8_t m_ReleaseRate;
+    uint8_t m_EnvelopeLevels[4];
+    uint8_t m_EnvelopeRates[4];
 
 };
 

@@ -120,14 +120,8 @@ always_ff @ (posedge i_Clock) begin
             //
             {2'b10, 6'h00}: r_NoteOn[w_VoiceRegIndex] <= i_RegisterValue[0];
             {2'b10, 6'h01}: r_Algorithm[w_VoiceRegIndex] <= i_RegisterValue;
-            {2'b10, 6'h02}: begin
-                $display("WROTE CARRIER COMP HIGH ON %d (= %x)", w_VoiceRegIndex, i_RegisterValue);
-                r_CarrierComp[w_VoiceRegIndex][15:8] <= i_RegisterValue;  // TODO: Remove
-            end
-            {2'b10, 6'h03}: begin
-                $display("WROTE CARRIER COMP LOW ON %d (= %x)", w_VoiceRegIndex, i_RegisterValue);
-                r_CarrierComp[w_VoiceRegIndex][7:0] <= i_RegisterValue;  // TODO: Remove
-            end
+            {2'b10, 6'h02}: r_CarrierComp[w_VoiceRegIndex][15:8] <= i_RegisterValue;  // TODO: Remove
+            {2'b10, 6'h03}: r_CarrierComp[w_VoiceRegIndex][7:0] <= i_RegisterValue;  // TODO: Remove
 
             default: /* ignore writes to invalid registers */ ;
         endcase
@@ -139,19 +133,119 @@ end
 /// Track the currently active voice operator
 logic unsigned [7:0] r_CycleNumber [31:0];
 `define CYCLE_VOICE(index)  r_CycleNumber[index][4:0]
+`define CYCLE_OPERATOR(index)  r_CycleNumber[index][7:5]
 
-
-
-
-// Envelope generation
-
-logic signed [15:0] r_EnvelopeCurrentLevel [256];
-
+// Cycle counter state machine
 always_ff @ (posedge i_Clock) begin
-    // TODO: Envelope state machine with NoteOn
+    // Each clock cycle will compute a new value for a voice operator.
+    // The order is the following:
+    //
+    // |    OP1     |    OP2     | ... |    OP7     |    OP8     |
+    // | V1 ... V32 | V1 ... V32 | ... | V1 ... V32 | V1 ... V32 |
+    // |            |            |     |            |            |
+    // 0            32           64    192          224          256
+    //
+    if (i_Reset)
+        r_CycleNumber[0] <= 0;
+    else
+        r_CycleNumber[0] <= r_CycleNumber[0] + 1;
+end
 
-    r_EnvelopeCurrentLevel[r_CycleNumber[0]] <= $signed(16'h7fff);
 
+
+
+
+
+typedef enum logic [2:0] {
+    MUTE,
+    ATTACK,
+    DECAY,
+    RECOVER,
+    SUSTAIN,
+    RELEASE
+} EnvelopeState_t;
+
+
+// TODO: Can these be stored together in a single block RAM?
+EnvelopeState_t r_EnvelopeState [256];
+// logic signed [12:0] r_EnvelopeLevel [256];
+logic unsigned [7:0] r_EnvelopeLevel [256];
+
+logic unsigned [7:0] r_EnvelopeClockDivider;
+
+// Envelope generation state machine
+always_ff @ (posedge i_Clock) begin
+    `define STATE r_EnvelopeState[r_CycleNumber[0]]
+    `define L   r_EnvelopeLevel[r_CycleNumber[0]]
+    `define L1  r_EnvelopeL1[r_CycleNumber[0]]
+    `define L2  r_EnvelopeL2[r_CycleNumber[0]]
+    `define L3  r_EnvelopeL3[r_CycleNumber[0]]
+    `define L4  r_EnvelopeL4[r_CycleNumber[0]]
+    `define R1  r_EnvelopeR1[r_CycleNumber[0]]
+    `define R2  r_EnvelopeR2[r_CycleNumber[0]]
+    `define R3  r_EnvelopeR3[r_CycleNumber[0]]
+    `define R4  r_EnvelopeR4[r_CycleNumber[0]]
+    `define NOTE_ON  r_NoteOn[`CYCLE_VOICE(0)]
+    `define NOTE_OFF  ( ! `NOTE_ON)
+
+
+    // if (r_CycleNumber[0] == 0) begin
+    //     if (r_EnvelopeClockDivider[7])
+    //         r_EnvelopeClockDivider <= 0;
+    //     else
+    //         r_EnvelopeClockDivider <= r_EnvelopeClockDivider + 1;
+    // end
+
+    // if (r_EnvelopeClockDivider[7]) begin
+    //     case (`STATE)
+    //         /* MUTE */ default: begin
+    //             `L <= 0;
+    //             if (`NOTE_ON) `STATE <= ATTACK;
+    //         end
+
+    //         ATTACK: begin
+    //             `L <= `L + `R1;
+    //             if (`NOTE_OFF)       `STATE <= RELEASE;
+    //             else if (`L >= `L1)  `STATE <= DECAY;
+    //         end
+
+    //         DECAY: begin
+    //             `L <= `L - `R2;
+    //             if (`NOTE_OFF)       `STATE <= RELEASE;
+    //             else if (`L <= `L2)  `STATE <= RECOVER;
+    //         end
+
+    //         RECOVER: begin
+    //             `L <= `L + `R3;
+    //             if (`NOTE_OFF)       `STATE <= RELEASE;
+    //             else if (`L >= `L3)  `STATE <= SUSTAIN;
+    //         end
+
+    //         SUSTAIN: begin
+    //             `L <= `L3;
+    //             if (`NOTE_OFF) `STATE <= RELEASE;
+    //         end
+
+    //         RELEASE: begin
+    //             `L <= `L - `R4;
+    //             if (`L <= `L4) `STATE <= MUTE;
+    //         end
+    //     endcase
+    // end
+
+    `L <= `NOTE_ON ? 8'hff : 8'h00;
+
+
+    `undef L
+    `undef L1
+    `undef L2
+    `undef L3
+    `undef L4
+    `undef R1
+    `undef R2
+    `undef R3
+    `undef R4
+    `undef NOTE_ON
 end
 
 
@@ -200,32 +294,38 @@ logic signed [15:0] r_EnvelopeFactor;
 integer i;
 always_ff @ (posedge i_Clock) begin
 
-    // Each clock cycle will compute a new value for a voice operator.
-    // The order is the following:
-    //
-    // |    OP1     |    OP2     | ... |    OP7     |    OP8     |
-    // | V1 ... V32 | V1 ... V32 | ... | V1 ... V32 | V1 ... V32 |
-    // |            |            |     |            |            |
-    // 0            32           64    192          224          256
-    //
-    if (i_Reset)
-        r_CycleNumber[0] <= 0;
-    else
-        r_CycleNumber[0] <= r_CycleNumber[0] + 1;
+
+    // // Stage 1: accumulate and modulate phase
+    // // (1 clock cycle)
+    // r_PhaseAcc[r_CycleNumber[0]] <= r_PhaseAcc[r_CycleNumber[0]] + r_PhaseStep[r_CycleNumber[0]];
+    // r_Phase <= r_PhaseAcc[r_CycleNumber[0]];  // TODO: Modulation with feedback
 
 
     // Stage 1: accumulate and modulate phase
     // (1 clock cycle)
-    r_PhaseAcc[r_CycleNumber[0]] <= r_PhaseAcc[r_CycleNumber[0]] + r_PhaseStep[r_CycleNumber[0]];
+    if (r_NoteOn[`CYCLE_VOICE(0)])
+        r_PhaseAcc[r_CycleNumber[0]] <= r_PhaseAcc[r_CycleNumber[0]] + r_PhaseStep[r_CycleNumber[0]];
+    else
+        r_PhaseAcc[r_CycleNumber[0]] <= 0;
     r_Phase <= r_PhaseAcc[r_CycleNumber[0]];  // TODO: Modulation with feedback
+
+
+
 
     // Stage 1 (branch 2): Multi-carrier Amplitude Compensation
     // (4 clock cycles)
-    r_EnvelopeFactorProduct[0] <= r_EnvelopeCurrentLevel[r_CycleNumber[0]] * r_CarrierComp[`CYCLE_VOICE(0)];
+    r_EnvelopeFactorProduct[0] <= $signed({1'b0, r_EnvelopeLevel[r_CycleNumber[0]], 7'b0}) * r_CarrierComp[`CYCLE_VOICE(0)];
     r_EnvelopeFactorProduct[1] <= r_EnvelopeFactorProduct[0];
     r_EnvelopeFactorProduct[2] <= r_EnvelopeFactorProduct[1];
     r_EnvelopeFactor <= {r_EnvelopeFactorProduct[2][30:16], 1'b0};
 
+    if (`CYCLE_VOICE(0) inside {0, 1}) begin
+        // $display("voice %d: r_EnvelopeLevel[r_CycleNumber[0]] = %d", `CYCLE_VOICE(0), r_EnvelopeLevel[r_CycleNumber[0]]);
+    end
+
+    if (`CYCLE_VOICE(3) inside {0, 1}) begin
+        // $display("voice %d: r_EnvelopeFactor = %d", `CYCLE_VOICE(3), {r_EnvelopeFactorProduct[2][30:16], 1'b0});
+    end
 
     // Stage 2: waveform generation
     // (see waveform_generator module)
@@ -258,6 +358,11 @@ always_ff @ (posedge i_Clock) begin
     r_CycleNumber[7] <= r_CycleNumber[6];
 
 
+    if (`CYCLE_VOICE(7) inside {0, 1}) begin
+        // $display("voice %d: r_WaveformValue[7] = %d", `CYCLE_VOICE(7), {r_WaveformAmplitudeProduct[6][30:16], 1'b0});
+    end
+
+
     // Stage 4: filtering
     // TODO
 
@@ -268,40 +373,33 @@ always_ff @ (posedge i_Clock) begin
         r_CycleNumber[i] <= r_CycleNumber[i - 1];
     end
 
-
-    if (r_NoteOn[`CYCLE_VOICE(31)])
-        r_Subsample <= r_WaveformValue[31];
-    else
-        r_Subsample <= 0;
-
-    r_SubsampleReady <= r_CycleNumber[31][7:5] == 3'd7;
+    r_Subsample <= r_WaveformValue[31];
+    r_SubsampleReady <= `CYCLE_OPERATOR(31) == 3'd7;
     o_SampleReady <= r_CycleNumber[31] == 8'd255;
-
 end
 
+// always_comb begin
+//     r_SubsampleReady = r_CycleNumber[29][7:5] == 3'd7;
+//     o_SampleReady = r_CycleNumber[29] == 8'd255;
+// end
 
+
+
+
+logic signed [21:0] r_SampleBuffer;
+logic signed [21:0] w_SignExtendedSubsample;
+assign w_SignExtendedSubsample = {{6{r_Subsample[15]}}, r_Subsample};
 
 // Subsample combination and output
-
-logic signed [20:0] r_SampleBuffer;
-logic signed [20:0] w_SignExtendedSubsample;
-assign w_SignExtendedSubsample = {{5{r_Subsample[15]}}, r_Subsample};
-
-logic r_StartingNewSample;
 always_ff @ (posedge i_Clock) begin
 
-    r_StartingNewSample <= o_SampleReady;
-    if (i_Reset || r_StartingNewSample) begin
+    if (i_Reset || o_SampleReady)
         r_SampleBuffer <= w_SignExtendedSubsample;
-    end
-    else if (r_SubsampleReady) begin
+    else if (r_SubsampleReady)
         r_SampleBuffer <= r_SampleBuffer + w_SignExtendedSubsample;
-        // $display("%d", w_SignExtendedSubsample);
-    end
 
-    if (o_SampleReady) begin
+    if (o_SampleReady)
         o_Sample <= r_SampleBuffer[20:5];
-    end
 
 end
 

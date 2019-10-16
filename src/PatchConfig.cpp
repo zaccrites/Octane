@@ -55,29 +55,21 @@ public:
         }
     }
 
-
-    // TODO: Use L1-4 and R1-4 instead
-
-    // uint8_t getAttackLevel() { return getAdsrValue("attack_level", 255); }
-    // uint8_t getSustainLevel() { return getAdsrValue("sustain_level", 255); }
-    // uint8_t getAttackRate() { return getAdsrValue("attack_rate", 255); }
-    // uint8_t getDecayRate() { return getAdsrValue("decay_rate", 255); }
-    // uint8_t getReleaseRate() { return getAdsrValue("release_rate", 255); }
-
-
-private:
-
-    uint8_t getAdsrValue(const char* key, uint8_t defaultValue)
+    uint8_t getEnvelopeLevel(uint8_t index)
     {
-        auto option = m_Json[key];
-        uint8_t rawValue = option.is_number() ? option.get<uint8_t>() : defaultValue;
-        return rawValue;
+        auto option = m_Json["levels"];
+        return option[index];
+    }
+
+    uint8_t getEnvelopeRate(uint8_t index)
+    {
+        auto option = m_Json["rates"];
+        return option[index];
     }
 
 
 private:
     json m_Json;
-
 
 };
 
@@ -152,11 +144,11 @@ PatchConfig PatchConfig::load(const char* path)
         opConfig.m_Waveform = rawOpConfig.getWaveform();
         opConfig.m_FrequencyRatio = rawOpConfig.getFrequencyRatio();
 
-        // opConfig.m_AttackLevel = rawOpConfig.getAttackLevel();
-        // opConfig.m_SustainLevel = rawOpConfig.getSustainLevel();
-        // opConfig.m_AttackRate = rawOpConfig.getAttackRate();
-        // opConfig.m_DecayRate = rawOpConfig.getDecayRate();
-        // opConfig.m_ReleaseRate = rawOpConfig.getReleaseRate();
+        for (int i = 0; i < 4; i++)
+        {
+            opConfig.m_EnvelopeLevels[i] = rawOpConfig.getEnvelopeLevel(i);
+            opConfig.m_EnvelopeRates[i] = rawOpConfig.getEnvelopeRate(i);
+        }
     }
 
     return config;
