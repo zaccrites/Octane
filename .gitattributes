@@ -1,0 +1,7 @@
+
+# https://github.com/github/linguist#overrides
+#
+# Ultimately I'd like to eliminate the vendor directory and have CMake
+# download these at build time, but I'm skipping that for now.
+vendor/* linguist-vendored
+
