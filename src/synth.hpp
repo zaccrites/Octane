@@ -16,6 +16,9 @@ public:
     Synth();
     ~Synth();
 
+    Synth(const Synth&) = delete;
+    Synth& operator=(const Synth&) = delete;
+
     void tick();
     void reset();
     void writeRegister(uint16_t registerNumber, uint8_t registerValue);
@@ -31,24 +34,27 @@ public:
     }
 
 public:
-    static const uint16_t VOICE_PARAM_KEYON  { 0x00 };
-    static const uint16_t VOICE_PARAM_ALGORITHM  { 0x01 };
-    // static const uint16_t VOICE_PARAM_AMPLITUDE_ADJUST { 0x02 };
+    static const uint8_t VOICE_PARAM_NOTEON  { 0x00 };
+    static const uint8_t VOICE_PARAM_ALGORITHM  { 0x01 };
+    static const uint8_t VOICE_PARAM_CARRIER_COMP_HIGH { 0x02 };
+    static const uint8_t VOICE_PARAM_CARRIER_COMP_LOW { 0x03 };
 
-    static const uint16_t OP_PARAM_PHASE_STEP_HIGH  { 0x00 };
-    static const uint16_t OP_PARAM_PHASE_STEP_LOW  { 0x01 };
-    static const uint16_t OP_PARAM_WAVEFORM_HIGH    { 0x02 };
-    static const uint16_t OP_PARAM_WAVEFORM_LOW    { 0x03 };
+    static const uint8_t OP_PARAM_PHASE_STEP_HIGH  { 0x00 };
+    static const uint8_t OP_PARAM_PHASE_STEP_LOW  { 0x01 };
+    static const uint8_t OP_PARAM_WAVEFORM_HIGH    { 0x02 };
+    static const uint8_t OP_PARAM_WAVEFORM_LOW    { 0x03 };
 
-    // static const uint16_t OP_PARAM_ATTACK_LEVEL  { 0x03 };
-    // static const uint16_t OP_PARAM_SUSTAIN_LEVEL  { 0x04 };
-    // static const uint16_t OP_PARAM_ATTACK_RATE  { 0x05 };
-    // static const uint16_t OP_PARAM_DECAY_RATE  { 0x06 };
-    // static const uint16_t OP_PARAM_RELEASE_RATE  { 0x07 };
+    static const uint8_t OP_PARAM_ENVELOPE_L1    { 0x04 };
+    static const uint8_t OP_PARAM_ENVELOPE_L2    { 0x05 };
+    static const uint8_t OP_PARAM_ENVELOPE_L3    { 0x06 };
+    static const uint8_t OP_PARAM_ENVELOPE_L4    { 0x07 };
+    static const uint8_t OP_PARAM_ENVELOPE_R1    { 0x08 };
+    static const uint8_t OP_PARAM_ENVELOPE_R2    { 0x09 };
+    static const uint8_t OP_PARAM_ENVELOPE_R3    { 0x0a };
+    static const uint8_t OP_PARAM_ENVELOPE_R4    { 0x0b };
 
-
-    // static const uint16_t OP_WAVEFORM_SINE  { 0x0000 };
-    // static const uint16_t OP_WAVEFORM_SQUARE { 0x0001 };
+    // static const uint8_t OP_WAVEFORM_SINE  { 0x0000 };
+    // static const uint8_t OP_WAVEFORM_SQUARE { 0x0001 };
 
 private:
     Vsynth m_Synth;

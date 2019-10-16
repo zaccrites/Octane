@@ -118,9 +118,19 @@ int main(int argc, char** argv)
         auto algorithmNumber = patchConfig.getAlgorithm();
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
         // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / patchConfig.getNumCarriers()));
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0));
 
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, false);
+        // TODO: Compute this ahead of time and store in the algorithm ROM
+        // With 8 carriers, we want to divide by 8 (append 3'b000 = 0 to the end)
+        // With 1 carrier, we don't want to divide at all (append 3'b111 = 7 to the end)
+        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_ATTENUATION_FACTOR, 8 - patchConfig.getNumCarriers());
+
+        // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(patchConfig.getNumCarriers());
+        uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(1);
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_HIGH, carrierComp >> 8);
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_LOW, carrierComp & 0xff);
+
+
+        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
 
         for (uint16_t opNum = 0; opNum < 8; opNum++)
         {
@@ -147,14 +157,14 @@ int main(int argc, char** argv)
             // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_WAVEFORM, waveform);
 
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
-            printf("phaseStep = %f \n", opConfig.getFrequencyRatio());
+            // printf("phaseStep = %f \n", opConfig.getFrequencyRatio());
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_HIGH, phaseStep >> 8);
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_LOW, phaseStep & 0xff);
         }
 
-        if (voiceNum == 1 || voiceNum == 2)
+        // if (voiceNum == 1 || voiceNum == 2)
         {
-            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_KEYON, true);
+            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, true);
         }
     }
 
