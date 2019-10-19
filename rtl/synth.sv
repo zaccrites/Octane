@@ -196,68 +196,65 @@ always_ff @ (posedge i_Clock) begin
             r_EnvelopeClockDivider <= r_EnvelopeClockDivider + 1;
     end
 
-    if (r_EnvelopeClockDivider[10]) begin
+
+    // `define NO_ENVELOPE
+    `ifdef NO_ENVELOPE
+    `L <= `NOTE_ON ? 9'h0ff : 9'h000;
+    `else
+    case (`STATE)
         // NOTE: If we go below zero, then `L[8] will be set.
 
-        // `define NO_ENVELOPE
-        `ifdef NO_ENVELOPE
+        // TODO: Determine if saturation logic below requires a ton of LUTs.
 
-        `L <= `NOTE_ON ? 9'h0ff : 9'h000;
+        /* MUTE */ default: begin
+            `L <= 0;
+            if (`NOTE_ON) `STATE <= ATTACK;
+        end
 
-        `else
-        case (`STATE)
-            /* MUTE */ default: begin
-                `L <= 0;
-                if (`NOTE_ON) `STATE <= ATTACK;
+        ATTACK: begin
+            if (r_EnvelopeClockDivider[10]) `L <= (`L + `R1 > 9'hff) ? 9'hff : `L + `R1;
+            if (`NOTE_OFF)       `STATE <= RELEASE;
+            else if (`L >= {1'b0, `L1}) begin
+                if (`CYCLE_VOICE(0) == 0) $display("Moving to DECAY at `L = %x", `L);
+                `STATE <= DECAY;
             end
+            // else if (`L >= {1'b0, `L1})  `STATE <= SUSTAIN;
+        end
 
-            ATTACK: begin
-                `L <= `L + `R1;
-                if (`NOTE_OFF)       `STATE <= RELEASE;
-                else if (`L >= {1'b0, `L1}) begin
-                    if (`CYCLE_VOICE(0) == 0) $display("Moving to DECAY at `L = %x", `L);
-                    `STATE <= DECAY;
-                end
-                // else if (`L >= {1'b0, `L1})  `STATE <= SUSTAIN;
+        DECAY: begin
+            if (r_EnvelopeClockDivider[10]) `L <= (`L - `R2 > 9'hff) ? 9'h00 : `L - `R2;
+            if (`NOTE_OFF)       `STATE <= RELEASE;
+            // else if (`L <= {1'b0, `L2} || `L[8]) begin
+            else if (`L <= {1'b0, `L2}) begin
+                if (`CYCLE_VOICE(0) == 0) $display("Moving to RECOVER at `L = %x", `L);
+                `STATE <= RECOVER;
             end
+            // else if (`L <= {1'b0, `L2} || `L[8])  `STATE <= SUSTAIN;
+        end
 
-            DECAY: begin
-                `L <= `L - `R2;
-                if (`NOTE_OFF)       `STATE <= RELEASE;
-                // else if (`L <= {1'b0, `L2} || `L[8]) begin
-                else if (`L <= {1'b0, `L2}) begin
-                    if (`CYCLE_VOICE(0) == 0) $display("Moving to RECOVER at `L = %x", `L);
-                    `STATE <= RECOVER;
-                end
-                // else if (`L <= {1'b0, `L2} || `L[8])  `STATE <= SUSTAIN;
+        RECOVER: begin
+            if (r_EnvelopeClockDivider[10]) `L <= (`L + `R3 > 9'hff) ? 9'hff : `L + `R3;
+            if (`NOTE_OFF)       `STATE <= RELEASE;
+            else if (`L >= {1'b0, `L3}) begin
+                if (`CYCLE_VOICE(0) == 0) $display("Moving to SUSTAIN at `L = %x", `L);
+                `STATE <= SUSTAIN;
             end
+        end
 
-            RECOVER: begin
-                `L <= `L + `R3;
-                if (`NOTE_OFF)       `STATE <= RELEASE;
-                else if (`L >= {1'b0, `L3}) begin
-                    if (`CYCLE_VOICE(0) == 0) $display("Moving to SUSTAIN at `L = %x", `L);
-                    `STATE <= SUSTAIN;
-                end
+        SUSTAIN: begin
+            `L <= {1'b0, `L3};
+            if (`NOTE_OFF) `STATE <= RELEASE;
+        end
+
+        RELEASE: begin
+            if (r_EnvelopeClockDivider[10]) `L <= (`L - `R4 > 9'hff) ? 9'h00 : `L - `R4;
+            if (`L <= {1'b0, `L4} || `L[8]) begin
+                if (`CYCLE_VOICE(0) == 0) $display("Moving to MUTE at `L = %x", `L);
+                `STATE <= MUTE;
             end
-
-            SUSTAIN: begin
-                `L <= {1'b0, `L3};
-                if (`NOTE_OFF) `STATE <= RELEASE;
-            end
-
-            RELEASE: begin
-                `L <= `L - `R4;
-                if (`L <= {1'b0, `L4} || `L[8]) begin
-                    if (`CYCLE_VOICE(0) == 0) $display("Moving to MUTE at `L = %x", `L);
-                    `STATE <= MUTE;
-                end
-            end
-        endcase
-        `endif
-    end
-
-
+        end
+    endcase
+    `endif
 
     `undef L
     `undef L1
