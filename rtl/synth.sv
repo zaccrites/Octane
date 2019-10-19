@@ -169,9 +169,11 @@ typedef enum logic [2:0] {
 // TODO: Can these be stored together in a single block RAM?
 EnvelopeState_t r_EnvelopeState [256];
 // logic signed [12:0] r_EnvelopeLevel [256];
-logic unsigned [8:0] r_EnvelopeLevel [256];
+logic unsigned [7:0] r_EnvelopeLevel [256];
 
 logic unsigned [15:0] r_EnvelopeClockDivider;
+logic w_DoEnvelopeStep;
+assign w_DoEnvelopeStep = r_EnvelopeClockDivider[10];
 
 // Envelope generation state machine
 always_ff @ (posedge i_Clock) begin
@@ -188,9 +190,8 @@ always_ff @ (posedge i_Clock) begin
     `define NOTE_ON  r_NoteOn[`CYCLE_VOICE(0)]
     `define NOTE_OFF  ( ! `NOTE_ON)
 
-
     if (r_CycleNumber[0] == 0) begin
-        if (r_EnvelopeClockDivider[10])
+        if (w_DoEnvelopeStep)
             r_EnvelopeClockDivider <= 0;
         else
             r_EnvelopeClockDivider <= r_EnvelopeClockDivider + 1;
@@ -199,56 +200,63 @@ always_ff @ (posedge i_Clock) begin
 
     // `define NO_ENVELOPE
     `ifdef NO_ENVELOPE
-    `L <= `NOTE_ON ? 9'h0ff : 9'h000;
+    `L <= `NOTE_ON ? 8'hff : 8'h00;
     `else
     case (`STATE)
         // NOTE: If we go below zero, then `L[8] will be set.
 
         // TODO: Determine if saturation logic below requires a ton of LUTs.
 
-        /* MUTE */ default: begin
+        /* MUTE: */ default: begin
             `L <= 0;
-            if (`NOTE_ON) `STATE <= ATTACK;
+            if (`NOTE_ON) begin
+                `STATE <= ATTACK;
+            end
         end
 
         ATTACK: begin
-            if (r_EnvelopeClockDivider[10]) `L <= (`L + `R1 > 9'hff) ? 9'hff : `L + `R1;
-            if (`NOTE_OFF)       `STATE <= RELEASE;
-            else if (`L >= {1'b0, `L1}) begin
+            if (w_DoEnvelopeStep) `L <= (`R1 > 8'hff - `L) ? 8'hff : `L + `R1;
+            if (`NOTE_OFF) begin
+                `STATE <= RELEASE;
+            end
+            else if (`L >= `L1) begin
                 if (`CYCLE_VOICE(0) == 0) $display("Moving to DECAY at `L = %x", `L);
                 `STATE <= DECAY;
             end
-            // else if (`L >= {1'b0, `L1})  `STATE <= SUSTAIN;
         end
 
         DECAY: begin
-            if (r_EnvelopeClockDivider[10]) `L <= (`L - `R2 > 9'hff) ? 9'h00 : `L - `R2;
-            if (`NOTE_OFF)       `STATE <= RELEASE;
-            // else if (`L <= {1'b0, `L2} || `L[8]) begin
-            else if (`L <= {1'b0, `L2}) begin
+            if (w_DoEnvelopeStep) `L <= (`R2 > `L) ? 8'h00 : `L - `R2;
+            if (`NOTE_OFF) begin
+                `STATE <= RELEASE;
+            end
+            else if (`L <= `L2) begin
                 if (`CYCLE_VOICE(0) == 0) $display("Moving to RECOVER at `L = %x", `L);
                 `STATE <= RECOVER;
             end
-            // else if (`L <= {1'b0, `L2} || `L[8])  `STATE <= SUSTAIN;
         end
 
         RECOVER: begin
-            if (r_EnvelopeClockDivider[10]) `L <= (`L + `R3 > 9'hff) ? 9'hff : `L + `R3;
-            if (`NOTE_OFF)       `STATE <= RELEASE;
-            else if (`L >= {1'b0, `L3}) begin
+            if (w_DoEnvelopeStep) `L <= (`R3 > 8'hff - `L) ? 8'hff : `L + `R3;
+            if (`NOTE_OFF) begin
+                `STATE <= RELEASE;
+            end
+            else if (`L >= `L3) begin
                 if (`CYCLE_VOICE(0) == 0) $display("Moving to SUSTAIN at `L = %x", `L);
                 `STATE <= SUSTAIN;
             end
         end
 
         SUSTAIN: begin
-            `L <= {1'b0, `L3};
-            if (`NOTE_OFF) `STATE <= RELEASE;
+            `L <= `L3;
+            if (`NOTE_OFF) begin
+                `STATE <= RELEASE;
+            end
         end
 
         RELEASE: begin
-            if (r_EnvelopeClockDivider[10]) `L <= (`L - `R4 > 9'hff) ? 9'h00 : `L - `R4;
-            if (`L <= {1'b0, `L4} || `L[8]) begin
+            if (w_DoEnvelopeStep) `L <= (`R4 > `L) ? 8'h00 : `L - `R4;
+            if (`L <= `L4) begin
                 if (`CYCLE_VOICE(0) == 0) $display("Moving to MUTE at `L = %x", `L);
                 `STATE <= MUTE;
             end
@@ -324,7 +332,7 @@ always_ff @ (posedge i_Clock) begin
 
     // Stage 1 (branch 2): Multi-carrier Amplitude Compensation
     // (4 clock cycles)
-    r_EnvelopeFactorProduct[0] <= $signed({r_EnvelopeLevel[r_CycleNumber[0]], 7'b0}) * r_CarrierComp[`CYCLE_VOICE(0)];
+    r_EnvelopeFactorProduct[0] <= $signed({1'b0, r_EnvelopeLevel[r_CycleNumber[0]], 7'b0}) * r_CarrierComp[`CYCLE_VOICE(0)];
     r_EnvelopeFactorProduct[1] <= r_EnvelopeFactorProduct[0];
     r_EnvelopeFactorProduct[2] <= r_EnvelopeFactorProduct[1];
     r_EnvelopeFactor <= {r_EnvelopeFactorProduct[2][30:16], 1'b0};
