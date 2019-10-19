@@ -8,29 +8,29 @@
     "operators": [
         {
             "comment": "Operator 1",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 2",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 3",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 4",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
@@ -39,29 +39,29 @@
 
         {
             "comment": "Operator 5",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 6",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 7",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 8",
-            "levels": [255, 255, 255, 0],
-            "rates": [255, 255, 255, 255],
+            "levels": [255, 128, 255, 0],
+            "rates": [10, 40, 20, 5],
             "waveform": "sine",
             "frequency_ratio": 1.00
         }

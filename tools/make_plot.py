@@ -17,14 +17,14 @@ MAX_VALUE = 2**(16 - 1)
 def main():
 
     if len(sys.argv) == 3:
-        sample_start = int(sys.argv[1])
-        sample_end = int(sys.argv[2])
+        sample_start = int(float(sys.argv[1]) * 1000)
+        sample_end = int(float(sys.argv[2]) * 1000)
     elif len(sys.argv) == 2:
         sample_start = 0
-        sample_end = int(sys.argv[1])
+        sample_end = int(float(sys.argv[1]) * 1000)
     else:
         sample_start = 0
-        sample_end = 1000
+        sample_end = -1
 
     data = []
     with open('data.csv', 'r') as f:

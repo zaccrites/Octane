@@ -169,9 +169,9 @@ typedef enum logic [2:0] {
 // TODO: Can these be stored together in a single block RAM?
 EnvelopeState_t r_EnvelopeState [256];
 // logic signed [12:0] r_EnvelopeLevel [256];
-logic unsigned [7:0] r_EnvelopeLevel [256];
+logic unsigned [8:0] r_EnvelopeLevel [256];
 
-logic unsigned [7:0] r_EnvelopeClockDivider;
+logic unsigned [15:0] r_EnvelopeClockDivider;
 
 // Envelope generation state machine
 always_ff @ (posedge i_Clock) begin
@@ -190,13 +190,21 @@ always_ff @ (posedge i_Clock) begin
 
 
     if (r_CycleNumber[0] == 0) begin
-        if (r_EnvelopeClockDivider[6])
+        if (r_EnvelopeClockDivider[10])
             r_EnvelopeClockDivider <= 0;
         else
             r_EnvelopeClockDivider <= r_EnvelopeClockDivider + 1;
     end
 
-    if (r_EnvelopeClockDivider[6]) begin
+    if (r_EnvelopeClockDivider[10]) begin
+        // NOTE: If we go below zero, then `L[8] will be set.
+
+        // `define NO_ENVELOPE
+        `ifdef NO_ENVELOPE
+
+        `L <= `NOTE_ON ? 9'h0ff : 9'h000;
+
+        `else
         case (`STATE)
             /* MUTE */ default: begin
                 `L <= 0;
@@ -206,32 +214,49 @@ always_ff @ (posedge i_Clock) begin
             ATTACK: begin
                 `L <= `L + `R1;
                 if (`NOTE_OFF)       `STATE <= RELEASE;
-                else if (`L >= `L1)  `STATE <= DECAY;
+                else if (`L >= {1'b0, `L1}) begin
+                    if (`CYCLE_VOICE(0) == 0) $display("Moving to DECAY at `L = %x", `L);
+                    `STATE <= DECAY;
+                end
+                // else if (`L >= {1'b0, `L1})  `STATE <= SUSTAIN;
             end
 
             DECAY: begin
                 `L <= `L - `R2;
                 if (`NOTE_OFF)       `STATE <= RELEASE;
-                else if (`L <= `L2)  `STATE <= RECOVER;
+                // else if (`L <= {1'b0, `L2} || `L[8]) begin
+                else if (`L <= {1'b0, `L2}) begin
+                    if (`CYCLE_VOICE(0) == 0) $display("Moving to RECOVER at `L = %x", `L);
+                    `STATE <= RECOVER;
+                end
+                // else if (`L <= {1'b0, `L2} || `L[8])  `STATE <= SUSTAIN;
             end
 
             RECOVER: begin
                 `L <= `L + `R3;
                 if (`NOTE_OFF)       `STATE <= RELEASE;
-                else if (`L >= `L3)  `STATE <= SUSTAIN;
+                else if (`L >= {1'b0, `L3}) begin
+                    if (`CYCLE_VOICE(0) == 0) $display("Moving to SUSTAIN at `L = %x", `L);
+                    `STATE <= SUSTAIN;
+                end
             end
 
             SUSTAIN: begin
-                `L <= `L3;
+                `L <= {1'b0, `L3};
                 if (`NOTE_OFF) `STATE <= RELEASE;
             end
 
             RELEASE: begin
                 `L <= `L - `R4;
-                if (`L <= `L4) `STATE <= MUTE;
+                if (`L <= {1'b0, `L4} || `L[8]) begin
+                    if (`CYCLE_VOICE(0) == 0) $display("Moving to MUTE at `L = %x", `L);
+                    `STATE <= MUTE;
+                end
             end
         endcase
+        `endif
     end
+
 
 
     `undef L
@@ -294,15 +319,15 @@ always_ff @ (posedge i_Clock) begin
 
     // Stage 1: accumulate and modulate phase
     // (1 clock cycle)
-    if (r_NoteOn[`CYCLE_VOICE(0)])
+    // if (r_NoteOn[`CYCLE_VOICE(0)])
         r_PhaseAcc[r_CycleNumber[0]] <= r_PhaseAcc[r_CycleNumber[0]] + r_PhaseStep[r_CycleNumber[0]];
-    else
-        r_PhaseAcc[r_CycleNumber[0]] <= 0;
+    // else
+        // r_PhaseAcc[r_CycleNumber[0]] <= 0;
     r_Phase <= r_PhaseAcc[r_CycleNumber[0]];  // TODO: Modulation with feedback
 
     // Stage 1 (branch 2): Multi-carrier Amplitude Compensation
     // (4 clock cycles)
-    r_EnvelopeFactorProduct[0] <= $signed({1'b0, r_EnvelopeLevel[r_CycleNumber[0]], 7'b0}) * r_CarrierComp[`CYCLE_VOICE(0)];
+    r_EnvelopeFactorProduct[0] <= $signed({r_EnvelopeLevel[r_CycleNumber[0]], 7'b0}) * r_CarrierComp[`CYCLE_VOICE(0)];
     r_EnvelopeFactorProduct[1] <= r_EnvelopeFactorProduct[0];
     r_EnvelopeFactorProduct[2] <= r_EnvelopeFactorProduct[1];
     r_EnvelopeFactor <= {r_EnvelopeFactorProduct[2][30:16], 1'b0};

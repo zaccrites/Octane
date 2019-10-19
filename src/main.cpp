@@ -61,11 +61,11 @@ int main(int argc, char** argv)
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
-        if (voiceNum < 16)
-        {
-            noteBaseFrequency = 350.0;
-        }
-        else
+        // if (voiceNum < 16)
+        // {
+        //     noteBaseFrequency = 350.0;
+        // }
+        // else
         {
             noteBaseFrequency = 440.0;
         }
@@ -145,8 +145,22 @@ int main(int argc, char** argv)
     double seconds = 3.0;
     auto& rBuffer = synth.getSampleBuffer();
 
+    double noteOn = true;
     while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
     {
+        double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
+        if (noteOn && t >= seconds - 1.0)
+        {
+            for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+            {
+                // if (voiceNum < 16)
+                {
+                    synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
+                }
+            }
+            noteOn = false;
+        }
+
         synth.tick();
     }
 

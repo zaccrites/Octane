@@ -73,7 +73,7 @@ target_compile_options(synth PRIVATE
     -Wshadow
     -Wcast-qual
     -Wold-style-cast
-    -Wfloat-equal
+    # -Wfloat-equal
 
     -Werror=return-type
     -Werror=uninitialized
