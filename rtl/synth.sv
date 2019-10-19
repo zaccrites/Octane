@@ -167,26 +167,31 @@ typedef enum logic [2:0] {
 
 
 // TODO: Can these be stored together in a single block RAM?
+// It may be a structural hazard unless I can move the envelope logic here
+// to the same pipeline stage as it is read to be passed to the DSP
+// (rather than stage 0, as it currently is).
 EnvelopeState_t r_EnvelopeState [256];
-// logic signed [12:0] r_EnvelopeLevel [256];
-logic unsigned [7:0] r_EnvelopeLevel [256];
+logic unsigned [12:0] r_EnvelopeLevel [256];
 
 logic unsigned [15:0] r_EnvelopeClockDivider;
 logic w_DoEnvelopeStep;
-assign w_DoEnvelopeStep = r_EnvelopeClockDivider[10];
+assign w_DoEnvelopeStep = r_EnvelopeClockDivider[9];
+
+`define ENVELOPE_LEVEL_MAX  13'h1fff
+`define ENVELOPE_LEVEL_MIN  13'h0000
 
 // Envelope generation state machine
 always_ff @ (posedge i_Clock) begin
     `define STATE r_EnvelopeState[r_CycleNumber[0]]
     `define L   r_EnvelopeLevel[r_CycleNumber[0]]
-    `define L1  r_EnvelopeL1[r_CycleNumber[0]]
-    `define L2  r_EnvelopeL2[r_CycleNumber[0]]
-    `define L3  r_EnvelopeL3[r_CycleNumber[0]]
-    `define L4  r_EnvelopeL4[r_CycleNumber[0]]
-    `define R1  r_EnvelopeR1[r_CycleNumber[0]]
-    `define R2  r_EnvelopeR2[r_CycleNumber[0]]
-    `define R3  r_EnvelopeR3[r_CycleNumber[0]]
-    `define R4  r_EnvelopeR4[r_CycleNumber[0]]
+    `define L1  {r_EnvelopeL1[r_CycleNumber[0]], 5'b0}
+    `define L2  {r_EnvelopeL2[r_CycleNumber[0]], 5'b0}
+    `define L3  {r_EnvelopeL3[r_CycleNumber[0]], 5'b0}
+    `define L4  {r_EnvelopeL4[r_CycleNumber[0]], 5'b0}
+    `define R1  {5'b0, r_EnvelopeR1[r_CycleNumber[0]]}
+    `define R2  {5'b0, r_EnvelopeR2[r_CycleNumber[0]]}
+    `define R3  {5'b0, r_EnvelopeR3[r_CycleNumber[0]]}
+    `define R4  {5'b0, r_EnvelopeR4[r_CycleNumber[0]]}
     `define NOTE_ON  r_NoteOn[`CYCLE_VOICE(0)]
     `define NOTE_OFF  ( ! `NOTE_ON)
 
@@ -200,14 +205,13 @@ always_ff @ (posedge i_Clock) begin
 
     // `define NO_ENVELOPE
     `ifdef NO_ENVELOPE
-    `L <= `NOTE_ON ? 8'hff : 8'h00;
+    `L <= `NOTE_ON ? `ENVELOPE_LEVEL_MAX : `ENVELOPE_LEVEL_MIN;
     `else
     case (`STATE)
-        // NOTE: If we go below zero, then `L[8] will be set.
-
         // TODO: Determine if saturation logic below requires a ton of LUTs.
 
-        /* MUTE: */ default: begin
+        // MUTE:
+        default: begin
             `L <= 0;
             if (`NOTE_ON) begin
                 `STATE <= ATTACK;
@@ -215,34 +219,31 @@ always_ff @ (posedge i_Clock) begin
         end
 
         ATTACK: begin
-            if (w_DoEnvelopeStep) `L <= (`R1 > 8'hff - `L) ? 8'hff : `L + `R1;
+            if (w_DoEnvelopeStep) `L <= (`R1 > `ENVELOPE_LEVEL_MAX - `L) ? `ENVELOPE_LEVEL_MAX : `L + `R1;
             if (`NOTE_OFF) begin
                 `STATE <= RELEASE;
             end
             else if (`L >= `L1) begin
-                if (`CYCLE_VOICE(0) == 0) $display("Moving to DECAY at `L = %x", `L);
                 `STATE <= DECAY;
             end
         end
 
         DECAY: begin
-            if (w_DoEnvelopeStep) `L <= (`R2 > `L) ? 8'h00 : `L - `R2;
+            if (w_DoEnvelopeStep) `L <= (`R2 > `L) ? `ENVELOPE_LEVEL_MIN : `L - `R2;
             if (`NOTE_OFF) begin
                 `STATE <= RELEASE;
             end
             else if (`L <= `L2) begin
-                if (`CYCLE_VOICE(0) == 0) $display("Moving to RECOVER at `L = %x", `L);
                 `STATE <= RECOVER;
             end
         end
 
         RECOVER: begin
-            if (w_DoEnvelopeStep) `L <= (`R3 > 8'hff - `L) ? 8'hff : `L + `R3;
+            if (w_DoEnvelopeStep) `L <= (`R3 > `ENVELOPE_LEVEL_MAX - `L) ? `ENVELOPE_LEVEL_MAX : `L + `R3;
             if (`NOTE_OFF) begin
                 `STATE <= RELEASE;
             end
             else if (`L >= `L3) begin
-                if (`CYCLE_VOICE(0) == 0) $display("Moving to SUSTAIN at `L = %x", `L);
                 `STATE <= SUSTAIN;
             end
         end
@@ -255,15 +256,15 @@ always_ff @ (posedge i_Clock) begin
         end
 
         RELEASE: begin
-            if (w_DoEnvelopeStep) `L <= (`R4 > `L) ? 8'h00 : `L - `R4;
+            if (w_DoEnvelopeStep) `L <= (`R4 > `L) ? `ENVELOPE_LEVEL_MIN : `L - `R4;
             if (`L <= `L4) begin
-                if (`CYCLE_VOICE(0) == 0) $display("Moving to MUTE at `L = %x", `L);
                 `STATE <= MUTE;
             end
         end
     endcase
     `endif
 
+    `undef STATE
     `undef L
     `undef L1
     `undef L2
@@ -274,6 +275,7 @@ always_ff @ (posedge i_Clock) begin
     `undef R3
     `undef R4
     `undef NOTE_ON
+    `undef NOTE_OFF
 end
 
 
@@ -332,7 +334,7 @@ always_ff @ (posedge i_Clock) begin
 
     // Stage 1 (branch 2): Multi-carrier Amplitude Compensation
     // (4 clock cycles)
-    r_EnvelopeFactorProduct[0] <= $signed({1'b0, r_EnvelopeLevel[r_CycleNumber[0]], 7'b0}) * r_CarrierComp[`CYCLE_VOICE(0)];
+    r_EnvelopeFactorProduct[0] <= $signed({1'b0, r_EnvelopeLevel[r_CycleNumber[0]], 2'b0}) * r_CarrierComp[`CYCLE_VOICE(0)];
     r_EnvelopeFactorProduct[1] <= r_EnvelopeFactorProduct[0];
     r_EnvelopeFactorProduct[2] <= r_EnvelopeFactorProduct[1];
     r_EnvelopeFactor <= {r_EnvelopeFactorProduct[2][30:16], 1'b0};
