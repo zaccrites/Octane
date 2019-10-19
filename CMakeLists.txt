@@ -18,6 +18,7 @@ add_executable(synth
     "src/main.cpp"
     "src/synth.cpp"
     "src/PatchConfig.cpp"
+    "src/debug.cpp"
 
     # TODO: Add these somewhere else?
     "roms/sine_rom.hex"

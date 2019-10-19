@@ -1,8 +1,17 @@
 
-# FM Synthesizer Simulator
+# Octane
 
-Simulates a DX7-style FM synthesizer for implementation on an FPGA.
+An 8-operator, 32-voice FM synthesizer in the style of 80's synthesizers
+like the Yamaha DX7.
+
+
+## Background
+
+TODO
+
 
 ## Development
 
-    sudo apt install build-essential cmake ninja-build python3-venv libsdl2-dev libsdl2-ttf-dev
+TODO
+
+    sudo apt install build-essential cmake ninja-build python3-venv libsdl2-dev

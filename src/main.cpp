@@ -5,6 +5,7 @@
 
 #include <SDL2/SDL.h>
 
+#include "debug.hpp"
 #include "synth.hpp"
 #include "PatchConfig.hpp"
 
@@ -40,50 +41,9 @@ uint16_t phaseStepForFrequency(double frequency) {
 
 
 
-// https://stackoverflow.com/a/3356421
-#include <stdexcept>
-#include <execinfo.h>
-void terminate_handler()
-{
-    // On using addr2line:
-    // https://stackoverflow.com/a/51597989
-    //
-    // Example: addr2line -afC -e ../synth-build/synth +0x69af
-
-    std::cerr << "Printing stack trace of uncaught exception: \n";
-    std::exception_ptr eptr = std::current_exception();
-    try
-    {
-        // assert(eptr);
-        std::rethrow_exception(eptr);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "what(): " << e.what() << "\n";
-    }
-    std::cerr << "------------------------------------------------------------"
-              << std::endl;
-
-    void *trace_elems[20];
-    int trace_elem_count = backtrace(trace_elems, 20);
-    char **stack_syms = backtrace_symbols(trace_elems, trace_elem_count);
-    for (int i = 0; i < trace_elem_count; i++)
-    {
-        std::cout << stack_syms[trace_elem_count - i - 1] << std::endl;
-    }
-    free(stack_syms);
-
-    std::cerr << "------------------------------------------------------------"
-              << std::endl;
-
-    exit(1);
-}
-
-
-
 int main(int argc, char** argv)
 {
-    std::set_terminate(terminate_handler);
+    setup_debug_handlers();
 
     if (argc < 2)
     {
@@ -101,33 +61,17 @@ int main(int argc, char** argv)
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
-        switch (voiceNum)
+        if (voiceNum < 16)
         {
-            case 0:
-                noteBaseFrequency = 100.0;
-                break;
-            case 1:
-                noteBaseFrequency = 200.0;
-                break;
-            case 31:
-                noteBaseFrequency = 1000.0;
-                break;
-            default:
-                noteBaseFrequency = 2000.0;
-                break;
+            noteBaseFrequency = 350.0;
         }
-        // noteBaseFrequency = 100.0 * (voiceNum + 1);
-        noteBaseFrequency = 1000.0;
-
+        else
+        {
+            noteBaseFrequency = 440.0;
+        }
 
         auto algorithmNumber = patchConfig.getAlgorithm();
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_AMPLITUDE_ADJUST, toFixed(1.0 / patchConfig.getNumCarriers()));
-
-        // TODO: Compute this ahead of time and store in the algorithm ROM
-        // With 8 carriers, we want to divide by 8 (append 3'b000 = 0 to the end)
-        // With 1 carrier, we don't want to divide at all (append 3'b111 = 7 to the end)
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_ATTENUATION_FACTOR, 8 - patchConfig.getNumCarriers());
 
         // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(patchConfig.getNumCarriers());
         uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(1);
@@ -173,7 +117,10 @@ int main(int argc, char** argv)
 
     for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, true);
+        // if (voiceNum <= 1)
+        {
+            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, true);
+        }
     }
 
 
@@ -195,7 +142,7 @@ int main(int argc, char** argv)
     }
 
 
-    double seconds = 1.0;
+    double seconds = 3.0;
     auto& rBuffer = synth.getSampleBuffer();
 
     while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
@@ -204,7 +151,7 @@ int main(int argc, char** argv)
     }
 
 
-    #if 0
+    #if 1
 
     // TODO: Graphics?
     // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
@@ -236,8 +183,8 @@ int main(int argc, char** argv)
 
 
     // TODO
-    // SDL_PauseAudioDevice(device, 0);
-    // SDL_Delay(static_cast<uint32_t>(seconds * 1000));
+    SDL_PauseAudioDevice(device, 0);
+    SDL_Delay(static_cast<uint32_t>(seconds * 1000));
 
     SDL_CloseAudio();
     SDL_Quit();
