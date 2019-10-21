@@ -61,17 +61,52 @@ int main(int argc, char** argv)
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
-        // if (voiceNum < 16)
-        // {
-        //     noteBaseFrequency = 350.0;
-        // }
-        // else
+        if (voiceNum < 16)
+        {
+            noteBaseFrequency = 350.0;
+        }
+        else
         {
             noteBaseFrequency = 440.0;
         }
 
-        auto algorithmNumber = patchConfig.getAlgorithm();
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
+        // auto algorithmNumber = patchConfig.getAlgorithm();
+        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
+
+        /*
+        "Algorithm 1"
+
+        1   5
+        |   |
+        2   6
+        |   |
+        3   7
+        |   |
+        4---8
+
+        Alghorithm bits:
+
+        rgfe dcba
+
+        r - Operator is a carrier
+        g - Modulated by OP7
+        f - Modulated by OP6
+        e - Modulated by OP5
+        d - Modulated by OP4
+        c - Modulated by OP3
+        b - Modulated by OP2
+        a - Modulated by OP1
+
+        */
+        synth.writeOperatorRegister(voiceNum, 1 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000001);
+        synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000010);
+        synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000100);
+        synth.writeOperatorRegister(voiceNum, 5 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0010000);
+        synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0100000);
+        synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'1000000);
+
 
         // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(patchConfig.getNumCarriers());
         uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(1);

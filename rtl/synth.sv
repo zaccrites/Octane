@@ -38,12 +38,13 @@ logic unsigned [7:0] r_EnvelopeR2 [256];
 logic unsigned [7:0] r_EnvelopeR3 [256];
 logic unsigned [7:0] r_EnvelopeR4 [256];
 
+/// Algorithm instruction words
+logic [7:0] r_Algorithm [256];
 
 
 
 /// Voice configuration registers
 logic r_NoteOn [32];
-logic [7:0] r_Algorithm [32];
 
 // TODO: This could be included in the algorithm ROM (though perhaps as a separate BRAM to avoid a structural hazard)
 /// The factor used to compensate for multiple carrier operators
@@ -103,6 +104,9 @@ always_ff @ (posedge i_Clock) begin
 
     if (i_RegisterWriteEnable) begin
         case (i_RegisterNumber[15:8])
+            // TODO: Rearrange these
+            //
+            //
             {2'b11, 6'h00}: r_PhaseStep[w_VoiceOpRegIndex][15:8] <= i_RegisterValue;
             {2'b11, 6'h01}: r_PhaseStep[w_VoiceOpRegIndex][7:0] <= i_RegisterValue;
             {2'b11, 6'h02}: r_Waveform[w_VoiceOpRegIndex][15:8] <= i_RegisterValue;
@@ -117,9 +121,11 @@ always_ff @ (posedge i_Clock) begin
             {2'b11, 6'h0a}: r_EnvelopeR3[w_VoiceOpRegIndex] <= i_RegisterValue;
             {2'b11, 6'h0b}: r_EnvelopeR4[w_VoiceOpRegIndex] <= i_RegisterValue;
             //
+            {2'b11, 6'h0c}: r_Algorithm[w_VoiceOpRegIndex] <= i_RegisterValue;
             //
-            {2'b10, 6'h00}: r_NoteOn[w_VoiceRegIndex] <= i_RegisterValue[0];
-            {2'b10, 6'h01}: r_Algorithm[w_VoiceRegIndex] <= i_RegisterValue;
+            //
+            {2'b10, 6'h00}: r_NoteOn[w_VoiceRegIndex] <= i_RegisterValue[7:0];
+            // {2'b10, 6'h01}: <reserved>
             {2'b10, 6'h02}: r_CarrierComp[w_VoiceRegIndex][15:8] <= i_RegisterValue;  // TODO: Remove
             {2'b10, 6'h03}: r_CarrierComp[w_VoiceRegIndex][7:0] <= i_RegisterValue;  // TODO: Remove
 
@@ -209,6 +215,11 @@ always_ff @ (posedge i_Clock) begin
     `else
     case (`STATE)
         // TODO: Determine if saturation logic below requires a ton of LUTs.
+
+        // FUTURE: Do I need to handle a situation where L2 > L3?
+        // I'll need to subtract from L in that case, instead of add.
+        // Many DX7 envelope diagrams show this case.
+        // http://www.audiocentralmagazine.com/wp-content/uploads/2012/04/dx7-envelope.png
 
         // MUTE:
         default: begin
@@ -300,9 +311,9 @@ logic unsigned [15:0] r_Phase;
 
 
 
-logic signed [15:0] r_WaveformValue [31:4];
 
 
+logic signed [15:0] r_WaveformValue [32];
 
 logic signed [15:0] r_Subsample;
 logic r_SubsampleReady;
@@ -312,11 +323,30 @@ logic r_SubsampleReady;
 
 
 
-// TODO: Reduce range on this and other pipeline registers (use Verilator warnings about UNUSED to trim them down)
-logic signed [31:0] r_WaveformAmplitudeProduct [31:0];
+// TODO: Reduce range on this and other pipeline registers
+//  (use Verilator warnings about UNUSED to trim them down)
+logic signed [31:0] r_WaveformAmplitudeProduct [32];
 
-logic signed [31:0] r_EnvelopeFactorProduct [2:0];
+logic signed [31:0] r_EnvelopeFactorProduct [32];
 logic signed [15:0] r_EnvelopeFactor;
+
+
+
+logic [7:0] r_AlgorithmWord [32];
+logic [18:0] r_ModulationPhaseAccumulator [32];
+
+
+
+
+
+logic signed [15:0] w_OperatorOutputRegister [8];
+operator_output_register_file operator_outputs (
+    .i_Clock        (i_Clock),
+    .i_WriteAddress (TODO),
+    .i_DataIn      (TODO),
+    .i_ReadAddress (i_ReadAddress),
+    .o_DataOut     (o_DataOut)
+);
 
 
 
@@ -324,13 +354,43 @@ logic signed [15:0] r_EnvelopeFactor;
 integer i;
 always_ff @ (posedge i_Clock) begin
 
+    // TODO: Should each of these stages be extracted into their own
+    // modules? Then I could create wires scoped to the module to clean
+    // up some of these names.
+    // (plus things like the waveform generator being their own module
+    // wouldn't look so weird).
+
+    // TODO: The timing on accessing some of these arrays may be wrong too.
+    // I should re-implement them as a synchronous block RAM because I think
+    // they need an extra clock for outputting the memory contents into
+    // a register, which I'm not doing here.
+    //
+    // That may also make it easy to use an `ifdef to swap the soft version
+    // out for a BRAM module instantiation when compiling using Lattice tools
+    // instead of Verilator (if needed).
+
+    // Stage 1: Accumulate modulation phase according to algorithm
+    r_ModulationPhaseAccumulator[0] <= r_Algorithm[r_CycleNumber[0]][0] ? w_OperatorOutputRegister[0] : 0;
+    // NOTE: Remember that OP8 can never modulate another operator, so it is omitted here.
+    for (i = 1; i <= 6; i = i + 1)
+        if (r_AlgorithmWord[i][i])
+            r_ModulationPhaseAccumulator[i] <= r_ModulationPhaseAccumulator[i - 1] + w_OperatorOutputRegister[i];
+    //
+    r_AlgorithmWord[1] <= r_Algorithm[r_CycleNumber[0]];
+    for (i = 2; i <= 6; i = i + 1)
+        r_AlgorithmWord[i] <= r_AlgorithmWord[i - 1];
+    //
+    for (i = 0; i < )
+
+    r_CycleNumber[1] <= r_CycleNumber[0];
+    r_CycleNumber[2] <= r_CycleNumber[1];
+    ...
+
+
     // Stage 1: accumulate and modulate phase
     // (1 clock cycle)
-    // if (r_NoteOn[`CYCLE_VOICE(0)])
-        r_PhaseAcc[r_CycleNumber[0]] <= r_PhaseAcc[r_CycleNumber[0]] + r_PhaseStep[r_CycleNumber[0]];
-    // else
-        // r_PhaseAcc[r_CycleNumber[0]] <= 0;
-    r_Phase <= r_PhaseAcc[r_CycleNumber[0]];  // TODO: Modulation with feedback
+    r_PhaseAcc[r_CycleNumber[0]] <= r_PhaseAcc[r_CycleNumber[0]] + r_PhaseStep[r_CycleNumber[0]];
+    r_Phase <= r_PhaseAcc[r_CycleNumber[0]] + r_ModulationPhase[?];
 
     // Stage 1 (branch 2): Multi-carrier Amplitude Compensation
     // (4 clock cycles)

@@ -40,7 +40,7 @@ public:
 
 public:
     static const uint8_t VOICE_PARAM_NOTEON  { 0x00 };
-    static const uint8_t VOICE_PARAM_ALGORITHM  { 0x01 };
+    // static const uint8_t VOICE_PARAM_RESERVED  { 0x01 };
     static const uint8_t VOICE_PARAM_CARRIER_COMP_HIGH { 0x02 };
     static const uint8_t VOICE_PARAM_CARRIER_COMP_LOW { 0x03 };
 
@@ -57,6 +57,8 @@ public:
     static const uint8_t OP_PARAM_ENVELOPE_R2    { 0x09 };
     static const uint8_t OP_PARAM_ENVELOPE_R3    { 0x0a };
     static const uint8_t OP_PARAM_ENVELOPE_R4    { 0x0b };
+
+    static const uint8_t OP_PARAM_ALGORITHM      { 0x0c };
 
     // static const uint8_t OP_WAVEFORM_SINE  { 0x0000 };
     // static const uint8_t OP_WAVEFORM_SQUARE { 0x0001 };
