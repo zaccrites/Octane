@@ -58,11 +58,25 @@ Possibly as a sample buffer of some kind?
 
 * (1) Multiple-modulator compensation
 * (1) Carrier compensation
-* (3) Operator output filter DSP
+* (4) Operator output filter DSP
 * (1) Operator output envelope
 * (1) Operator feedback factor
 
-**TOTAL: 7/8**
+**TOTAL: 8/8**
+
+To make the filtering work I will need every tap I can possibly get.
+I can potentially avoid some multiplication with carrier compensation
+and multiple modulators by using `log` and `exp` sine tables,
+though this complicates other waveforms.
+
+Using a shifter for feedback like the DX7 did gets me one back
+at least. Then I can at least have 5 without resorting to logarithms.
+
+4 or 5 taps may be enough for what I want to do, actually.
+-26 dB/decade (5% in stopband) is achievable at 44.1 kHz
+with N=5.
+
+The problem is going to be getting the block RAM.
 
 
 
