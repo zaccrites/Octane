@@ -4,10 +4,8 @@ import sys
 import math
 
 
-# The block ram is 16 bits, but we synthesize the 17th bit using the
-# phase. The multiplier is 16 bits, though, so we can only store 15 bits
-# in the ROM.
-BIT_DEPTH = 16
+# The block ram is 14 bits, and we synthesize a 15th bit using the phase.
+BIT_DEPTH = 14
 NUM_SAMPLES = 8192
 
 # Quarter-wave only!

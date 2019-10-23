@@ -10,6 +10,17 @@ like the Yamaha DX7.
 TODO
 
 
+## Features
+
+* Eight operators
+* 32-voice polyphony
+* Fully customizable algorithm: any combination of operator modulation is possible
+* Feedback on all operators
+* Configurable digital filter for each operator
+
+TODO
+
+
 ## Development
 
 TODO
