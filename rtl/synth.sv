@@ -107,10 +107,20 @@ logic [4:0] w_VoiceRegWriteIndex;
 assign w_VoiceRegWriteIndex = i_RegisterWriteNumber[4:0];
 //
 
+
+function logic regWriteEnable(logic [7:0] category);
+    return i_RegisterWriteEnable && category == category;
+endfunction
+
+
 logic w_AlgorithmWriteEnable;
+logic [1:0] w_PhaseStepWriteEnable;
 always_comb begin
 
-    w_AlgorithmWriteEnable = i_RegisterWriteEnable && w_RegisterWriteCategory == {2'b11, 6'h0c};
+    w_PhaseStepWriteEnable[0] = regWriteEnable({2'b11, 6'h00});  // HIGH
+    w_PhaseStepWriteEnable[1] = regWriteEnable({2'b11, 6'h01});  // LOW
+
+    w_AlgorithmWriteEnable = regWriteEnable({2'b11, 6'h0c});
 
 end
 
@@ -180,7 +190,6 @@ end
 
 
 
-logic signed [15:0] w_ModulationPhase;
 
 stage_modulation modulation (
     .i_Clock          (i_Clock),
@@ -211,23 +220,28 @@ assign w_OperatorWritebackValue = 0;
 
 
 // TODO
-assign o_SampleReady = 0;
+assign o_SampleReady = r_VoiceOperator[2] == 8'hff;
 
 
-// stage_phase_accumulation phase_accumulation (
-//     .i_Clock                     (i_Clock),
-//     .i_ModulationPhase           (i_ModulationPhase),
-//     .i_VoiceOperator             (i_VoiceOperator),
-//     .o_ModulatedPhase            (o_ModulatedPhase),
+logic signed [15:0] w_ModulationPhase;
+logic signed [15:0] w_ModulatedPhase;
 
-//     .o_VoiceOperator             (o_VoiceOperator),
-//     .i_Algorithm                 (i_Algorithm),
-//     .o_Algorithm                 (o_Algorithm),
 
-//     .i_PhaseStepConfigWriteEnable(i_PhaseStepConfigWriteEnable),
-//     .i_PhaseStepConfigWriteAddr  (i_PhaseStepConfigWriteAddr),
-//     .i_PhaseStepConfigWriteData  (i_PhaseStepConfigWriteData)
-// );
+stage_phase_accumulation phase_accumulation (
+    .i_Clock                     (i_Clock),
+    .i_VoiceOperator             (r_VoiceOperator[1]),
+    .o_VoiceOperator             (r_VoiceOperator[2]),
+
+    .i_ModulationPhase           (w_ModulationPhase),
+    .o_ModulatedPhase            (w_ModulatedPhase),
+
+    .i_AlgorithmWord                 (r_AlgorithmWord[0]),
+    .o_AlgorithmWord                 (r_AlgorithmWord[1]),
+
+    .i_PhaseStepConfigWriteEnable(w_PhaseStepWriteEnable),
+    .i_PhaseStepConfigWriteAddr  (w_VoiceOpRegWriteIndex),
+    .i_PhaseStepConfigWriteData  (i_RegisterWriteValue)
+);
 
 
 // stage_waveform_generation waveform_generation (

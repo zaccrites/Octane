@@ -19,15 +19,15 @@ module stage_phase_accumulation (
     input VoiceOperatorID_t i_VoiceOperator,
     output VoiceOperatorID_t o_VoiceOperator,
 
-    input AlgorithmWord_t i_Algorithm,
-    output AlgorithmWord_t o_Algorithm,
+    input AlgorithmWord_t i_AlgorithmWord,
+    output AlgorithmWord_t o_AlgorithmWord,
 
     // ----------------------------------------------------------
 
     // configuration
-    input logic i_PhaseStepConfigWriteEnable,
+    input logic [1:0] i_PhaseStepConfigWriteEnable,
     input VoiceOperatorID_t i_PhaseStepConfigWriteAddr,
-    input logic signed [15:0] i_PhaseStepConfigWriteData
+    input logic unsigned [7:0] i_PhaseStepConfigWriteData
 
 );
 
@@ -36,12 +36,12 @@ module stage_phase_accumulation (
 /// When we add the signed modulation phase to this unsigned value (which
 /// we make signed by prepending a 0 sign bit), we get a 17-bit signed phase
 /// value which we can pass to the waveform generator.
-logic unsigned [15:0] r_PhaseAccumulators [NUM_VOICE_OPERATORS];
-logic unsigned [15:0] r_PhaseStepConfig [NUM_VOICE_OPERATORS];
+logic unsigned [15:0] r_PhaseAccumulators [`NUM_VOICE_OPERATORS];
+logic unsigned [15:0] r_PhaseStepConfig [`NUM_VOICE_OPERATORS];
 
 
 // Pipeline registers
-AlgorithmWord_t r_Algorithm;
+AlgorithmWord_t r_AlgorithmWord;
 VoiceOperatorID_t r_VoiceOperator;
 logic signed [15:0] r_AccumulatedPhase;
 logic signed [15:0] r_PhaseStep;
@@ -55,12 +55,14 @@ end
 
 always_ff @ (posedge i_Clock) begin
 
-    if (i_PhaseStepConfigWriteEnable)
-        r_PhaseStepConfig[i_PhaseStepConfigWriteAddr] <= i_PhaseStepConfigWriteData;
+    // TODO: Make sure Lattice tools figure out to use write enable mask
+    if (i_PhaseStepConfigWriteEnable[0])
+        r_PhaseStepConfig[i_PhaseStepConfigWriteAddr][15:8] <= i_PhaseStepConfigWriteData;
+    if (i_PhaseStepConfigWriteEnable[1])
+        r_PhaseStepConfig[i_PhaseStepConfigWriteAddr][7:0] <= i_PhaseStepConfigWriteData;
 
     // Clock 1
     // ----------------------------------------------------------
-
     r_PhaseAccumulators[r_VoiceOperator] <= w_SteppedPhase;
 
     r_AccumulatedPhase <= r_PhaseAccumulators[i_VoiceOperator];
@@ -68,19 +70,16 @@ always_ff @ (posedge i_Clock) begin
     r_ModulationPhase <= i_ModulationPhase;
 
     r_VoiceOperator <= i_VoiceOperator;
-    r_Algorithm <= i_Algorithm;
-
+    r_AlgorithmWord <= i_AlgorithmWord;
     // ----------------------------------------------------------
 
     // Clock 2
     // ----------------------------------------------------------
-
     // TODO: Feedback
     o_ModulatedPhase <= w_SteppedPhase + r_ModulationPhase;
 
     o_VoiceOperator <= r_VoiceOperator;
-    o_Algorithm <= r_Algorithm;
-
+    o_AlgorithmWord <= r_AlgorithmWord;
     // ----------------------------------------------------------
 
 end
