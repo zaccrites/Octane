@@ -25,24 +25,23 @@ pkg load signal;
 % dB  = 40;
 % N = dB*Fs/(22*delta_f);
 
-f1 = 1000;
-f2 = 8000;
+f1 = 500;
+f2 = 1000;
 delta_f = f2-f1;
 Fs = 44100;
-dB  = -20 * log10(0.04)
-N = dB*Fs/(22*delta_f)
-% N = 8
-% dB = N / Fs * 22*delta_f
+% dB  = -20 * log10(0.50)
+% N = dB*Fs/(22*delta_f)
+N = (8 * 3) - 1
+dB = N / Fs * 22*delta_f
 
 f =  [f1 ]/(Fs/2);
-% hc = fir1(round(N)-1, f,'low');
+hc = fir1(round(N)-1, f,'low');
 
 % The above calculation produces a filter with these properties:
 %  * 28 dB stopband rejection at 8 kHz (passband stops at 1 kHz)
-%    (28 dB per decade?)
 %  * 7th-order, using 8 taps
 %  * Linear phase?
-hc = fir1(7, f,'low');
+hc = fir1(N, f,'low');
 
 % See also: https://octave.sourceforge.io/signal/function/fir1.html
 
@@ -76,6 +75,7 @@ Hz = Hz / z^7
 
 % figure
 plot((-0.5:1/4096:0.5-1/4096)*Fs,20*log10(abs(fftshift(fft(hc,4096)))))
-axis([0 20000 -60 20])
+axis([0 10000 -60 20])
 title('Filter Frequency Response')
 grid on
+grid minor
