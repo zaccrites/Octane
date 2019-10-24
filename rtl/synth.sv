@@ -165,9 +165,6 @@ end
 
 
 
-// TODO: Trim these down
-VoiceOperatorID_t r_VoiceOperator [32];
-AlgorithmWord_t r_AlgorithmWord [32];
 
 
 
@@ -200,7 +197,7 @@ stage_modulation modulation (
     .o_ModulationPhase(w_ModulationPhase),
 
 
-    .o_AlgorithmWord      (r_AlgorithmWord[0]),
+    .o_AlgorithmWord      (r_AlgorithmWord[1]),
 
     // TODO: Set these if register written above
     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
@@ -219,12 +216,17 @@ assign w_OperatorWritebackID = 0;
 assign w_OperatorWritebackValue = 0;
 
 
-// TODO
-assign o_SampleReady = r_VoiceOperator[2] == 8'hff;
+
+
+// TODO: Trim these down
+VoiceOperatorID_t r_VoiceOperator [31:0];
+AlgorithmWord_t r_AlgorithmWord [31:0];
+
+
 
 
 logic signed [15:0] w_ModulationPhase;
-logic signed [15:0] w_ModulatedPhase;
+logic signed [16:0] w_ModulatedPhase;
 
 
 stage_phase_accumulation phase_accumulation (
@@ -235,8 +237,8 @@ stage_phase_accumulation phase_accumulation (
     .i_ModulationPhase           (w_ModulationPhase),
     .o_ModulatedPhase            (w_ModulatedPhase),
 
-    .i_AlgorithmWord                 (r_AlgorithmWord[0]),
-    .o_AlgorithmWord                 (r_AlgorithmWord[1]),
+    .i_AlgorithmWord                 (r_AlgorithmWord[1]),
+    .o_AlgorithmWord                 (r_AlgorithmWord[2]),
 
     .i_PhaseStepConfigWriteEnable(w_PhaseStepWriteEnable),
     .i_PhaseStepConfigWriteAddr  (w_VoiceOpRegWriteIndex),
@@ -244,11 +246,19 @@ stage_phase_accumulation phase_accumulation (
 );
 
 
-// stage_waveform_generation waveform_generation (
-//     .i_Clock  (i_Clock),
-//     .i_Phase   (i_Phase),
-//     .o_Waveform(o_Waveform)
-// );
+logic signed [15:0] r_RawWaveform;
+
+stage_waveform_generation waveform_generation (
+    .i_Clock  (i_Clock),
+    .i_Phase   (w_ModulatedPhase),
+    .o_Waveform(r_RawWaveform),
+
+    .i_VoiceOperator(r_VoiceOperator[2]),
+    .o_VoiceOperator(r_VoiceOperator[3]),
+
+    .i_AlgorithmWord(r_AlgorithmWord[2]),
+    .o_AlgorithmWord(r_AlgorithmWord[3])
+);
 
 
 
@@ -260,7 +270,8 @@ stage_phase_accumulation phase_accumulation (
 logic signed [15:0] r_Subsample;
 assign r_Subsample = 0;
 logic r_SubsampleReady;
-assign r_SubsampleReady = 0;
+assign r_SubsampleReady = r_VoiceOperator[2] == 8'hff;
+assign o_SampleReady = r_VoiceOperator[2] == 8'hff;
 
 
 logic signed [21:0] r_SampleBuffer;

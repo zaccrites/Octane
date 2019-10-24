@@ -4,12 +4,40 @@ import sys
 import math
 
 
-# The block ram is 14 bits, and we synthesize a 15th bit using the phase.
-BIT_DEPTH = 14
-NUM_SAMPLES = 8192
+# The SPRAM is 16 bits wide, but we have to accomodate a synthesized sign
+# bit, so we only generate 15 bits here.
+BIT_DEPTH = 15
+NUM_SAMPLES = (16 * 1024) * 4
 
 # Quarter-wave only!
 PERIOD = math.pi / 2.0
+
+
+# TODO
+template = '''
+
+#ifndef SINE_TABLE_H
+#define SINE_TABLE_H
+
+#include <stdint.h>
+#define SINE_TABLE_LENGTH  {length}
+
+#ifdef SINE_TABLE_IMPLEMENTATION
+
+const uint16_t SINE_TABLE[SINE_TABLE_LENGTH] = {{
+{entries}
+}};
+
+#else
+extern const uint16_t SINE_TABLE[SINE_TABLE_LENGTH];
+#endif
+
+#endif
+
+'''
+
+
+
 
 
 def main():

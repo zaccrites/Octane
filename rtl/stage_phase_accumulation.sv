@@ -12,7 +12,7 @@ module stage_phase_accumulation (
     // ----------------------------------------------------------
 
     input signed [15:0] i_ModulationPhase,
-    output signed [15:0] o_ModulatedPhase,
+    output signed [16:0] o_ModulatedPhase,
 
     // ----------------------------------------------------------
 
