@@ -99,7 +99,7 @@ logic unsigned [15:0] r_CarrierComp [32];
 // V (5 bits) represents the zero-based voice number.
 //
 //
-logic w_RegisterWriteCategory;  // TODO: Find better name
+logic [7:0] w_RegisterWriteCategory;  // TODO: Find better name
 assign w_RegisterWriteCategory = i_RegisterWriteNumber[15:8];
 logic [7:0] w_VoiceOpRegWriteIndex;
 assign w_VoiceOpRegWriteIndex = i_RegisterWriteNumber[7:0];
@@ -196,8 +196,22 @@ stage_modulation modulation (
     // TODO: Set these if register written above
     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
     .i_AlgorithmWriteAddr  (w_VoiceOpRegWriteIndex),
-    .i_AlgorithmWriteData  (i_RegisterWriteValue)
+    .i_AlgorithmWriteData  (i_RegisterWriteValue[7:0]),
+
+    .i_OperatorWritebackID   (w_OperatorWritebackID),
+    .i_OperatorWritebackValue(w_OperatorWritebackValue)
+
 );
+
+// TODO
+VoiceOperatorID_t w_OperatorWritebackID;
+logic signed [15:0] w_OperatorWritebackValue;
+assign w_OperatorWritebackID = 0;
+assign w_OperatorWritebackValue = 0;
+
+
+// TODO
+assign o_SampleReady = 0;
 
 
 // stage_phase_accumulation phase_accumulation (

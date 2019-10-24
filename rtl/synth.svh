@@ -12,19 +12,31 @@ typedef struct packed
 
 
 
-const integer NUM_VOICES = 32;
-const integer NUM_OPERATORS = 8;
-const integer NUM_VOICE_OPERATORS = NUM_VOICES * NUM_OPERATORS;
+
+`define NUM_VOICES            32
+`define NUM_OPERATORS         8
+`define NUM_VOICE_OPERATORS   (`NUM_VOICES * `NUM_OPERATORS)
+
 
 typedef logic unsigned [7:0] VoiceOperatorID_t;
 typedef logic unsigned [2:0] OperatorID_t;
 typedef logic unsigned [4:0] VoiceID_t;
 
-function OperatorID_t getOperatorID(VoiceOperatorID_t voiceOperator);
+
+function OperatorID_t getOperatorID (
+    // verilator lint_off UNUSED
+    VoiceOperatorID_t voiceOperator
+    // verilator lint_on UNUSED
+);
     return voiceOperator[7:5];
 endfunction
 
-function VoiceID_t getVoiceID(VoiceOperatorID_t voiceOperator);
+
+function VoiceID_t getVoiceID (
+    // verilator lint_off UNUSED
+    VoiceOperatorID_t voiceOperator
+    // verilator lint_on UNUSED
+);
     return voiceOperator[4:0];
 endfunction
 
