@@ -61,13 +61,13 @@ int main(int argc, char** argv)
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
-        if (voiceNum < 16)
+        // if (voiceNum < 16)
+        // {
+        //     noteBaseFrequency = 350.0;
+        // }
+        // else
         {
-            noteBaseFrequency = 350.0;
-        }
-        else
-        {
-            noteBaseFrequency = 440.0;
+            noteBaseFrequency = 1000.0;
         }
 
         // auto algorithmNumber = patchConfig.getAlgorithm();
@@ -98,14 +98,24 @@ int main(int argc, char** argv)
         a - Modulated by OP1
 
         */
+        // synth.writeOperatorRegister(voiceNum, 1 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        // synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000001);
+        // synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000010);
+        // synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000100);
+        // synth.writeOperatorRegister(voiceNum, 5 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        // synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0010000);
+        // synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0100000);
+        // synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'1000000);
         synth.writeOperatorRegister(voiceNum, 1 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000001);
-        synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000010);
-        synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000100);
+        synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
         synth.writeOperatorRegister(voiceNum, 5 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0010000);
-        synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0100000);
-        synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'1000000);
+        synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000000);
+
+
 
 
         // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(patchConfig.getNumCarriers());
@@ -145,6 +155,8 @@ int main(int argc, char** argv)
             // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_WAVEFORM, waveform);
 
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
+            // printf("phaseStep: 0x%04x  (expected 0xcece) \n", phaseStep);
+
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_HIGH, phaseStep >> 8);
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_LOW, phaseStep & 0xff);
         }
@@ -159,48 +171,48 @@ int main(int argc, char** argv)
     }
 
 
-    printf("Registers: \n");
-    printf("Phase Step: \n");
-    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-    {
-        if ( ! (voiceNum == 0 || voiceNum == 31)) continue;
+    // printf("Registers: \n");
+    // printf("Phase Step: \n");
+    // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+    // {
+    //     if ( ! (voiceNum == 0 || voiceNum == 31)) continue;
 
-        const bool noteOn = synth.getRawModel().synth__DOT__r_NoteOn[voiceNum];
-        printf("  %d NoteOn = %d \n", voiceNum, noteOn);
+    //     const bool noteOn = synth.getRawModel().synth__DOT__r_NoteOn[voiceNum];
+    //     printf("  %d NoteOn = %d \n", voiceNum, noteOn);
 
-        for (uint8_t opNum = 0; opNum < 8; opNum++)
-        {
-            const uint8_t index = (opNum << 5) | voiceNum;
-            const uint16_t phaseStep = synth.getRawModel().synth__DOT__r_PhaseStep[index];
-            printf("  %d.%d phaseStep = 0x%04x \n", voiceNum, opNum, phaseStep);
-        }
-    }
+    //     for (uint8_t opNum = 0; opNum < 8; opNum++)
+    //     {
+    //         const uint8_t index = (opNum << 5) | voiceNum;
+    //         const uint16_t phaseStep = synth.getRawModel().synth__DOT__r_PhaseStep[index];
+    //         printf("  %d.%d phaseStep = 0x%04x \n", voiceNum, opNum, phaseStep);
+    //     }
+    // }
 
 
-    double seconds = 3.0;
+    double seconds = 0.25;
     auto& rBuffer = synth.getSampleBuffer();
 
     double noteOn = true;
     while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
     {
         double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
-        if (noteOn && t >= seconds - 1.0)
-        {
-            for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-            {
-                // if (voiceNum < 16)
-                {
-                    synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
-                }
-            }
-            noteOn = false;
-        }
+        // if (noteOn && t >= seconds - 1.0)
+        // {
+        //     for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+        //     {
+        //         // if (voiceNum < 16)
+        //         {
+        //             synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
+        //         }
+        //     }
+        //     noteOn = false;
+        // }
 
         synth.tick();
     }
 
 
-    #if 1
+    #if 0
 
     // TODO: Graphics?
     // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)

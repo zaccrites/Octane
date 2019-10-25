@@ -55,6 +55,13 @@ assign w_QuarterWaveSine = {1'b0, r_RawQuarterWaveSine};
 
 always_ff @ (posedge i_Clock) begin
 
+    // if (i_VoiceOperator == 255) $display("ID: %d, phase: %d", i_VoiceOperator, i_Phase);
+    // if (r_VoiceOperator[1] == 255) $display("ID: %d, rawWaveform: %x", r_VoiceOperator[1], (r_NegateOutput[1] ? ~w_QuarterWaveSine : w_QuarterWaveSine));
+
+
+    // Is the problem here? Or in the modulation?
+
+
     // Clock 1
     // ----------------------------------------------------------
     r_NegateOutput[0] <= w_NegateOutput;

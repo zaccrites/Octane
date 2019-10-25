@@ -11,8 +11,7 @@ module stage_phase_accumulation (
 
     // ----------------------------------------------------------
 
-    input signed [15:0] i_ModulationPhase,
-    output signed [16:0] o_ModulatedPhase,
+    output logic unsigned [15:0] o_Phase,
 
     // ----------------------------------------------------------
 
@@ -45,8 +44,6 @@ AlgorithmWord_t r_AlgorithmWord;
 VoiceOperatorID_t r_VoiceOperator;
 logic signed [15:0] r_AccumulatedPhase;
 logic signed [15:0] r_PhaseStep;
-logic signed [15:0] r_ModulationPhase;
-
 
 logic signed [15:0] w_SteppedPhase;
 always_comb begin
@@ -63,11 +60,11 @@ always_ff @ (posedge i_Clock) begin
 
     // Clock 1
     // ----------------------------------------------------------
+    // Feeds back from Clock 2 to Clock 1
     r_PhaseAccumulators[r_VoiceOperator] <= w_SteppedPhase;
 
     r_AccumulatedPhase <= r_PhaseAccumulators[i_VoiceOperator];
     r_PhaseStep <= r_PhaseStepConfig[i_VoiceOperator];
-    r_ModulationPhase <= i_ModulationPhase;
 
     r_VoiceOperator <= i_VoiceOperator;
     r_AlgorithmWord <= i_AlgorithmWord;
@@ -75,8 +72,7 @@ always_ff @ (posedge i_Clock) begin
 
     // Clock 2
     // ----------------------------------------------------------
-    // TODO: Feedback
-    o_ModulatedPhase <= w_SteppedPhase + r_ModulationPhase;
+    o_Phase <= w_SteppedPhase;
 
     o_VoiceOperator <= r_VoiceOperator;
     o_AlgorithmWord <= r_AlgorithmWord;

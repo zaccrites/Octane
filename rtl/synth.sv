@@ -109,7 +109,7 @@ assign w_VoiceRegWriteIndex = i_RegisterWriteNumber[4:0];
 
 
 function logic regWriteEnable(logic [7:0] category);
-    return i_RegisterWriteEnable && category == category;
+    return i_RegisterWriteEnable && w_RegisterWriteCategory == category;
 endfunction
 
 
@@ -188,26 +188,26 @@ end
 
 
 
-stage_modulation modulation (
-    .i_Clock          (i_Clock),
+// stage_modulation modulation (
+//     .i_Clock          (i_Clock),
 
-    .i_VoiceOperator  (r_VoiceOperator[0]),
-    .o_VoiceOperator  (r_VoiceOperator[1]),
+//     .i_VoiceOperator  (r_VoiceOperator[0]),
+//     .o_VoiceOperator  (r_VoiceOperator[1]),
 
-    .o_ModulationPhase(w_ModulationPhase),
+//     .o_ModulationPhase(w_ModulationPhase),
 
 
-    .o_AlgorithmWord      (r_AlgorithmWord[1]),
+//     .o_AlgorithmWord      (r_AlgorithmWord[1]),
 
-    // TODO: Set these if register written above
-    .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
-    .i_AlgorithmWriteAddr  (w_VoiceOpRegWriteIndex),
-    .i_AlgorithmWriteData  (i_RegisterWriteValue[7:0]),
+//     // TODO: Set these if register written above
+//     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
+//     .i_AlgorithmWriteAddr  (w_VoiceOpRegWriteIndex),
+//     .i_AlgorithmWriteData  (i_RegisterWriteValue[7:0]),
 
-    .i_OperatorWritebackID   (w_OperatorWritebackID),
-    .i_OperatorWritebackValue(w_OperatorWritebackValue)
+//     .i_OperatorWritebackID   (w_OperatorWritebackID),
+//     .i_OperatorWritebackValue(w_OperatorWritebackValue)
 
-);
+// );
 
 // TODO
 VoiceOperatorID_t w_OperatorWritebackID;
@@ -227,17 +227,22 @@ AlgorithmWord_t r_AlgorithmWord [31:0];
 
 logic signed [15:0] w_ModulationPhase;
 logic signed [16:0] w_ModulatedPhase;
+logic unsigned [15:0] w_RawPhase;
 
 
 stage_phase_accumulation phase_accumulation (
     .i_Clock                     (i_Clock),
-    .i_VoiceOperator             (r_VoiceOperator[1]),
+    // .i_VoiceOperator             (r_VoiceOperator[1]),
+    .i_VoiceOperator             (r_VoiceOperator[0]),
     .o_VoiceOperator             (r_VoiceOperator[2]),
 
-    .i_ModulationPhase           (w_ModulationPhase),
-    .o_ModulatedPhase            (w_ModulatedPhase),
+    // .i_ModulationPhase           (w_ModulationPhase),
+    // .o_ModulatedPhase            (w_ModulatedPhase),
 
-    .i_AlgorithmWord                 (r_AlgorithmWord[1]),
+    .o_Phase                     (w_RawPhase),
+
+    // .i_AlgorithmWord                 (r_AlgorithmWord[1]),
+    .i_AlgorithmWord                 (r_AlgorithmWord[0]),
     .o_AlgorithmWord                 (r_AlgorithmWord[2]),
 
     .i_PhaseStepConfigWriteEnable(w_PhaseStepWriteEnable),
@@ -246,12 +251,13 @@ stage_phase_accumulation phase_accumulation (
 );
 
 
-logic signed [15:0] r_RawWaveform;
+logic signed [15:0] r_RawWaveform [32];
 
 stage_waveform_generation waveform_generation (
     .i_Clock  (i_Clock),
-    .i_Phase   (w_ModulatedPhase),
-    .o_Waveform(r_RawWaveform),
+    // .i_Phase   (w_ModulatedPhase),
+    .i_Phase   ($signed({1'b0, w_RawPhase})),
+    .o_Waveform(r_RawWaveform[3]),
 
     .i_VoiceOperator(r_VoiceOperator[2]),
     .o_VoiceOperator(r_VoiceOperator[3]),
@@ -261,17 +267,14 @@ stage_waveform_generation waveform_generation (
 );
 
 
-
-
-
-
-
 // TODO
 logic signed [15:0] r_Subsample;
-assign r_Subsample = 0;
+assign r_Subsample = r_RawWaveform[3];
+// assign r_Subsample = w_ModulatedPhase[15:0];
+// assign r_Subsample = w_RawPhase;
 logic r_SubsampleReady;
-assign r_SubsampleReady = r_VoiceOperator[2] == 8'hff;
-assign o_SampleReady = r_VoiceOperator[2] == 8'hff;
+assign r_SubsampleReady = r_VoiceOperator[3] == 8'hff;
+assign o_SampleReady = r_VoiceOperator[3] == 8'hff;
 
 
 logic signed [21:0] r_SampleBuffer;

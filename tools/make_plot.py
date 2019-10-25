@@ -33,7 +33,8 @@ def main():
             data.append(Record(
                 x=int(row[0]),
                 sample=int(row[1]) / MAX_VALUE,
-                expected=int(row[2]) / MAX_VALUE,
+                # expected=int(row[2]) / MAX_VALUE,
+                expected=0,
             ))
 
     def get_fft(samples):
@@ -79,7 +80,8 @@ def main():
             return np.s_[row, i] if len(plots) > 1 else np.s_[row]
 
         axes[get_index(0)].set_title(f'Time Domain ({name})')
-        axes[get_index(0)].plot(sample_x[sample_start:sample_end], sample_y[sample_start:sample_end])
+        axes[get_index(0)].plot(sample_x[sample_start:sample_end], sample_y[sample_start:sample_end], marker='o')
+        # axes[get_index(0)].plot(sample_x[sample_start:sample_end], sample_y[sample_start:sample_end])
         axes[get_index(0)].set_xlabel('Sample Number')
         axes[get_index(0)].set_ylabel('Amplitude')
 
@@ -91,11 +93,11 @@ def main():
         use_linear_fft_plot = True
         if use_linear_fft_plot:
             import matplotlib.ticker as plticker
-            axes[get_index(1)].plot(freq_labels, sample_fft, 'r')
+            axes[get_index(1)].plot(freq_labels, sample_fft, color='r')
             axes[get_index(1)].set_xlim([0, 33 * 100])
             axes[get_index(1)].xaxis.set_major_locator(plticker.MultipleLocator(base=200.0))
         else:
-            axes[get_index(1)].semilogx(freq_labels, sample_fft, 'r')
+            axes[get_index(1)].semilogx(freq_labels, sample_fft, color='r')
             axes[get_index(1)].set_xlim([1, 20000])
 
         for ax in axes.flat:

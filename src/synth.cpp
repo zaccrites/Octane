@@ -30,17 +30,19 @@ void Synth::tick()
         int16_t sample = m_Synth.o_Sample;
         m_SampleBuffer.push_front(sample);
 
-        // TODO: Generate an "expected" sample as well
-        int16_t expectedSample = static_cast<int16_t>(
-            0x7fff *
-            std::sin(
-                2.0 * M_PI * 440.0 * m_t
-                + std::sin(2.0 * M_PI * 880.0 * m_t)
-            )
-            / 16.0
-        );
+        // // TODO: Generate an "expected" sample as well
+        // int16_t expectedSample = static_cast<int16_t>(
+        //     0x7fff *
+        //     std::sin(
+        //         2.0 * M_PI * 440.0 * m_t
+        //         + std::sin(2.0 * M_PI * 880.0 * m_t)
+        //     )
+        //     / 16.0
+        // );
+        // fprintf(m_DataFile, "%zu,%d,%d\n", m_SampleCounter++, sample, expectedSample);
 
-        fprintf(m_DataFile, "%zu,%d,%d\n", m_SampleCounter++, sample, expectedSample);
+        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
+
     }
 
     // We execute 256 clock cycles for each audio sample (at 44.1 kHz),
@@ -63,8 +65,8 @@ void Synth::reset()
 
 void Synth::writeRegister(uint16_t registerNumber, uint8_t value)
 {
-    m_Synth.i_RegisterNumber = registerNumber;
-    m_Synth.i_RegisterValue = value;
+    m_Synth.i_RegisterWriteNumber = registerNumber;
+    m_Synth.i_RegisterWriteValue = value;
     m_Synth.i_RegisterWriteEnable = 1;
     tick();
     m_Synth.i_RegisterWriteEnable = 0;
