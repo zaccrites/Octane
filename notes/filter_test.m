@@ -29,7 +29,7 @@ f1 = 1000;
 f2 = 8000;
 delta_f = f2-f1;
 Fs = 44100;
-dB  = -20 * log10(0.04)
+dB  = -20 * log10(0.01)
 N = dB*Fs/(22*delta_f)
 % N = (8 * 3) - 1
 % dB = N / Fs * 22*delta_f
@@ -42,6 +42,21 @@ hc = fir1(round(N)-1, f,'low');
 %  * 7th-order, using 8 taps
 %  * Linear phase?
 % hc = fir1(N, f,'low');
+
+
+% Another option would be to take the memory used to store raw filter
+% coefficients and instead store a single 16-bit number, which is used to
+% select an entire filter. Then the coefficients would be selected using
+% LUT ROM inside the FPGA. The left over memory can then be used to store
+% additional history for another round of filter taps.
+%
+% This has an additional benefit in that I can precompute the filters
+% using Python or Octave instead of on the MCU. I can take full advantage
+% of the number of filters I have by spacing them apart logarithmically.
+% With 16 bits I can use two bits for selecting the filter type
+% (low pass, high pass, bandpass, or bandstop), then 14 bits leaves me with
+% more than enough cutoff frequency options.
+
 
 % See also: https://octave.sourceforge.io/signal/function/fir1.html
 
