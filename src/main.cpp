@@ -61,14 +61,17 @@ int main(int argc, char** argv)
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
-        // if (voiceNum < 16)
-        // {
-        //     noteBaseFrequency = 350.0;
-        // }
-        // else
+        if (voiceNum < 16)
+        {
+            noteBaseFrequency = 500.0;
+        }
+        else
         {
             noteBaseFrequency = 1000.0;
         }
+
+        noteBaseFrequency = 100.0 * (1 + voiceNum);
+
 
         // auto algorithmNumber = patchConfig.getAlgorithm();
         // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);

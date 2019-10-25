@@ -188,26 +188,7 @@ end
 
 
 
-// stage_modulation modulation (
-//     .i_Clock          (i_Clock),
 
-//     .i_VoiceOperator  (r_VoiceOperator[0]),
-//     .o_VoiceOperator  (r_VoiceOperator[1]),
-
-//     .o_ModulationPhase(w_ModulationPhase),
-
-
-//     .o_AlgorithmWord      (r_AlgorithmWord[1]),
-
-//     // TODO: Set these if register written above
-//     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
-//     .i_AlgorithmWriteAddr  (w_VoiceOpRegWriteIndex),
-//     .i_AlgorithmWriteData  (i_RegisterWriteValue[7:0]),
-
-//     .i_OperatorWritebackID   (w_OperatorWritebackID),
-//     .i_OperatorWritebackValue(w_OperatorWritebackValue)
-
-// );
 
 // TODO
 VoiceOperatorID_t w_OperatorWritebackID;
@@ -225,30 +206,46 @@ AlgorithmWord_t r_AlgorithmWord [31:0];
 
 
 
-logic signed [15:0] w_ModulationPhase;
 logic signed [16:0] w_ModulatedPhase;
 logic unsigned [15:0] w_RawPhase;
 
 
 stage_phase_accumulation phase_accumulation (
     .i_Clock                     (i_Clock),
-    // .i_VoiceOperator             (r_VoiceOperator[1]),
     .i_VoiceOperator             (r_VoiceOperator[0]),
-    .o_VoiceOperator             (r_VoiceOperator[2]),
-
-    // .i_ModulationPhase           (w_ModulationPhase),
-    // .o_ModulatedPhase            (w_ModulatedPhase),
+    .o_VoiceOperator             (r_VoiceOperator[1]),
 
     .o_Phase                     (w_RawPhase),
-
-    // .i_AlgorithmWord                 (r_AlgorithmWord[1]),
-    .i_AlgorithmWord                 (r_AlgorithmWord[0]),
-    .o_AlgorithmWord                 (r_AlgorithmWord[2]),
 
     .i_PhaseStepConfigWriteEnable(w_PhaseStepWriteEnable),
     .i_PhaseStepConfigWriteAddr  (w_VoiceOpRegWriteIndex),
     .i_PhaseStepConfigWriteData  (i_RegisterWriteValue)
 );
+
+
+
+stage_modulation modulation (
+    .i_Clock          (i_Clock),
+
+    .i_VoiceOperator  (r_VoiceOperator[1]),
+    .o_VoiceOperator  (r_VoiceOperator[2]),
+
+    .i_Phase       (w_RawPhase),
+    .o_Phase       (w_ModulatedPhase),
+
+
+    .o_AlgorithmWord      (r_AlgorithmWord[2]),
+
+    // TODO: Set these if register written above
+    .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
+    .i_AlgorithmWriteAddr  (w_VoiceOpRegWriteIndex),
+    .i_AlgorithmWriteData  (i_RegisterWriteValue[7:0]),
+
+    .i_OperatorWritebackID   (w_OperatorWritebackID),
+    .i_OperatorWritebackValue(w_OperatorWritebackValue)
+
+);
+
 
 
 logic signed [15:0] r_RawWaveform [32];

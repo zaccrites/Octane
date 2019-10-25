@@ -18,9 +18,6 @@ module stage_phase_accumulation (
     input VoiceOperatorID_t i_VoiceOperator,
     output VoiceOperatorID_t o_VoiceOperator,
 
-    input AlgorithmWord_t i_AlgorithmWord,
-    output AlgorithmWord_t o_AlgorithmWord,
-
     // ----------------------------------------------------------
 
     // configuration
@@ -40,7 +37,6 @@ logic unsigned [15:0] r_PhaseStepConfig [`NUM_VOICE_OPERATORS];
 
 
 // Pipeline registers
-AlgorithmWord_t r_AlgorithmWord;
 VoiceOperatorID_t r_VoiceOperator;
 logic signed [15:0] r_AccumulatedPhase;
 logic signed [15:0] r_PhaseStep;
@@ -67,7 +63,6 @@ always_ff @ (posedge i_Clock) begin
     r_PhaseStep <= r_PhaseStepConfig[i_VoiceOperator];
 
     r_VoiceOperator <= i_VoiceOperator;
-    r_AlgorithmWord <= i_AlgorithmWord;
     // ----------------------------------------------------------
 
     // Clock 2
@@ -75,7 +70,6 @@ always_ff @ (posedge i_Clock) begin
     o_Phase <= w_SteppedPhase;
 
     o_VoiceOperator <= r_VoiceOperator;
-    o_AlgorithmWord <= r_AlgorithmWord;
     // ----------------------------------------------------------
 
 end
