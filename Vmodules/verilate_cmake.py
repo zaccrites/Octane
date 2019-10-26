@@ -39,6 +39,11 @@ target_include_directories({{ cmake_target_name }}
         "{{ verilator_include_dir }}"
 )
 
+set_target_properties({{ cmake_target_name }} PROPERTIES
+    CXX_STANDARD 17
+    CXX_EXTENSIONS OFF
+)
+
 target_compile_options({{ cmake_target_name }} PRIVATE
     # Apparently -Os can have better performance than -O3 for Verilator
     # modules due to fitting better in the instruction cache.

@@ -2,6 +2,8 @@
 #include <printf.h>
 #include <iostream>
 #include <fstream>
+#include <algorithm>  // for std::find
+#include <optional>
 
 #include <SDL2/SDL.h>
 
@@ -41,17 +43,36 @@ uint16_t phaseStepForFrequency(double frequency) {
 
 
 
-int main(int argc, char** argv)
+int main(int argc, const char** argv)
 {
     setup_debug_handlers();
 
-    if (argc < 2)
+    auto getOption = [argv, argc](const std::string& option) -> std::optional<std::string> {
+        const char** end = argv + argc;
+        const char** it = std::find(argv, end, option);
+        if (it != end && ++it != end)
+        {
+            return *it;
+        }
+        return {};
+    };
+
+    auto isOptionPresent = [argv, argc](const std::string& option) -> bool {
+        const char** end = argv + argc;
+        const char** it = std::find(argv, end, option);
+        return it != end;
+    };
+
+    const auto playAudio = isOptionPresent("play");
+
+    const auto patchConfigPath = getOption("-p");
+    if ( ! patchConfigPath)
     {
         std::cerr << "ERROR: Must provide path to patch config file" << std::endl;
         return 1;
     }
 
-    auto patchConfig = PatchConfig::load(argv[1]);
+    auto patchConfig = PatchConfig::load(*patchConfigPath);
     std::cout << "Setting up patch " << patchConfig.getName() << std::endl;
 
     Synth synth;
@@ -202,7 +223,9 @@ int main(int argc, char** argv)
     // }
 
 
-    bool playAudio = true;
+
+
+
     double seconds = playAudio ? 2.0 : 0.25;
     auto& rBuffer = synth.getSampleBuffer();
 

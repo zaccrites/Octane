@@ -1,8 +1,8 @@
 
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
-project(synthetic VERSION 0.1.0
-        DESCRIPTION "FPGA-based FM synthesizer"
+project(octane VERSION 0.1.0
+        DESCRIPTION "An eight-operator FM synthesizer"
         LANGUAGES CXX)
 
 
@@ -23,6 +23,11 @@ add_executable(synth
     # TODO: Add these somewhere else?
     "roms/sine_rom.hex"
     "roms/algorithm_rom.hex"
+)
+
+set_target_properties(synth PROPERTIES
+    CXX_STANDARD 17
+    CXX_EXTENSIONS OFF
 )
 
 

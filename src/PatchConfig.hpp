@@ -13,6 +13,7 @@
 //  - More advanced ADSR envelope shape
 
 #include <string>
+#include <string_view>
 
 
 class OperatorConfig
@@ -50,7 +51,7 @@ class PatchConfig
 {
 public:
 
-    static PatchConfig load(const char* path);
+    static PatchConfig load(std::string_view path);
     // TODO: Save?
 
     inline const std::string& getName() const { return m_Name; }

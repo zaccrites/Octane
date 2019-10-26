@@ -77,9 +77,9 @@ class RawPatchConfig
 {
 public:
 
-    RawPatchConfig(const char* path) : m_Json {}
+    RawPatchConfig(std::string_view path) : m_Json {}
     {
-        std::ifstream jsonFile { path };
+        std::ifstream jsonFile(std::string(path).c_str());
         jsonFile >> m_Json;
     }
 
@@ -128,7 +128,7 @@ private:
 
 
 
-PatchConfig PatchConfig::load(const char* path)
+PatchConfig PatchConfig::load(std::string_view path)
 {
     RawPatchConfig rawConfig { path };
 
