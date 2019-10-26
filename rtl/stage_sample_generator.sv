@@ -72,7 +72,7 @@ always_ff @ (posedge i_Clock) begin
     r_CompensatedCarrierOutputProduct[0] <= w_CarrierCompsensationFactor * i_OperatorOutput;
     r_CompensatedCarrierOutputProduct[1] <= r_CompensatedCarrierOutputProduct[0];
     r_CompensatedCarrierOutputProduct[2] <= r_CompensatedCarrierOutputProduct[1];
-    r_CompensatedCarrierOutput <= r_CompensatedCarrierOutputProduct[2][31:16];
+    r_CompensatedCarrierOutput <= {r_CompensatedCarrierOutputProduct[2][30:16], 1'b0};
 
     // -------------------------------------------------------
 

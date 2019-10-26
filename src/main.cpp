@@ -82,15 +82,15 @@ int main(int argc, const char** argv)
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
-        if (voiceNum < 16)
-        {
-            // noteBaseFrequency = 500.0;
-            noteBaseFrequency = 350.0;
-        }
-        else
+        // if (voiceNum < 16)
+        // {
+        //     // noteBaseFrequency = 500.0;
+        //     noteBaseFrequency = 350.0;
+        // }
+        // else
         {
             // noteBaseFrequency = 1000.0;
-            noteBaseFrequency = 440.0;
+            noteBaseFrequency = 200.0;
         }
 
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
@@ -137,21 +137,18 @@ int main(int argc, const char** argv)
         // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
         uint16_t algorithmWords[8] = {
             //xx mmmmmmm xxxx c nnn
-            0b00'0000000'0000'0'010,  // OP1
-            0b00'0000000'0000'0'010,  // OP2
-            0b00'0000000'0000'0'010,  // OP3
-            0b00'0000000'0000'1'010,  // OP4
-            0b00'0000000'0000'0'010,  // OP5
-            0b00'0000000'0000'0'010,  // OP6
-            0b00'0000000'0000'0'010,  // OP7
-            0b00'0000000'0000'1'010,  // OP8
+            0b00'0000000'0000'0'000,  // OP1
+            0b00'0000000'0000'0'000,  // OP2
+            0b00'0000000'0000'0'000,  // OP3
+            0b00'0000000'0000'0'000,  // OP4
+            0b00'0000000'0000'0'000,  // OP5
+            0b00'0000000'0000'0'000,  // OP6
+            0b00'0000000'0000'0'000,  // OP7
+            // 0b00'1000000'0000'1'000,  // OP8
+            0b00'0000000'0000'1'000,  // OP8
         };
+        // BUG: All operators seem to be considered carriers, regardless of the IS_CARRIER bit
 
-
-        // // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(patchConfig.getNumCarriers());
-        // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(1);
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_HIGH, carrierComp >> 8);
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_LOW, carrierComp & 0xff);
 
 
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
@@ -189,8 +186,6 @@ int main(int argc, const char** argv)
             // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_WAVEFORM, waveform);
 
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
-            // printf("phaseStep: 0x%04x  (expected 0xcece) \n", phaseStep);
-
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_HIGH, phaseStep >> 8);
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_LOW, phaseStep & 0xff);
         }

@@ -8,7 +8,10 @@
             ]
         },
         {
-            "path": "../synth_OLD"
+            "path": "../synth_OLD",
+            "folder_exclude_patterns": [
+                "vendor"
+            ]
         }
     ]
 }

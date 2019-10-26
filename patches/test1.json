@@ -34,9 +34,6 @@
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
-
-
-
         {
             "comment": "Operator 5",
             "levels": [255, 128, 150, 25],
@@ -44,6 +41,8 @@
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
+
+
         {
             "comment": "Operator 6",
             "levels": [255, 128, 150, 25],
