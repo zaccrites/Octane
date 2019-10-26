@@ -19,9 +19,11 @@ module stage_modulation (
     input logic signed [15:0] i_OperatorWritebackValue,
 
     // configuration
-    input logic i_AlgorithmWriteEnable,
+    input logic [1:0] i_AlgorithmWriteEnable,
     input VoiceOperatorID_t i_AlgorithmWriteAddr,
+    // verilator lint_off UNUSED
     input logic [7:0] i_AlgorithmWriteData
+    // verilator lint_on UNUSED
 
 );
 
@@ -43,8 +45,14 @@ always_ff @ (posedge i_Clock) begin
 
     // TODO: Feedback
 
-    if (i_AlgorithmWriteEnable)
-        r_Algorithm[i_AlgorithmWriteAddr] <= i_AlgorithmWriteData;
+    // TODO: Make sure Lattice tools figure out to use write enable mask
+    if (i_AlgorithmWriteEnable[0]) begin
+        r_Algorithm[i_AlgorithmWriteAddr].ModulateWithOP <= i_AlgorithmWriteData[6:0];
+    end
+    if (i_AlgorithmWriteEnable[1]) begin
+        r_Algorithm[i_AlgorithmWriteAddr].IsACarrier <= i_AlgorithmWriteData[3];
+        r_Algorithm[i_AlgorithmWriteAddr].NumCarriers <= i_AlgorithmWriteData[2:0];
+    end
 
     for (i = 0; i < `OPERATOR_OUTPUT_MEMORY_READ_PORTS; i = i + 1) begin
         r_OperatorOutputMemory[i][i_OperatorWritebackID] <= i_OperatorWritebackValue;

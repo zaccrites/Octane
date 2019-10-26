@@ -80,8 +80,8 @@ def main():
             return np.s_[row, i] if len(plots) > 1 else np.s_[row]
 
         axes[get_index(0)].set_title(f'Time Domain ({name})')
-        axes[get_index(0)].plot(sample_x[sample_start:sample_end], sample_y[sample_start:sample_end], marker='o')
-        # axes[get_index(0)].plot(sample_x[sample_start:sample_end], sample_y[sample_start:sample_end])
+        # axes[get_index(0)].plot(sample_x[sample_start:sample_end], sample_y[sample_start:sample_end], marker='o')
+        axes[get_index(0)].plot(sample_x[sample_start:sample_end], sample_y[sample_start:sample_end])
         axes[get_index(0)].set_xlabel('Sample Number')
         axes[get_index(0)].set_ylabel('Amplitude')
 

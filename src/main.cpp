@@ -63,14 +63,16 @@ int main(int argc, char** argv)
         double noteBaseFrequency;
         if (voiceNum < 16)
         {
-            noteBaseFrequency = 500.0;
+            // noteBaseFrequency = 500.0;
+            noteBaseFrequency = 350.0;
         }
         else
         {
-            noteBaseFrequency = 1000.0;
+            // noteBaseFrequency = 1000.0;
+            noteBaseFrequency = 440.0;
         }
 
-        noteBaseFrequency = 100.0 * (1 + voiceNum);
+        // noteBaseFrequency = 100.0 * (1 + voiceNum);
 
 
         // auto algorithmNumber = patchConfig.getAlgorithm();
@@ -102,29 +104,33 @@ int main(int argc, char** argv)
 
         */
         // synth.writeOperatorRegister(voiceNum, 1 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000001);
-        // synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000010);
-        // synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000100);
+        // synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        // synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        // synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
         // synth.writeOperatorRegister(voiceNum, 5 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0010000);
-        // synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0100000);
-        // synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'1000000);
-        synth.writeOperatorRegister(voiceNum, 1 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 5 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000000);
+        // synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        // synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
+        // synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000000);
 
 
+        // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
+        uint16_t algorithmWords[8] = {
+            //xx mmmmmmm xxxx c nnn
+            0b00'0000000'0000'0'010,  // OP1
+            0b00'0000000'0000'0'010,  // OP2
+            0b00'0000000'0000'0'010,  // OP3
+            0b00'0000000'0000'1'010,  // OP4
+            0b00'0000000'0000'0'010,  // OP5
+            0b00'0000000'0000'0'010,  // OP6
+            0b00'0000000'0000'0'010,  // OP7
+            0b00'0000000'0000'1'010,  // OP8
+        };
 
 
-        // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(patchConfig.getNumCarriers());
-        uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(1);
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_HIGH, carrierComp >> 8);
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_LOW, carrierComp & 0xff);
+        // // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(patchConfig.getNumCarriers());
+        // uint16_t carrierComp = static_cast<double>(0x7fff) / static_cast<double>(1);
+        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_HIGH, carrierComp >> 8);
+        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_CARRIER_COMP_LOW, carrierComp & 0xff);
 
 
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
@@ -132,6 +138,10 @@ int main(int argc, char** argv)
         for (uint16_t opNum = 0; opNum < 8; opNum++)
         {
             auto opConfig = patchConfig.getOperatorConfig(opNum);
+
+            // TODO: Use JSON
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM_HIGH, algorithmWords[opNum] >> 8);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM_LOW, algorithmWords[opNum] & 0xff);
 
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L1, opConfig.getEnvelopeL1());
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L2, opConfig.getEnvelopeL2());
@@ -192,7 +202,8 @@ int main(int argc, char** argv)
     // }
 
 
-    double seconds = 0.25;
+    bool playAudio = true;
+    double seconds = playAudio ? 2.0 : 0.25;
     auto& rBuffer = synth.getSampleBuffer();
 
     double noteOn = true;
@@ -212,48 +223,52 @@ int main(int argc, char** argv)
         // }
 
         synth.tick();
+
+        // printf("rBuffer.size() = %d \n", rBuffer.size());
+
     }
 
 
-    #if 0
-
-    // TODO: Graphics?
-    // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-    if (SDL_Init(SDL_INIT_AUDIO) != 0)
+    if (playAudio)
     {
-        std::cerr << "Failed to init SDL" << std::endl;
-        return 1;
+
+        // TODO: Graphics?
+        // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+        if (SDL_Init(SDL_INIT_AUDIO) != 0)
+        {
+            std::cerr << "Failed to init SDL" << std::endl;
+            return 1;
+        }
+
+        // https://wiki.libsdl.org/SDL_AudioSpec
+        SDL_AudioSpec want, have;
+        SDL_AudioDeviceID device;
+        SDL_memset(&want, 0, sizeof(want));
+        want.freq = SAMPLE_FREQUENCY;
+        want.format = AUDIO_S16;
+        want.channels = 1;
+        want.samples = 1024;
+        want.userdata = &synth;
+        want.callback = [](void* pUserdata, uint8_t* pBuffer, int length) {
+            Synth* pSynth = static_cast<Synth*>(pUserdata);
+            pSynth->writeSampleBytes(pBuffer, length);
+        };
+        device = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+        if (device == 0)
+        {
+            std::cerr << "Failed to init SDL audio" << std::endl;
+            return 1;
+        }
+
+
+        // TODO
+        SDL_PauseAudioDevice(device, 0);
+        SDL_Delay(static_cast<uint32_t>(seconds * 1000));
+
+        SDL_CloseAudio();
+        SDL_Quit();
+
     }
-
-    // https://wiki.libsdl.org/SDL_AudioSpec
-    SDL_AudioSpec want, have;
-    SDL_AudioDeviceID device;
-    SDL_memset(&want, 0, sizeof(want));
-    want.freq = SAMPLE_FREQUENCY;
-    want.format = AUDIO_S16;
-    want.channels = 1;
-    want.samples = 1024;
-    want.userdata = &synth;
-    want.callback = [](void* pUserdata, uint8_t* pBuffer, int length) {
-        Synth* pSynth = static_cast<Synth*>(pUserdata);
-        pSynth->writeSampleBytes(pBuffer, length);
-    };
-    device = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-    if (device == 0)
-    {
-        std::cerr << "Failed to init SDL audio" << std::endl;
-        return 1;
-    }
-
-
-    // TODO
-    SDL_PauseAudioDevice(device, 0);
-    SDL_Delay(static_cast<uint32_t>(seconds * 1000));
-
-    SDL_CloseAudio();
-    SDL_Quit();
-
-    #endif
 
     return 0;
 }

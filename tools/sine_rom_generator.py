@@ -5,7 +5,7 @@ import math
 
 
 # The SPRAM is 16 bits wide, but we have to accomodate a synthesized sign
-# bit, so we only generate 15 bits here.
+# bit, so we only generate 15 (unsigned) bits here.
 BIT_DEPTH = 15
 NUM_SAMPLES = (16 * 1024) * 4
 
@@ -42,17 +42,20 @@ extern const uint16_t SINE_TABLE[SINE_TABLE_LENGTH];
 
 def main():
     # TODO: argparse
-    MAX_RANGE = 2 ** (BIT_DEPTH - 1)
+    MAX_RANGE = 2 ** BIT_DEPTH
 
     for i in range(NUM_SAMPLES // 4):
         # https://zipcpu.com/dsp/2017/08/26/quarterwave.html
         phase = 2 * math.pi * (2 * i + 1) / (2 * NUM_SAMPLES)
         y = math.sin(phase)
-        yn = int(y * MAX_RANGE)
+        dydx = math.cos(phase)
 
         # https://stackoverflow.com/a/12946226
         MASK = (2 ** BIT_DEPTH) - 1
-        print(f'{yn & MASK :08x}  // sin({phase/math.pi:.12f} * pi) = {y:.012f}')
+        yn = int(y * MAX_RANGE) & MASK
+
+        display_phase = f'{phase/math.pi:.5f} * pi'
+        print(f'{yn:04x}  // y(x) = sin({display_phase}) = {y:.012f}   |   dy/dx = cos({display_phase}) = {dydx:.012f}')
 
 
 if __name__ == '__main__':

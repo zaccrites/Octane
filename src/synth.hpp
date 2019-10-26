@@ -58,7 +58,8 @@ public:
     static const uint8_t OP_PARAM_ENVELOPE_R3    { 0x0a };
     static const uint8_t OP_PARAM_ENVELOPE_R4    { 0x0b };
 
-    static const uint8_t OP_PARAM_ALGORITHM      { 0x0c };
+    static const uint8_t OP_PARAM_ALGORITHM_HIGH      { 0x0c };
+    static const uint8_t OP_PARAM_ALGORITHM_LOW      { 0x0d };
 
     // static const uint8_t OP_WAVEFORM_SINE  { 0x0000 };
     // static const uint8_t OP_WAVEFORM_SQUARE { 0x0001 };

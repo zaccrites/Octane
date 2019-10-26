@@ -113,14 +113,15 @@ function logic regWriteEnable(logic [7:0] category);
 endfunction
 
 
-logic w_AlgorithmWriteEnable;
+logic [1:0] w_AlgorithmWriteEnable;
 logic [1:0] w_PhaseStepWriteEnable;
 always_comb begin
 
     w_PhaseStepWriteEnable[0] = regWriteEnable({2'b11, 6'h00});  // HIGH
     w_PhaseStepWriteEnable[1] = regWriteEnable({2'b11, 6'h01});  // LOW
 
-    w_AlgorithmWriteEnable = regWriteEnable({2'b11, 6'h0c});
+    w_AlgorithmWriteEnable[0] = regWriteEnable({2'b11, 6'h0c});  // HIGH
+    w_AlgorithmWriteEnable[1] = regWriteEnable({2'b11, 6'h0d});  // LOW
 
 end
 
@@ -264,32 +265,45 @@ stage_waveform_generation waveform_generation (
 );
 
 
+stage_sample_generator sample_generator (
+    .i_Clock        (i_Clock),
+
+    .i_VoiceOperator(r_VoiceOperator[3]),
+    .i_AlgorithmWord (r_AlgorithmWord[3]),
+    .i_OperatorOutput(r_RawWaveform[3]),
+
+    .o_SampleReady  (o_SampleReady),
+    .o_Sample        (o_Sample)
+);
+
+
+
 // TODO
-logic signed [15:0] r_Subsample;
-assign r_Subsample = r_RawWaveform[3];
+// logic signed [15:0] r_Subsample;
+// assign r_Subsample = r_RawWaveform[3];
 // assign r_Subsample = w_ModulatedPhase[15:0];
 // assign r_Subsample = w_RawPhase;
-logic r_SubsampleReady;
-assign r_SubsampleReady = r_VoiceOperator[3] == 8'hff;
-assign o_SampleReady = r_VoiceOperator[3] == 8'hff;
+// logic r_SubsampleReady;
+// assign r_SubsampleReady = r_VoiceOperator[3] == 8'hff;
+// assign o_SampleReady = r_VoiceOperator[3] == 8'hff;
 
 
-logic signed [21:0] r_SampleBuffer;
-logic signed [21:0] w_SignExtendedSubsample;
-assign w_SignExtendedSubsample = {{6{r_Subsample[15]}}, r_Subsample};
+// logic signed [21:0] r_SampleBuffer;
+// logic signed [21:0] w_SignExtendedSubsample;
+// assign w_SignExtendedSubsample = {{6{r_Subsample[15]}}, r_Subsample};
 
-// Subsample combination and output
-always_ff @ (posedge i_Clock) begin
+// // Subsample combination and output
+// always_ff @ (posedge i_Clock) begin
 
-    if (i_Reset || o_SampleReady)
-        r_SampleBuffer <= w_SignExtendedSubsample;
-    else if (r_SubsampleReady)
-        r_SampleBuffer <= r_SampleBuffer + w_SignExtendedSubsample;
+//     if (i_Reset || o_SampleReady)
+//         r_SampleBuffer <= w_SignExtendedSubsample;
+//     else if (r_SubsampleReady)
+//         r_SampleBuffer <= r_SampleBuffer + w_SignExtendedSubsample;
 
-    if (o_SampleReady)
-        o_Sample <= r_SampleBuffer[20:5];
+//     if (o_SampleReady)
+//         o_Sample <= r_SampleBuffer[20:5];
 
-end
+// end
 
 
 
