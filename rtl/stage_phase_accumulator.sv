@@ -6,7 +6,7 @@
 // ===============================
 // 2 clock cycles
 // ===============================
-module stage_phase_accumulation (
+module stage_phase_accumulator (
     input i_Clock,
 
     // ----------------------------------------------------------

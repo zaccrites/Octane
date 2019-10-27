@@ -1,7 +1,7 @@
 
 `include "synth.svh"
 
-module stage_waveform_generation (
+module stage_waveform_generator (
     input i_Clock,
 
     input VoiceOperatorID_t i_VoiceOperator,

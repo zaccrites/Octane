@@ -3,7 +3,7 @@
 
 `include "synth.svh"
 
-module stage_modulation (
+module stage_modulator (
     input i_Clock,
 
     // Accepts raw unsigned phase and modulates to signed phase

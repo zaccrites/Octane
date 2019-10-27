@@ -182,7 +182,7 @@ logic signed [16:0] w_ModulatedPhase;
 logic unsigned [15:0] w_RawPhase;
 
 
-stage_phase_accumulation phase_accumulation (
+stage_phase_accumulator phase_accumulator (
     .i_Clock                     (i_Clock),
     .i_VoiceOperator             (r_VoiceOperator[0]),
     .o_VoiceOperator             (r_VoiceOperator[1]),
@@ -195,7 +195,7 @@ stage_phase_accumulation phase_accumulation (
 );
 
 
-stage_modulation modulation (
+stage_modulator modulator (
     .i_Clock          (i_Clock),
 
     .i_VoiceOperator  (r_VoiceOperator[1]),
@@ -220,7 +220,7 @@ stage_modulation modulation (
 
 logic signed [15:0] w_RawWaveform;
 
-stage_waveform_generation waveform_generation (
+stage_waveform_generator waveform_generator (
     .i_Clock  (i_Clock),
     .i_Phase   (w_ModulatedPhase),
     .o_Waveform(w_RawWaveform),
