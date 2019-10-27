@@ -18,49 +18,52 @@
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 2.00
+            "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 3",
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 3.00
+            "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 4",
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 3.50
+            "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 5",
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 5.00
+            "frequency_ratio": 1.00
         },
+
+
+
         {
             "comment": "Operator 6",
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 6.00
+            "frequency_ratio": 2.00
         },
         {
             "comment": "Operator 7",
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 7.00
+            "frequency_ratio": 0.50
         },
         {
             "comment": "Operator 8",
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 4.40
+            "frequency_ratio": 1.00
         }
 
     ]

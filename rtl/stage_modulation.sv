@@ -32,14 +32,11 @@ module stage_modulation (
 `define OPERATOR_OUTPUT_MEMORY_READ_PORTS  7
 logic signed [15:0] r_OperatorOutputMemory [`OPERATOR_OUTPUT_MEMORY_READ_PORTS] [`NUM_VOICE_OPERATORS];
 
-// TODO: Fix modulation
-// verilator lint_off UNUSED
-logic signed [15:0] r_OperatorOutput [6:0];
-// verilator lint_on UNUSED
 
-logic signed [16:0] r_ModulatedPhase [6:0];
-AlgorithmWord_t r_AlgorithmWord [6:0];
-VoiceOperatorID_t r_VoiceOperator [6:0];
+logic signed [15:0] r_OperatorOutput [7:0];
+logic signed [16:0] r_ModulatedPhase [7:0];
+AlgorithmWord_t r_AlgorithmWord [7:0];
+VoiceOperatorID_t r_VoiceOperator [7:0];
 
 AlgorithmWord_t r_Algorithm [`NUM_VOICE_OPERATORS];
 
@@ -71,12 +68,17 @@ always_ff @ (posedge i_Clock) begin
     r_VoiceOperator[0] <= i_VoiceOperator;
     // ----------------------------------------------------------
 
-    // Clocks 2-7
+    // Clocks 2-8
     // ----------------------------------------------------------
-    for (i = 1; i <= 6; i = i + 1) begin
-        r_OperatorOutput[i] <= r_OperatorOutputMemory[i][r_VoiceOperator[i - 1]];
-        // r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1] + {r_OperatorOutput[i - 1][15], r_OperatorOutput[i - 1]};
-        r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1]; // + {r_OperatorOutput[i - 1][15], r_OperatorOutput[i - 1]};
+    for (i = 1; i <= 7; i = i + 1) begin
+        if (i <= 6)
+            r_OperatorOutput[i] <= r_OperatorOutputMemory[i][r_VoiceOperator[i - 1]];
+
+        if (r_AlgorithmWord[i - 1].ModulateWithOP[i - 1])
+            // divide by a lot to avoid overflow (TODO: fix)
+            r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1] + {{6{r_OperatorOutput[i - 1][15]}}, r_OperatorOutput[i - 1][15:6]};
+        else
+            r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1];
 
         r_VoiceOperator[i] <= r_VoiceOperator[i - 1];
         r_AlgorithmWord[i] <= r_AlgorithmWord[i - 1];
@@ -86,9 +88,13 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-assign o_Phase = r_ModulatedPhase[6];
-assign o_AlgorithmWord = r_AlgorithmWord[6];
-assign o_VoiceOperator = r_VoiceOperator[6];
+assign o_Phase = r_ModulatedPhase[7];
+assign o_AlgorithmWord = r_AlgorithmWord[7];
+assign o_VoiceOperator = r_VoiceOperator[7];
+
+
+// logic signed [15:0] w_ModulationCompensationFactor;
+
 
 
 endmodule

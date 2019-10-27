@@ -90,7 +90,7 @@ int main(int argc, const char** argv)
         // else
         {
             // noteBaseFrequency = 1000.0;
-            noteBaseFrequency = 100.0;
+            noteBaseFrequency = 400.0;
         }
 
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
@@ -124,36 +124,20 @@ int main(int argc, const char** argv)
         a - Modulated by OP1
 
         */
-        // synth.writeOperatorRegister(voiceNum, 1 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 2 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 3 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 4 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 5 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 6 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 7 - 1, Synth::OP_PARAM_ALGORITHM, 0b0'0000000);
-        // synth.writeOperatorRegister(voiceNum, 8 - 1, Synth::OP_PARAM_ALGORITHM, 0b1'0000000);
 
 
         // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
         uint16_t algorithmWords[8] = {
+            //   7654321
             //xx mmmmmmm xxxx c nnn
-            // 0b00'0000000'0000'1'111,  // OP1
-            // 0b00'0000000'0000'1'111,  // OP2
-            // 0b00'0000000'0000'1'111,  // OP3
-            // 0b00'0000000'0000'1'111,  // OP4
-            // 0b00'0000000'0000'1'111,  // OP5
-            // 0b00'0000000'0000'1'111,  // OP6
-            // 0b00'0000000'0000'1'111,  // OP7
-            // 0b00'0000000'0000'1'111,  // OP8
-
-            0b00'0000000'0000'0'001,  // OP1
-            0b00'0000000'0000'0'001,  // OP2
-            0b00'0000000'0000'0'001,  // OP3
-            0b00'0000000'0000'1'001,  // OP4
-            0b00'0000000'0000'0'001,  // OP5
-            0b00'0000000'0000'0'001,  // OP6
-            0b00'0000000'0000'0'001,  // OP7
-            0b00'0000000'0000'1'001,  // OP8
+            0b00'0000000'0000'0'000,  // OP1
+            0b00'0000000'0000'0'000,  // OP2
+            0b00'0000000'0000'0'000,  // OP3
+            0b00'0000000'0000'0'000,  // OP4
+            0b00'0000000'0000'0'000,  // OP5
+            0b00'0000000'0000'0'000,  // OP6
+            0b00'0000000'0000'0'000,  // OP7
+            0b00'1111111'0000'1'000,  // OP8
 
         };
 
