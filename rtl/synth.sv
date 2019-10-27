@@ -55,12 +55,6 @@ logic r_NoteOn [32];
 logic unsigned [15:0] r_CarrierComp [32];
 
 
-
-
-
-
-
-
 // Register assignment
 //
 //
@@ -163,12 +157,6 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-
-
-
-
-
-
 // TODO: Move into its own module?
 /// Track the currently active voice operator
 always_ff @ (posedge i_Clock) begin
@@ -187,24 +175,9 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-
-
-
-
-// TODO
-VoiceOperatorID_t w_OperatorWritebackID;
-logic signed [15:0] w_OperatorWritebackValue;
-assign w_OperatorWritebackID = 0;
-assign w_OperatorWritebackValue = 0;
-
-
-
-
 // TODO: Trim these down
 VoiceOperatorID_t r_VoiceOperator [31:0];
 AlgorithmWord_t r_AlgorithmWord [31:0];
-
-
 
 
 logic signed [16:0] w_ModulatedPhase;
@@ -222,7 +195,6 @@ stage_phase_accumulation phase_accumulation (
     .i_PhaseStepConfigWriteAddr  (w_VoiceOpRegWriteIndex),
     .i_PhaseStepConfigWriteData  (i_RegisterWriteValue)
 );
-
 
 
 stage_modulation modulation (
@@ -248,14 +220,12 @@ stage_modulation modulation (
 );
 
 
-
-logic signed [15:0] r_RawWaveform [32];
+logic signed [15:0] w_RawWaveform;
 
 stage_waveform_generation waveform_generation (
     .i_Clock  (i_Clock),
-    // .i_Phase   (w_ModulatedPhase),
-    .i_Phase   ($signed({1'b0, w_RawPhase})),
-    .o_Waveform(r_RawWaveform[3]),
+    .i_Phase   (w_ModulatedPhase),
+    .o_Waveform(w_RawWaveform),
 
     .i_VoiceOperator(r_VoiceOperator[2]),
     .o_VoiceOperator(r_VoiceOperator[3]),
@@ -265,47 +235,23 @@ stage_waveform_generation waveform_generation (
 );
 
 
+// TODO
+VoiceOperatorID_t w_OperatorWritebackID;
+logic signed [15:0] w_OperatorWritebackValue;
+assign w_OperatorWritebackID = r_VoiceOperator[3];
+assign w_OperatorWritebackValue = w_RawWaveform;
+
+
 stage_sample_generator sample_generator (
     .i_Clock        (i_Clock),
 
     .i_VoiceOperator(r_VoiceOperator[3]),
     .i_AlgorithmWord (r_AlgorithmWord[3]),
-    .i_OperatorOutput(r_RawWaveform[3]),
+    .i_OperatorOutput(w_RawWaveform),
 
     .o_SampleReady  (o_SampleReady),
     .o_Sample        (o_Sample)
 );
-
-
-
-// TODO
-// logic signed [15:0] r_Subsample;
-// assign r_Subsample = r_RawWaveform[3];
-// assign r_Subsample = w_ModulatedPhase[15:0];
-// assign r_Subsample = w_RawPhase;
-// logic r_SubsampleReady;
-// assign r_SubsampleReady = r_VoiceOperator[3] == 8'hff;
-// assign o_SampleReady = r_VoiceOperator[3] == 8'hff;
-
-
-// logic signed [21:0] r_SampleBuffer;
-// logic signed [21:0] w_SignExtendedSubsample;
-// assign w_SignExtendedSubsample = {{6{r_Subsample[15]}}, r_Subsample};
-
-// // Subsample combination and output
-// always_ff @ (posedge i_Clock) begin
-
-//     if (i_Reset || o_SampleReady)
-//         r_SampleBuffer <= w_SignExtendedSubsample;
-//     else if (r_SubsampleReady)
-//         r_SampleBuffer <= r_SampleBuffer + w_SignExtendedSubsample;
-
-//     if (o_SampleReady)
-//         o_Sample <= r_SampleBuffer[20:5];
-
-// end
-
-
 
 
 endmodule

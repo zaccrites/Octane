@@ -20,10 +20,17 @@ module stage_sample_generator (
 );
 
 
+VoiceOperatorID_t r_VoiceOperator [4];
+logic r_IsCarrier [4];
 
-
+logic signed [31:0] r_CompensatedCarrierOutputProduct [3];
+logic signed [15:0] r_CompensatedCarrierOutput;
 
 logic signed [15:0] w_CarrierCompsensationFactor;
+logic signed [20:0] w_SignExtendedCarrierOutput;
+logic signed [20:0] r_SampleBuffer;
+
+
 
 always_comb begin
 
@@ -39,18 +46,9 @@ always_comb begin
         3'd7: w_CarrierCompsensationFactor = 16'h1000;
     endcase
 
+    w_SignExtendedCarrierOutput = {{5{r_CompensatedCarrierOutput[15]}}, r_CompensatedCarrierOutput};
+
 end
-
-
-VoiceOperatorID_t r_VoiceOperator [10];
-logic r_IsCarrier [10];
-
-logic signed [20:0] r_SampleBuffer;
-
-
-logic signed [31:0] r_CompensatedCarrierOutputProduct [3];
-logic signed [15:0] r_CompensatedCarrierOutput;
-
 
 
 always_ff @ (posedge i_Clock) begin
@@ -82,15 +80,19 @@ always_ff @ (posedge i_Clock) begin
 
     // If the previous clock output a sample, then this clock should
     // reset the buffer.
-    if (o_SampleReady)
-        r_SampleBuffer <= r_IsCarrier[3] ? {{5{r_CompensatedCarrierOutput[15]}}, r_CompensatedCarrierOutput} : 0;
+    if (o_SampleReady) begin
+        if (r_IsCarrier[3]) begin
+            r_SampleBuffer <= w_SignExtendedCarrierOutput;
+        end
+        else begin
+            r_SampleBuffer <= 0;
+        end
+    end
 
-    else if (r_IsCarrier[3])
-        r_SampleBuffer <= r_SampleBuffer + {{5{r_CompensatedCarrierOutput[15]}}, r_CompensatedCarrierOutput};
+    else if (r_IsCarrier[3]) begin
+        r_SampleBuffer <= r_SampleBuffer + w_SignExtendedCarrierOutput;
+    end
 
-    // $display("id = %d", r_VoiceOperator[3]);
-
-    // o_SampleReady <= r_VoiceOperator[3] == `NUM_VOICE_OPERATORS;
     o_SampleReady <= r_VoiceOperator[3] == 8'hff;
 
     // -------------------------------------------------------

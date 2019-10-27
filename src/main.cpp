@@ -137,18 +137,25 @@ int main(int argc, const char** argv)
         // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
         uint16_t algorithmWords[8] = {
             //xx mmmmmmm xxxx c nnn
-            0b00'0000000'0000'0'000,  // OP1
-            0b00'0000000'0000'0'000,  // OP2
-            0b00'0000000'0000'0'000,  // OP3
-            0b00'0000000'0000'0'000,  // OP4
-            0b00'0000000'0000'0'000,  // OP5
-            0b00'0000000'0000'0'000,  // OP6
-            0b00'0000000'0000'0'000,  // OP7
-            // 0b00'1000000'0000'1'000,  // OP8
-            0b00'0000000'0000'1'000,  // OP8
-        };
-        // BUG: All operators seem to be considered carriers, regardless of the IS_CARRIER bit
+            // 0b00'0000000'0000'1'111,  // OP1
+            // 0b00'0000000'0000'1'111,  // OP2
+            // 0b00'0000000'0000'1'111,  // OP3
+            // 0b00'0000000'0000'1'111,  // OP4
+            // 0b00'0000000'0000'1'111,  // OP5
+            // 0b00'0000000'0000'1'111,  // OP6
+            // 0b00'0000000'0000'1'111,  // OP7
+            // 0b00'0000000'0000'1'111,  // OP8
 
+            0b00'0000000'0000'0'001,  // OP1
+            0b00'0000000'0000'0'001,  // OP2
+            0b00'0000000'0000'0'001,  // OP3
+            0b00'0000000'0000'1'001,  // OP4
+            0b00'0000000'0000'0'001,  // OP5
+            0b00'0000000'0000'0'001,  // OP6
+            0b00'0000000'0000'0'001,  // OP7
+            0b00'0000000'0000'1'001,  // OP8
+
+        };
 
 
         synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
