@@ -31,6 +31,10 @@ function(verilate_cmake)
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
     endif()
+
+    # TODO: Verilated CMake files should be output to the build directory,
+    # not the source directory. That way when the build directory is deleted,
+    # this generated file doesn't have to be deleted at the same time.
     include(${OUTPUT_CMAKE_FILE_PATH})
 endfunction()
 

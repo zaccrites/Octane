@@ -14,7 +14,7 @@ add_subdirectory(Vmodules)
 
 
 
-add_executable(synth
+add_executable(simulator
     "src/main.cpp"
     "src/synth.cpp"
     "src/PatchConfig.cpp"
@@ -25,7 +25,7 @@ add_executable(synth
     "roms/algorithm_rom.hex"
 )
 
-set_target_properties(synth PROPERTIES
+set_target_properties(simulator PROPERTIES
     CXX_STANDARD 17
     CXX_EXTENSIONS OFF
 )
@@ -55,21 +55,20 @@ add_custom_command(
 )
 
 
-target_link_libraries(synth
+target_link_libraries(simulator
     ${SDL2_LIBRARIES}
     SDL2_ttf
 
     Vsynth
 )
 
-target_include_directories(synth PRIVATE SYSTEM
+target_include_directories(simulator PRIVATE SYSTEM
     "vendor/include"
 )
 
 
 # TODO: Prevent copy-paste of compiler settings to unit_test target
-target_compile_options(synth PRIVATE
-    -std=c++14
+target_compile_options(simulator PRIVATE
     -pedantic
     -Wall
     -Wextra
