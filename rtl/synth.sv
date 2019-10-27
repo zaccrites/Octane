@@ -17,42 +17,40 @@ module synth (
 );
 
 
-// verilator lint_off UNUSED
-
-
-
-
 /// Voice operator configuration registers
 
 /// Frequency information
-logic unsigned [15:0] r_PhaseStep [256];
+// logic unsigned [15:0] r_PhaseStep [256];
 
 /// Waveform type and parameters
-logic [15:0] r_Waveform  [256];
+// logic [15:0] r_Waveform  [256];
 
 /// Envelope level registers
-logic unsigned [7:0] r_EnvelopeL1 [256];
-logic unsigned [7:0] r_EnvelopeL2 [256];
-logic unsigned [7:0] r_EnvelopeL3 [256];
-logic unsigned [7:0] r_EnvelopeL4 [256];
+// logic unsigned [7:0] r_EnvelopeL1 [256];
+// logic unsigned [7:0] r_EnvelopeL2 [256];
+// logic unsigned [7:0] r_EnvelopeL3 [256];
+// logic unsigned [7:0] r_EnvelopeL4 [256];
 
 /// Envelope rate registers
-logic unsigned [7:0] r_EnvelopeR1 [256];
-logic unsigned [7:0] r_EnvelopeR2 [256];
-logic unsigned [7:0] r_EnvelopeR3 [256];
-logic unsigned [7:0] r_EnvelopeR4 [256];
+// logic unsigned [7:0] r_EnvelopeR1 [256];
+// logic unsigned [7:0] r_EnvelopeR2 [256];
+// logic unsigned [7:0] r_EnvelopeR3 [256];
+// logic unsigned [7:0] r_EnvelopeR4 [256];
 
 /// Algorithm instruction words
-logic [7:0] r_Algorithm [256];
+// logic [7:0] r_Algorithm [256];
 
 
 
 /// Voice configuration registers
-logic r_NoteOn [32];
+// logic r_NoteOn [32];
 
 // TODO: This could be included in the algorithm ROM (though perhaps as a separate BRAM to avoid a structural hazard)
 /// The factor used to compensate for multiple carrier operators
-logic unsigned [15:0] r_CarrierComp [32];
+// logic unsigned [15:0] r_CarrierComp [32];
+
+
+
 
 
 // Register assignment
@@ -97,8 +95,8 @@ logic [7:0] w_RegisterWriteCategory;  // TODO: Find better name
 assign w_RegisterWriteCategory = i_RegisterWriteNumber[15:8];
 logic [7:0] w_VoiceOpRegWriteIndex;
 assign w_VoiceOpRegWriteIndex = i_RegisterWriteNumber[7:0];
-logic [4:0] w_VoiceRegWriteIndex;
-assign w_VoiceRegWriteIndex = i_RegisterWriteNumber[4:0];
+// logic [4:0] w_VoiceRegWriteIndex;
+// assign w_VoiceRegWriteIndex = i_RegisterWriteNumber[4:0];
 //
 
 
@@ -235,6 +233,12 @@ stage_waveform_generation waveform_generation (
 );
 
 
+// TODO: REMOVE THIS HACK
+// Only allow a single voice for now
+logic signed [15:0] w_GatedRawWaveform;
+assign w_GatedRawWaveform = (getVoiceID(r_VoiceOperator[2]) == 0) ? w_RawWaveform : 0;
+
+
 // TODO
 VoiceOperatorID_t w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
@@ -247,7 +251,8 @@ stage_sample_generator sample_generator (
 
     .i_VoiceOperator(r_VoiceOperator[3]),
     .i_AlgorithmWord (r_AlgorithmWord[3]),
-    .i_OperatorOutput(w_RawWaveform),
+    // .i_OperatorOutput(w_RawWaveform),
+    .i_OperatorOutput(w_GatedRawWaveform),
 
     .o_SampleReady  (o_SampleReady),
     .o_Sample        (o_Sample)

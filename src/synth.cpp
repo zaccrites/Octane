@@ -28,6 +28,10 @@ void Synth::tick()
     if (m_Synth.o_SampleReady)
     {
         int16_t sample = m_Synth.o_Sample;
+
+        // TODO: REMOVE HACK (maximum volume for a single voice)
+        sample = sample * 32;
+
         m_SampleBuffer.push_front(sample);
 
         // // TODO: Generate an "expected" sample as well

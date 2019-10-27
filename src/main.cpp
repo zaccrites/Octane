@@ -90,7 +90,7 @@ int main(int argc, const char** argv)
         // else
         {
             // noteBaseFrequency = 1000.0;
-            noteBaseFrequency = 200.0;
+            noteBaseFrequency = 100.0;
         }
 
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
@@ -223,8 +223,6 @@ int main(int argc, const char** argv)
     //         printf("  %d.%d phaseStep = 0x%04x \n", voiceNum, opNum, phaseStep);
     //     }
     // }
-
-
 
 
 

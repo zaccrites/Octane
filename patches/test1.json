@@ -32,7 +32,7 @@
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 4.00
+            "frequency_ratio": 3.50
         },
         {
             "comment": "Operator 5",
@@ -60,7 +60,7 @@
             "levels": [255, 128, 150, 25],
             "rates": [128, 64, 64, 60],
             "waveform": "sine",
-            "frequency_ratio": 8.00
+            "frequency_ratio": 4.40
         }
 
     ]
