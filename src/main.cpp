@@ -130,19 +130,20 @@ int main(int argc, const char** argv)
         uint16_t algorithmWords[8] = {
             //   7654321
             //xx mmmmmmm xxxx c nnn
-            0b00'0000000'0000'0'000,  // OP1
+            0b00'0000000'0000'1'000,  // OP1
             0b00'0000000'0000'0'000,  // OP2
             0b00'0000000'0000'0'000,  // OP3
             0b00'0000000'0000'0'000,  // OP4
             0b00'0000000'0000'0'000,  // OP5
             0b00'0000000'0000'0'000,  // OP6
             0b00'0000000'0000'0'000,  // OP7
-            0b00'1111111'0000'1'000,  // OP8
+            0b00'0000000'0000'0'000,  // OP8
 
         };
 
 
-        synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
+        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
+        synth.setNoteOn(voiceNum, false);
 
         for (uint16_t opNum = 0; opNum < 8; opNum++)
         {
@@ -186,7 +187,8 @@ int main(int argc, const char** argv)
     {
         // if (voiceNum <= 1)
         {
-            synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, true);
+            // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, true);
+            // synth.setNoteOn(voiceNum, true);
         }
     }
 
@@ -210,24 +212,26 @@ int main(int argc, const char** argv)
 
 
 
-    double seconds = playAudio ? 2.0 : 0.25;
+    double seconds = playAudio ? 2.0 : 0.3;
     auto& rBuffer = synth.getSampleBuffer();
 
-    double noteOn = true;
+    double noteOn = false;
     while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
     {
         double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
-        // if (noteOn && t >= seconds - 1.0)
-        // {
-        //     for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-        //     {
-        //         // if (voiceNum < 16)
-        //         {
-        //             synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
-        //         }
-        //     }
-        //     noteOn = false;
-        // }
+
+        double onTime = seconds * 0.0;
+        double offTime = seconds * 0.8;
+        if ( ! noteOn && t > onTime && t < offTime)
+        {
+            noteOn = true;
+            synth.setNoteOn(0, true);
+        }
+        else if (noteOn && t > offTime)
+        {
+            noteOn = false;
+            synth.setNoteOn(0, false);
+        }
 
         synth.tick();
 

@@ -1,6 +1,8 @@
 
 #include "synth.hpp"
 
+#include <algorithm>  // for std::fill_n
+
 
 // TODO: Find a better way
 Synth::Synth() :
@@ -8,8 +10,10 @@ Synth::Synth() :
     m_SampleBuffer {},
     m_SampleCounter {0},
     m_DataFile { fopen("data.csv", "w") },
+    m_NoteOnState {},
     m_t {0.0}
 {
+    std::fill_n(m_NoteOnState, 32, false);
 }
 
 Synth::~Synth()
@@ -67,6 +71,47 @@ void Synth::reset()
 }
 
 
+void Synth::setNoteOn(uint8_t voiceNum, bool noteOn)
+{
+    voiceNum = voiceNum % 32;
+    if (m_NoteOnState[voiceNum] == noteOn)
+    {
+        return;
+    }
+    m_NoteOnState[voiceNum] = noteOn;
+
+    const uint8_t bank = voiceNum / 8;
+    const uint8_t newRegisterValue =
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 0]) << 0) |
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 1]) << 1) |
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 2]) << 2) |
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 3]) << 3) |
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 4]) << 4) |
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 5]) << 5) |
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 6]) << 6) |
+        (static_cast<uint8_t>(m_NoteOnState[8 * bank + 7]) << 7);
+
+    switch (bank)
+    {
+        case 0:
+            writeGlobalRegister(GLOBAL_PARAM_NOTEON_BANK0, newRegisterValue);
+            break;
+        case 1:
+            writeGlobalRegister(GLOBAL_PARAM_NOTEON_BANK1, newRegisterValue);
+            break;
+        case 2:
+            writeGlobalRegister(GLOBAL_PARAM_NOTEON_BANK2, newRegisterValue);
+            break;
+        case 3:
+            writeGlobalRegister(GLOBAL_PARAM_NOTEON_BANK3, newRegisterValue);
+            break;
+        default:
+            // impossible
+            break;
+    }
+}
+
+
 void Synth::writeRegister(uint16_t registerNumber, uint8_t value)
 {
     m_Synth.i_RegisterWriteNumber = registerNumber;
@@ -107,5 +152,12 @@ void Synth::writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t
 void Synth::writeVoiceRegister(uint8_t voiceNum, uint8_t parameter, uint8_t value)
 {
     const uint16_t registerNumber = (0b10 << 14) | (parameter << 8) | voiceNum;
+    writeRegister(registerNumber, value);
+}
+
+
+void Synth::writeGlobalRegister(uint8_t parameter, uint8_t value)
+{
+    const uint16_t registerNumber = (0b01 << 14) | (parameter << 8);
     writeRegister(registerNumber, value);
 }

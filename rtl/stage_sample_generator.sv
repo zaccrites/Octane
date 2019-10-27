@@ -72,14 +72,6 @@ always_ff @ (posedge i_Clock) begin
     r_CompensatedCarrierOutputProduct[2] <= r_CompensatedCarrierOutputProduct[1];
     r_CompensatedCarrierOutput <= {r_CompensatedCarrierOutputProduct[2][30:16], 1'b0};
 
-    // if (i_AlgorithmWord.IsACarrier && getVoiceID(i_VoiceOperator) == 31) begin
-    //     $display("(ID: %d) i_OperatorOutput = %d", i_VoiceOperator, i_OperatorOutput);
-    // end
-
-    // if (r_IsCarrier[3] && getVoiceID(r_VoiceOperator[3]) == 31) begin
-    //     $display("(ID: %d) r_CompensatedCarrierOutput = %d", r_VoiceOperator[3], $signed({r_CompensatedCarrierOutputProduct[2][30:16], 1'b0}));
-    // end
-
     // -------------------------------------------------------
 
 
