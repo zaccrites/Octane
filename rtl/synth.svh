@@ -7,9 +7,8 @@ typedef struct packed
 {
     // OP8 can never be a modulator, so we don't keep a bit for it.
     logic [6:0] ModulateWithOP;
-    //
-    logic IsACarrier;
     logic [2:0] NumCarriers;
+    logic IsACarrier;
 } AlgorithmWord_t;
 
 

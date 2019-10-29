@@ -55,18 +55,12 @@ public:
         }
     }
 
-    uint8_t getEnvelopeLevel(uint8_t index)
-    {
-        auto option = m_Json["levels"];
-        return option[index];
-    }
+    uint16_t getAttackLevel() { return m_Json["levels"][0]; }
+    uint16_t getSustainLevel() { return m_Json["levels"][1]; }
 
-    uint8_t getEnvelopeRate(uint8_t index)
-    {
-        auto option = m_Json["rates"];
-        return option[index];
-    }
-
+    uint16_t getAttackRate() { return m_Json["rates"][0]; }
+    uint16_t getDecayRate() { return m_Json["rates"][1]; }
+    uint16_t getReleaseRate() { return m_Json["rates"][2]; }
 
 private:
     json m_Json;
@@ -143,12 +137,11 @@ PatchConfig PatchConfig::load(std::string_view path)
 
         opConfig.m_Waveform = rawOpConfig.getWaveform();
         opConfig.m_FrequencyRatio = rawOpConfig.getFrequencyRatio();
-
-        for (int i = 0; i < 4; i++)
-        {
-            opConfig.m_EnvelopeLevels[i] = rawOpConfig.getEnvelopeLevel(i);
-            opConfig.m_EnvelopeRates[i] = rawOpConfig.getEnvelopeRate(i);
-        }
+        opConfig.m_AttackLevel = rawOpConfig.getAttackLevel();
+        opConfig.m_SustainLevel = rawOpConfig.getSustainLevel();
+        opConfig.m_AttackRate = rawOpConfig.getAttackRate();
+        opConfig.m_DecayRate = rawOpConfig.getDecayRate();
+        opConfig.m_ReleaseRate = rawOpConfig.getReleaseRate();
     }
 
     return config;

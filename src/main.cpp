@@ -92,58 +92,22 @@ int main(int argc, const char** argv)
             // noteBaseFrequency = 1000.0;
             noteBaseFrequency = 523.251;  // C5
         }
-
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
-
-
-        // auto algorithmNumber = patchConfig.getAlgorithm();
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_ALGORITHM, algorithmNumber - 1);
-
-        /*
-        "Algorithm 1"
-
-        1   5
-        |   |
-        2   6
-        |   |
-        3   7
-        |   |
-        4---8
-
-        Alghorithm bits:
-
-        rgfe dcba
-
-        r - Operator is a carrier
-        g - Modulated by OP7
-        f - Modulated by OP6
-        e - Modulated by OP5
-        d - Modulated by OP4
-        c - Modulated by OP3
-        b - Modulated by OP2
-        a - Modulated by OP1
-
-        */
 
 
         // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
         uint16_t algorithmWords[8] = {
-            //   7654321
-            //xx mmmmmmm xxxx c nnn
-            0b00'0000000'0000'0'000,  // OP1
-            // 0b00'0000000'0000'1'000,  // OP1
-
-            0b00'0000001'0000'1'000,  // OP2
-            // 0b00'0000000'0000'1'000,  // OP2
-
-
-            0b00'0000000'0000'0'000,  // OP3
-            0b00'0000000'0000'0'000,  // OP4
-            0b00'0000000'0000'0'000,  // OP5
-            0b00'0000000'0000'0'000,  // OP6
-            0b00'0000000'0000'0'000,  // OP7
-            0b00'0000000'0000'0'000,  // OP8
-
+            //       7654321
+            //xxxxxx mmmmmmm nnn c
+            0b000000'0000000'000'0,  // OP1
+            // 0b000000'0000001'000'1,  // OP2
+            0b000000'0000000'000'1,  // OP2
+            0b000000'0000000'000'0,  // OP3
+            0b000000'0000000'000'0,  // OP4
+            0b000000'0000000'000'0,  // OP5
+            0b000000'0000000'000'0,  // OP6
+            0b000000'0000000'000'0,  // OP7
+            0b000000'0000000'000'0,  // OP8
         };
 
 
@@ -155,36 +119,28 @@ int main(int argc, const char** argv)
             auto opConfig = patchConfig.getOperatorConfig(opNum);
 
             // TODO: Use JSON
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM_HIGH, algorithmWords[opNum] >> 8);
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM_LOW, algorithmWords[opNum] & 0xff);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM, algorithmWords[opNum]);
 
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L1, opConfig.getEnvelopeL1());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L2, opConfig.getEnvelopeL2());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L3, opConfig.getEnvelopeL3());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_L4, opConfig.getEnvelopeL4());
+            // TODO: Change actual levels to match modulation index (function of frequency and set level), if is a modulator
+            auto fixOperatorLevel = [](uint16_t level, bool isCarrier) {
+                double multiplier = static_cast<double>(level) / 1000.0;
+                return static_cast<uint16_t>(0x3fff * multiplier);
+            };
+            // ... that will affect the rate as well, since the time to reach the level should be the same regardless of note frequency played
+            auto fixOperatorRate = [](uint16_t rate, bool isCarrier) {
+                double multiplier = static_cast<double>(rate) / 1000.0;
+                return static_cast<uint16_t>(0x1fff * multiplier);
+            };
 
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R1, opConfig.getEnvelopeR1());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R2, opConfig.getEnvelopeR2());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R3, opConfig.getEnvelopeR3());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_R4, opConfig.getEnvelopeR4());
-
-            // uint16_t waveform;
-            // switch (opConfig.getWaveform())
-            // {
-            //     case OperatorConfig::Waveform::Square:
-            //         waveform = Synth::OP_WAVEFORM_SQUARE;
-            //         break;
-
-            //     case OperatorConfig::Waveform::Sine:
-            //     default:
-            //         waveform = Synth::OP_WAVEFORM_SINE;
-            //         break;
-            // }
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_WAVEFORM, waveform);
+            bool isCarrier = true;  // TODO
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, fixOperatorLevel(opConfig.getAttackLevel(), isCarrier));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, fixOperatorLevel(opConfig.getSustainLevel(), isCarrier));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, fixOperatorRate(opConfig.getAttackRate(), isCarrier));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, fixOperatorRate(opConfig.getDecayRate(), isCarrier));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, fixOperatorRate(opConfig.getReleaseRate(), isCarrier));
 
             uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_HIGH, phaseStep >> 8);
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP_LOW, phaseStep & 0xff);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
         }
     }
 
@@ -195,26 +151,6 @@ int main(int argc, const char** argv)
             synth.setNoteOn(voiceNum, true);
         }
     }
-
-
-    // printf("Registers: \n");
-    // printf("Phase Step: \n");
-    // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-    // {
-    //     if ( ! (voiceNum == 0 || voiceNum == 31)) continue;
-
-    //     const bool noteOn = synth.getRawModel().synth__DOT__r_NoteOn[voiceNum];
-    //     printf("  %d NoteOn = %d \n", voiceNum, noteOn);
-
-    //     for (uint8_t opNum = 0; opNum < 8; opNum++)
-    //     {
-    //         const uint8_t index = (opNum << 5) | voiceNum;
-    //         const uint16_t phaseStep = synth.getRawModel().synth__DOT__r_PhaseStep[index];
-    //         printf("  %d.%d phaseStep = 0x%04x \n", voiceNum, opNum, phaseStep);
-    //     }
-    // }
-
-
 
     double seconds = playAudio ? 2.0 : 0.3;
     auto& rBuffer = synth.getSampleBuffer();

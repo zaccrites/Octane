@@ -25,9 +25,9 @@ public:
 
     void setNoteOn(uint8_t voiceNum, bool noteOn);
 
-    void writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint8_t value);
-    void writeVoiceRegister(uint8_t voiceNum, uint8_t parameter, uint8_t value);
-    void writeGlobalRegister(uint8_t parameter, uint8_t value);
+    void writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value);
+    void writeVoiceRegister(uint8_t voiceNum, uint8_t parameter, uint16_t value);
+    void writeGlobalRegister(uint8_t parameter, uint16_t value);
 
     void writeSampleBytes(uint8_t* pRawStream, size_t number);
     const std::deque<int16_t>& getSampleBuffer() const
@@ -43,25 +43,16 @@ public:
 public:
     static const uint8_t GLOBAL_PARAM_NOTEON_BANK0  { 0x00 };
     static const uint8_t GLOBAL_PARAM_NOTEON_BANK1  { 0x01 };
-    static const uint8_t GLOBAL_PARAM_NOTEON_BANK2  { 0x02 };
-    static const uint8_t GLOBAL_PARAM_NOTEON_BANK3  { 0x03 };
 
-    static const uint8_t OP_PARAM_PHASE_STEP_HIGH  { 0x00 };
-    static const uint8_t OP_PARAM_PHASE_STEP_LOW  { 0x01 };
-    static const uint8_t OP_PARAM_WAVEFORM_HIGH    { 0x02 };
-    static const uint8_t OP_PARAM_WAVEFORM_LOW    { 0x03 };
+    static const uint8_t OP_PARAM_PHASE_STEP  { 0x00 };
+    static const uint8_t OP_PARAM_ALGORITHM      { 0x01 };
 
-    static const uint8_t OP_PARAM_ENVELOPE_L1    { 0x04 };
-    static const uint8_t OP_PARAM_ENVELOPE_L2    { 0x05 };
-    static const uint8_t OP_PARAM_ENVELOPE_L3    { 0x06 };
-    static const uint8_t OP_PARAM_ENVELOPE_L4    { 0x07 };
-    static const uint8_t OP_PARAM_ENVELOPE_R1    { 0x08 };
-    static const uint8_t OP_PARAM_ENVELOPE_R2    { 0x09 };
-    static const uint8_t OP_PARAM_ENVELOPE_R3    { 0x0a };
-    static const uint8_t OP_PARAM_ENVELOPE_R4    { 0x0b };
+    static const uint8_t OP_PARAM_ENVELOPE_ATTACK_LEVEL   { 0x02 };
+    static const uint8_t OP_PARAM_ENVELOPE_SUSTAIN_LEVEL  { 0x03 };
+    static const uint8_t OP_PARAM_ENVELOPE_ATTACK_RATE    { 0x04 };
+    static const uint8_t OP_PARAM_ENVELOPE_DECAY_RATE     { 0x05 };
+    static const uint8_t OP_PARAM_ENVELOPE_RELEASE_RATE   { 0x06 };
 
-    static const uint8_t OP_PARAM_ALGORITHM_HIGH      { 0x0c };
-    static const uint8_t OP_PARAM_ALGORITHM_LOW      { 0x0d };
 
     // static const uint8_t OP_WAVEFORM_SINE  { 0x0000 };
     // static const uint8_t OP_WAVEFORM_SQUARE { 0x0001 };

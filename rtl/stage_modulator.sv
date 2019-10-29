@@ -22,10 +22,10 @@ module stage_modulator (
     input logic signed [15:0] i_OperatorWritebackValue,
 
     // configuration
-    input logic [1:0] i_AlgorithmWriteEnable,
-    input VoiceOperatorID_t i_AlgorithmWriteAddr,
+    input logic i_AlgorithmWriteEnable,
+    input VoiceOperatorID_t i_ConfigWriteAddr,
     // verilator lint_off UNUSED
-    input logic [7:0] i_AlgorithmWriteData
+    input logic [15:0] i_ConfigWriteData
     // verilator lint_on UNUSED
 
 );
@@ -34,6 +34,8 @@ module stage_modulator (
 // Replicated to create more read ports.
 `define OPERATOR_OUTPUT_MEMORY_READ_PORTS  7
 logic signed [15:0] r_OperatorOutputMemory [`OPERATOR_OUTPUT_MEMORY_READ_PORTS] [`NUM_VOICE_OPERATORS];
+
+// verilator lint_off UNUSED
 
 
 logic signed [15:0] r_OperatorOutput [7:0];
@@ -50,14 +52,8 @@ always_ff @ (posedge i_Clock) begin
 
     // TODO: Feedback
 
-    // TODO: Make sure Lattice tools figure out to use write enable mask
-    if (i_AlgorithmWriteEnable[0]) begin
-        r_Algorithm[i_AlgorithmWriteAddr].ModulateWithOP <= i_AlgorithmWriteData[6:0];
-    end
-    if (i_AlgorithmWriteEnable[1]) begin
-        r_Algorithm[i_AlgorithmWriteAddr].IsACarrier <= i_AlgorithmWriteData[3];
-        r_Algorithm[i_AlgorithmWriteAddr].NumCarriers <= i_AlgorithmWriteData[2:0];
-    end
+    if (i_AlgorithmWriteEnable)
+        r_Algorithm[i_ConfigWriteAddr] <= i_ConfigWriteData[10:0];
 
     for (i = 0; i < `OPERATOR_OUTPUT_MEMORY_READ_PORTS; i = i + 1) begin
         r_OperatorOutputMemory[i][i_OperatorWritebackID] <= i_OperatorWritebackValue;
@@ -85,7 +81,8 @@ always_ff @ (posedge i_Clock) begin
             // if (getVoiceID(r_VoiceOperator[i - 1]) == 0) $display("Adding modulation phase: %d", $signed({{1{r_OperatorOutput[i - 1][15]}}, r_OperatorOutput[i - 1][15:1]}));
             // r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1] + {{1{r_OperatorOutput[i - 1][15]}}, r_OperatorOutput[i - 1][15:1]};
             // r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1] + $unsigned(r_OperatorOutput[i - 1]);
-            r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1] + {1'b0, $unsigned(r_OperatorOutput[i - 1][15:1])};
+            // r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1] + {1'b0, $unsigned(r_OperatorOutput[i - 1][15:1])};
+            r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1];
         end
         else begin
             r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1];

@@ -21,9 +21,9 @@ module stage_phase_accumulator (
     // ----------------------------------------------------------
 
     // configuration
-    input logic [1:0] i_PhaseStepConfigWriteEnable,
-    input VoiceOperatorID_t i_PhaseStepConfigWriteAddr,
-    input logic unsigned [7:0] i_PhaseStepConfigWriteData
+    input logic i_PhaseStepConfigWriteEnable,
+    input VoiceOperatorID_t i_ConfigWriteAddr,
+    input logic [15:0] i_ConfigWriteData
 
 );
 
@@ -49,10 +49,8 @@ end
 always_ff @ (posedge i_Clock) begin
 
     // TODO: Make sure Lattice tools figure out to use write enable mask
-    if (i_PhaseStepConfigWriteEnable[0])
-        r_PhaseStepConfig[i_PhaseStepConfigWriteAddr][15:8] <= i_PhaseStepConfigWriteData;
-    if (i_PhaseStepConfigWriteEnable[1])
-        r_PhaseStepConfig[i_PhaseStepConfigWriteAddr][7:0] <= i_PhaseStepConfigWriteData;
+    if (i_PhaseStepConfigWriteEnable)
+        r_PhaseStepConfig[i_ConfigWriteAddr] <= i_ConfigWriteData;
 
     // Clock 1
     // ----------------------------------------------------------

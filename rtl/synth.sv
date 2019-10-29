@@ -9,48 +9,12 @@ module synth (
     // TODO: Use SPI interface for input and output (collect bits into a register)
     input logic i_RegisterWriteEnable,
     input logic [15:0] i_RegisterWriteNumber,
-    input logic [7:0] i_RegisterWriteValue,
+    input logic [15:0] i_RegisterWriteValue,
 
     output logic signed [15:0] o_Sample,
     output logic o_SampleReady
 
 );
-
-
-/// Voice operator configuration registers
-
-/// Frequency information
-// logic unsigned [15:0] r_PhaseStep [256];
-
-/// Waveform type and parameters
-// logic [15:0] r_Waveform  [256];
-
-/// Envelope level registers
-// logic unsigned [7:0] r_EnvelopeL1 [256];
-// logic unsigned [7:0] r_EnvelopeL2 [256];
-// logic unsigned [7:0] r_EnvelopeL3 [256];
-// logic unsigned [7:0] r_EnvelopeL4 [256];
-
-/// Envelope rate registers
-// logic unsigned [7:0] r_EnvelopeR1 [256];
-// logic unsigned [7:0] r_EnvelopeR2 [256];
-// logic unsigned [7:0] r_EnvelopeR3 [256];
-// logic unsigned [7:0] r_EnvelopeR4 [256];
-
-/// Algorithm instruction words
-// logic [7:0] r_Algorithm [256];
-
-
-
-/// Voice configuration registers
-// logic r_NoteOn [32];
-
-// TODO: This could be included in the algorithm ROM (though perhaps as a separate BRAM to avoid a structural hazard)
-/// The factor used to compensate for multiple carrier operators
-// logic unsigned [15:0] r_CarrierComp [32];
-
-
-
 
 
 // Register assignment
@@ -93,73 +57,34 @@ function logic regWriteEnable(logic [7:0] category);
 endfunction
 
 
-logic [3:0] w_NoteOnConfigWriteEnable;
-logic [7:0] w_EnvelopeConfigWriteEnable;
-logic [1:0] w_AlgorithmWriteEnable;
-logic [1:0] w_PhaseStepWriteEnable;
+
+// TODO: REMOVE THIS
+// verilator lint_off UNUSED
+
+
+logic [1:0] w_NoteOnConfigWriteEnable;
+logic [4:0] w_EnvelopeConfigWriteEnable;
+logic w_AlgorithmWriteEnable;
+logic w_PhaseStepWriteEnable;
+
 always_comb begin
 
     // GLOBAL CONFIGURATION
     w_NoteOnConfigWriteEnable[0] = regWriteEnable({2'b01, 6'h00});
     w_NoteOnConfigWriteEnable[1] = regWriteEnable({2'b01, 6'h01});
-    w_NoteOnConfigWriteEnable[2] = regWriteEnable({2'b01, 6'h02});
-    w_NoteOnConfigWriteEnable[3] = regWriteEnable({2'b01, 6'h03});
 
     // VOICE CONFIGURATION
     // (none yet)
 
     // VOICE OPERATOR CONFIGURATION
-    w_PhaseStepWriteEnable[0] = regWriteEnable({2'b11, 6'h00});  // HIGH
-    w_PhaseStepWriteEnable[1] = regWriteEnable({2'b11, 6'h01});  // LOW
+    w_PhaseStepWriteEnable = regWriteEnable({2'b11, 6'h00});
+    w_AlgorithmWriteEnable = regWriteEnable({2'b11, 6'h01});
 
-    w_EnvelopeConfigWriteEnable[0] = regWriteEnable({2'b11, 6'h04});  // ATTACK LEVEL
-    w_EnvelopeConfigWriteEnable[1] = regWriteEnable({2'b11, 6'h05});  // DECAY LEVEL
-    w_EnvelopeConfigWriteEnable[2] = regWriteEnable({2'b11, 6'h06});  // SUSTAIN LEVEL
-    w_EnvelopeConfigWriteEnable[3] = regWriteEnable({2'b11, 6'h07});  // RELEASE LEVEL
-    w_EnvelopeConfigWriteEnable[4] = regWriteEnable({2'b11, 6'h08});  // ATTACK RATE
-    w_EnvelopeConfigWriteEnable[5] = regWriteEnable({2'b11, 6'h09});  // DECAY RATE
-    w_EnvelopeConfigWriteEnable[6] = regWriteEnable({2'b11, 6'h0a});  // RECOVERY RATE
-    w_EnvelopeConfigWriteEnable[7] = regWriteEnable({2'b11, 6'h0b});  // RELEASE RATE
-
-    w_AlgorithmWriteEnable[0] = regWriteEnable({2'b11, 6'h0c});  // HIGH
-    w_AlgorithmWriteEnable[1] = regWriteEnable({2'b11, 6'h0d});  // LOW
-
-end
-
-
-always_ff @ (posedge i_Clock) begin
-
-    // if (i_RegisterWriteEnable) begin
-    //     case (i_RegisterWriteNumber[15:8])
-    //         // TODO: Rearrange these
-    //         //
-    //         //
-    //         {2'b11, 6'h00}: r_PhaseStep[w_VoiceOpRegWriteIndex][15:8] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h01}: r_PhaseStep[w_VoiceOpRegWriteIndex][7:0] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h02}: r_Waveform[w_VoiceOpRegWriteIndex][15:8] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h03}: r_Waveform[w_VoiceOpRegWriteIndex][7:0] <= i_RegisterWriteValue;
-    //         //
-    //         {2'b11, 6'h04}: r_EnvelopeL1[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h05}: r_EnvelopeL2[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h06}: r_EnvelopeL3[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h07}: r_EnvelopeL4[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h08}: r_EnvelopeR1[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h09}: r_EnvelopeR2[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h0a}: r_EnvelopeR3[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         {2'b11, 6'h0b}: r_EnvelopeR4[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         //
-    //         {2'b11, 6'h0c}: r_Algorithm[w_VoiceOpRegWriteIndex] <= i_RegisterWriteValue;
-    //         //
-    //         //
-    //         {2'b10, 6'h00}: r_NoteOn[w_VoiceRegWriteIndex] <= i_RegisterWriteValue[7:0];
-    //         // {2'b10, 6'h01}: <reserved>
-    //         {2'b10, 6'h02}: r_CarrierComp[w_VoiceRegWriteIndex][15:8] <= i_RegisterWriteValue;  // TODO: Remove
-    //         {2'b10, 6'h03}: r_CarrierComp[w_VoiceRegWriteIndex][7:0] <= i_RegisterWriteValue;  // TODO: Remove
-
-    //         default: /* ignore writes to invalid registers */ ;
-    //     endcase
-    // end
-
+    w_EnvelopeConfigWriteEnable[0] = regWriteEnable({2'b11, 6'h01});  // ATTACK LEVEL
+    w_EnvelopeConfigWriteEnable[1] = regWriteEnable({2'b11, 6'h02});  // SUSTAIN LEVEL
+    w_EnvelopeConfigWriteEnable[2] = regWriteEnable({2'b11, 6'h03});  // ATTACK RATE
+    w_EnvelopeConfigWriteEnable[3] = regWriteEnable({2'b11, 6'h04});  // DECAY RATE
+    w_EnvelopeConfigWriteEnable[4] = regWriteEnable({2'b11, 6'h05});  // RELEASE RATE
 
 end
 
@@ -199,8 +124,8 @@ stage_phase_accumulator phase_accumulator (
     .o_Phase                     (w_RawPhase),
 
     .i_PhaseStepConfigWriteEnable(w_PhaseStepWriteEnable),
-    .i_PhaseStepConfigWriteAddr  (w_VoiceOpRegWriteIndex),
-    .i_PhaseStepConfigWriteData  (i_RegisterWriteValue)
+    .i_ConfigWriteAddr  (w_VoiceOpRegWriteIndex),
+    .i_ConfigWriteData  (i_RegisterWriteValue)
 );
 
 
@@ -218,8 +143,8 @@ stage_modulator modulator (
 
     // TODO: Set these if register written above
     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
-    .i_AlgorithmWriteAddr  (w_VoiceOpRegWriteIndex),
-    .i_AlgorithmWriteData  (i_RegisterWriteValue),
+    .i_ConfigWriteAddr  (w_VoiceOpRegWriteIndex),
+    .i_ConfigWriteData  (i_RegisterWriteValue),
 
     .i_OperatorWritebackID   (w_OperatorWritebackID),
     .i_OperatorWritebackValue(w_OperatorWritebackValue)
@@ -242,41 +167,52 @@ stage_waveform_generator waveform_generator (
 );
 
 
-logic signed [15:0] w_AttenuatedWaveform;
+// logic signed [15:0] w_AttenuatedWaveform;
+// always_ff @ (posedge i_Clock) begin
+//     if (getVoiceID(r_VoiceOperator[4]) == 1)
+//         $display("[%0d.%0d] w_AttenuatedWaveform = %d", getVoiceID(r_VoiceOperator[4]), getOperatorID(r_VoiceOperator[4]), w_AttenuatedWaveform);
+// end
 
-stage_envelope_attenuator envelope_attenuator (
-    .i_Clock        (i_Clock),
+// stage_envelope_attenuator envelope_attenuator (
+//     .i_Clock        (i_Clock),
 
-    .i_VoiceOperator  (r_VoiceOperator[3]),
-    .o_VoiceOperator  (r_VoiceOperator[4]),
+//     .i_VoiceOperator  (r_VoiceOperator[3]),
+//     .o_VoiceOperator  (r_VoiceOperator[4]),
 
-    .i_AlgorithmWord  (r_AlgorithmWord[3]),
-    .o_AlgorithmWord  (r_AlgorithmWord[4]),
+//     .i_AlgorithmWord  (r_AlgorithmWord[3]),
+//     .o_AlgorithmWord  (r_AlgorithmWord[4]),
 
-    .i_Waveform     (w_RawWaveform),
-    .o_Waveform     (w_AttenuatedWaveform),
+//     .i_Waveform     (w_RawWaveform),
+//     .o_Waveform     (w_AttenuatedWaveform),
 
-    .i_EnvelopeConfigWriteEnable(w_EnvelopeConfigWriteEnable),
-    .i_NoteOnConfigWriteEnable  (w_NoteOnConfigWriteEnable),
-    .i_ConfigWriteAddr          (w_VoiceOpRegWriteIndex),
-    .i_ConfigWriteData          (i_RegisterWriteValue)
-);
+//     .i_EnvelopeConfigWriteEnable(w_EnvelopeConfigWriteEnable),
+//     .i_NoteOnConfigWriteEnable  (w_NoteOnConfigWriteEnable),
+//     .i_ConfigWriteAddr          (w_VoiceOpRegWriteIndex),
+//     .i_ConfigWriteData          (i_RegisterWriteValue)
+// );
 
 
 
 // TODO
 VoiceOperatorID_t w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
-assign w_OperatorWritebackID = r_VoiceOperator[4];
-assign w_OperatorWritebackValue = w_AttenuatedWaveform;
+// assign w_OperatorWritebackID = r_VoiceOperator[4];
+// assign w_OperatorWritebackValue = w_AttenuatedWaveform;
+assign w_OperatorWritebackID = 0;
+assign w_OperatorWritebackValue = 0;
 
 
 stage_sample_generator sample_generator (
     .i_Clock        (i_Clock),
 
-    .i_VoiceOperator(r_VoiceOperator[4]),
-    .i_AlgorithmWord (r_AlgorithmWord[4]),
-    .i_OperatorOutput(w_AttenuatedWaveform),
+    // .i_VoiceOperator(r_VoiceOperator[4]),
+    // .i_AlgorithmWord (r_AlgorithmWord[4]),
+    // .i_OperatorOutput(w_AttenuatedWaveform),
+
+    .i_VoiceOperator(r_VoiceOperator[3]),
+    .i_AlgorithmWord (r_AlgorithmWord[3]),
+    .i_OperatorOutput(w_RawWaveform),
+    // .i_OperatorOutput(w_ModulatedPhase[16:1]),
 
     .o_SampleReady  (o_SampleReady),
     .o_Sample        (o_Sample)
