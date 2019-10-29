@@ -90,9 +90,10 @@ int main(int argc, const char** argv)
         // else
         {
             // noteBaseFrequency = 1000.0;
-            noteBaseFrequency = 523.251;  // C5
+            // noteBaseFrequency = 523.251;  // C5
         }
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
+        noteBaseFrequency = 100.0;
 
 
         // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
@@ -101,8 +102,8 @@ int main(int argc, const char** argv)
             //xxxxxx mmmmmmm nnn c
             0b000000'0000000'000'0,  // OP1
             // 0b000000'0000001'000'1,  // OP2
-            0b000000'0000000'000'1,  // OP2
-            0b000000'0000000'000'0,  // OP3
+            0b000000'0000000'001'1,  // OP2
+            0b000000'0000000'001'1,  // OP3
             0b000000'0000000'000'0,  // OP4
             0b000000'0000000'000'0,  // OP5
             0b000000'0000000'000'0,  // OP6
@@ -146,7 +147,7 @@ int main(int argc, const char** argv)
 
     for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
-        if (voiceNum == 1)
+        // if (voiceNum == 1)
         {
             synth.setNoteOn(voiceNum, true);
         }

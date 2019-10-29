@@ -32,10 +32,6 @@ void Synth::tick()
     if (m_Synth.o_SampleReady)
     {
         int16_t sample = m_Synth.o_Sample;
-
-        // TODO: REMOVE HACK (maximum volume for a single voice)
-        sample = sample * 32;
-
         m_SampleBuffer.push_front(sample);
 
         // // TODO: Generate an "expected" sample as well
@@ -98,7 +94,7 @@ void Synth::setNoteOn(uint8_t voiceNum, bool noteOn)
 }
 
 
-void Synth::writeRegister(uint16_t registerNumber, uint8_t value)
+void Synth::writeRegister(uint16_t registerNumber, uint16_t value)
 {
     m_Synth.i_RegisterWriteNumber = registerNumber;
     m_Synth.i_RegisterWriteValue = value;

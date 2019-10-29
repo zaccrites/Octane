@@ -208,11 +208,10 @@ always_ff @ (posedge i_Clock) begin
     // Clocks 2-5 : Attenuate output sample
     // ----------------------------------------------------------
 
-    // r_AttenuatedWaveformProduct[0] <= r_RawWaveform * $signed({1'b0, r_EnvelopeState.Level, 1'b0});
-    r_AttenuatedWaveformProduct[0] <= r_RawWaveform * 16'h7fff;
+    r_AttenuatedWaveformProduct[0] <= r_RawWaveform * $signed({1'b0, r_EnvelopeState.Level, 1'b0});
     r_AttenuatedWaveformProduct[1] <= r_AttenuatedWaveformProduct[0];
     r_AttenuatedWaveformProduct[2] <= r_AttenuatedWaveformProduct[1];
-    o_Waveform <= r_AttenuatedWaveformProduct[2][31:16];
+    o_Waveform <= {r_AttenuatedWaveformProduct[2][30:16], 1'b0};
 
     r_VoiceOperator[1] <= r_VoiceOperator[0];
     r_VoiceOperator[2] <= r_VoiceOperator[1];

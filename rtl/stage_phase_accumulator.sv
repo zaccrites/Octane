@@ -1,30 +1,18 @@
 
-// Accumulate phase and combine with modulation and feedback phase.
-
 `include "synth.svh"
 
-// ===============================
-// 2 clock cycles
-// ===============================
+
 module stage_phase_accumulator (
     input i_Clock,
 
-    // ----------------------------------------------------------
-
     output logic unsigned [15:0] o_Phase,
-
-    // ----------------------------------------------------------
 
     input VoiceOperatorID_t i_VoiceOperator,
     output VoiceOperatorID_t o_VoiceOperator,
 
-    // ----------------------------------------------------------
-
-    // configuration
     input logic i_PhaseStepConfigWriteEnable,
     input VoiceOperatorID_t i_ConfigWriteAddr,
     input logic [15:0] i_ConfigWriteData
-
 );
 
 

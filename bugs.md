@@ -17,8 +17,9 @@
 
 # Other
 
-* Is curring off the sign bit like this in the sample_generator right?
+* Is curring off the sign bit like this in the sample generator and atteunator actually correct?
   `r_CompensatedCarrierOutput <= {r_CompensatedCarrierOutputProduct[2][30:16], 1'b0};`
+  `o_Waveform <= {r_AttenuatedWaveformProduct[2][30:16], 1'b0};`
 * The way configuration registers are written with respect to byte ordering
   vs. register numbers is a bit messy. It should be organized better.
 * Use a real bug tracker?

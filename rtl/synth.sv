@@ -47,20 +47,10 @@ logic [7:0] w_RegisterWriteCategory;  // TODO: Find better name
 assign w_RegisterWriteCategory = i_RegisterWriteNumber[15:8];
 logic [7:0] w_VoiceOpRegWriteIndex;
 assign w_VoiceOpRegWriteIndex = i_RegisterWriteNumber[7:0];
-// logic [4:0] w_VoiceRegWriteIndex;
-// assign w_VoiceRegWriteIndex = i_RegisterWriteNumber[4:0];
-//
-
 
 function logic regWriteEnable(logic [7:0] category);
     return i_RegisterWriteEnable && w_RegisterWriteCategory == category;
 endfunction
-
-
-
-// TODO: REMOVE THIS
-// verilator lint_off UNUSED
-
 
 logic [1:0] w_NoteOnConfigWriteEnable;
 logic [4:0] w_EnvelopeConfigWriteEnable;
@@ -167,52 +157,41 @@ stage_waveform_generator waveform_generator (
 );
 
 
-// logic signed [15:0] w_AttenuatedWaveform;
-// always_ff @ (posedge i_Clock) begin
-//     if (getVoiceID(r_VoiceOperator[4]) == 1)
-//         $display("[%0d.%0d] w_AttenuatedWaveform = %d", getVoiceID(r_VoiceOperator[4]), getOperatorID(r_VoiceOperator[4]), w_AttenuatedWaveform);
-// end
+logic signed [15:0] w_AttenuatedWaveform;
 
-// stage_envelope_attenuator envelope_attenuator (
-//     .i_Clock        (i_Clock),
+stage_envelope_attenuator envelope_attenuator (
+    .i_Clock        (i_Clock),
 
-//     .i_VoiceOperator  (r_VoiceOperator[3]),
-//     .o_VoiceOperator  (r_VoiceOperator[4]),
+    .i_VoiceOperator  (r_VoiceOperator[3]),
+    .o_VoiceOperator  (r_VoiceOperator[4]),
 
-//     .i_AlgorithmWord  (r_AlgorithmWord[3]),
-//     .o_AlgorithmWord  (r_AlgorithmWord[4]),
+    .i_AlgorithmWord  (r_AlgorithmWord[3]),
+    .o_AlgorithmWord  (r_AlgorithmWord[4]),
 
-//     .i_Waveform     (w_RawWaveform),
-//     .o_Waveform     (w_AttenuatedWaveform),
+    .i_Waveform     (w_RawWaveform),
+    .o_Waveform     (w_AttenuatedWaveform),
 
-//     .i_EnvelopeConfigWriteEnable(w_EnvelopeConfigWriteEnable),
-//     .i_NoteOnConfigWriteEnable  (w_NoteOnConfigWriteEnable),
-//     .i_ConfigWriteAddr          (w_VoiceOpRegWriteIndex),
-//     .i_ConfigWriteData          (i_RegisterWriteValue)
-// );
+    .i_EnvelopeConfigWriteEnable(w_EnvelopeConfigWriteEnable),
+    .i_NoteOnConfigWriteEnable  (w_NoteOnConfigWriteEnable),
+    .i_ConfigWriteAddr          (w_VoiceOpRegWriteIndex),
+    .i_ConfigWriteData          (i_RegisterWriteValue)
+);
 
 
 
 // TODO
 VoiceOperatorID_t w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
-// assign w_OperatorWritebackID = r_VoiceOperator[4];
-// assign w_OperatorWritebackValue = w_AttenuatedWaveform;
-assign w_OperatorWritebackID = 0;
-assign w_OperatorWritebackValue = 0;
+assign w_OperatorWritebackID = r_VoiceOperator[4];
+assign w_OperatorWritebackValue = w_AttenuatedWaveform;
 
 
 stage_sample_generator sample_generator (
     .i_Clock        (i_Clock),
 
-    // .i_VoiceOperator(r_VoiceOperator[4]),
-    // .i_AlgorithmWord (r_AlgorithmWord[4]),
-    // .i_OperatorOutput(w_AttenuatedWaveform),
-
-    .i_VoiceOperator(r_VoiceOperator[3]),
-    .i_AlgorithmWord (r_AlgorithmWord[3]),
-    .i_OperatorOutput(w_RawWaveform),
-    // .i_OperatorOutput(w_ModulatedPhase[16:1]),
+    .i_VoiceOperator(r_VoiceOperator[4]),
+    .i_AlgorithmWord (r_AlgorithmWord[4]),
+    .i_OperatorOutput(w_AttenuatedWaveform),
 
     .o_SampleReady  (o_SampleReady),
     .o_Sample        (o_Sample)

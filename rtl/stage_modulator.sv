@@ -39,8 +39,7 @@ logic signed [15:0] r_OperatorOutputMemory [`OPERATOR_OUTPUT_MEMORY_READ_PORTS] 
 
 
 logic signed [15:0] r_OperatorOutput [7:0];
-// logic signed [16:0] r_ModulatedPhase [7:0];
-logic unsigned [15:0] r_ModulatedPhase [7:0];
+logic signed [16:0] r_ModulatedPhase [7:0];
 AlgorithmWord_t r_AlgorithmWord [7:0];
 VoiceOperatorID_t r_VoiceOperator [7:0];
 
@@ -63,8 +62,8 @@ always_ff @ (posedge i_Clock) begin
     // ----------------------------------------------------------
     r_OperatorOutput[0] <= r_OperatorOutputMemory[0][i_VoiceOperator];
     // r_ModulatedPhase[0] <= $signed({1'b0, i_Phase});
-    // r_ModulatedPhase[0] <= i_Phase;
-    r_ModulatedPhase[0] <= {1'b0, i_Phase[15:1]};  // Do I need to divide modulators by number of modulators (plus one for the original phase, which is also divided)?
+    r_ModulatedPhase[0] <= {1'b0, i_Phase};
+    // r_ModulatedPhase[0] <= {1'b0, i_Phase[15:1]};  // Do I need to divide modulators by number of modulators (plus one for the original phase, which is also divided)?
 
     r_AlgorithmWord[0] <= r_Algorithm[i_VoiceOperator];
     r_VoiceOperator[0] <= i_VoiceOperator;
@@ -96,13 +95,9 @@ always_ff @ (posedge i_Clock) begin
 end
 
 // TODO: Use unsigned phase only?
-assign o_Phase = $signed({1'b0, r_ModulatedPhase[7]});
+assign o_Phase = r_ModulatedPhase[7];
 assign o_AlgorithmWord = r_AlgorithmWord[7];
 assign o_VoiceOperator = r_VoiceOperator[7];
-
-
-// logic signed [15:0] w_ModulationCompensationFactor;
-
 
 
 endmodule

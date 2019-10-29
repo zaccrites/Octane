@@ -21,7 +21,7 @@ public:
 
     void tick();
     void reset();
-    void writeRegister(uint16_t registerNumber, uint8_t registerValue);
+    void writeRegister(uint16_t registerNumber, uint16_t registerValue);
 
     void setNoteOn(uint8_t voiceNum, bool noteOn);
 

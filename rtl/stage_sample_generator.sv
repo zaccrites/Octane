@@ -94,9 +94,6 @@ always_ff @ (posedge i_Clock) begin
 
     o_SampleReady <= r_VoiceOperator[3] == 8'hff;
 
-    // if (r_VoiceOperator[3] == 8'hff)
-    //     $display("Ready sample is %d", r_SampleBuffer[20:5]);
-
     // -------------------------------------------------------
 
 end
