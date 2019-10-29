@@ -10,6 +10,6 @@
 MAX_MODULATORS = 7
 
 for i in range(2 ** MAX_MODULATORS):
-    num_modulators = bin(i).count('1')
-    compensation_factor = round(0x7fff / num_modulators) if num_modulators else 0
-    print(f"7'b{i:07b}:  w_ModulationCompensationFactor = 16'h{compensation_factor:04x};  // {num_modulators} modulators")
+    num_phase_sources = 1 + bin(i).count('1')
+    compensation_factor = round(0x7fff / num_phase_sources)
+    print(f"7'b{i:07b}:  w_ModulationCompensationFactor = 16'h{compensation_factor:04x};  // {num_phase_sources} phase sources")

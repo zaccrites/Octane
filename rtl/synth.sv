@@ -267,8 +267,8 @@ stage_envelope_attenuator envelope_attenuator (
 // TODO
 VoiceOperatorID_t w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
-assign w_OperatorWritebackID = r_VoiceOperator[3];
-assign w_OperatorWritebackValue = w_RawWaveform;
+assign w_OperatorWritebackID = r_VoiceOperator[4];
+assign w_OperatorWritebackValue = w_AttenuatedWaveform;
 
 
 stage_sample_generator sample_generator (

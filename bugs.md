@@ -7,7 +7,8 @@
 
 # Features
 
-* Re-enable all 32 voices
+* Only update operator level after a zero crossing to avoid waveform artifacts
+  from the sudden jump in amplitude.
 * Filtering
 * Configuration should use an SPI interface
 * Sine "ROM" data should be loaded at start, not configured with `$readmemh`
