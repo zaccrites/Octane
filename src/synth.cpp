@@ -10,8 +10,7 @@ Synth::Synth() :
     m_SampleBuffer {},
     m_SampleCounter {0},
     m_DataFile { fopen("data.csv", "w") },
-    m_NoteOnState {},
-    m_t {0.0}
+    m_NoteOnState {}
 {
     std::fill_n(m_NoteOnState, 32, false);
 }
@@ -21,39 +20,54 @@ Synth::~Synth()
     fclose(m_DataFile);
 }
 
-#include <cmath>
+
+void Synth::spiTick()
+{
+    // The FPGA clock runs 8x as fast as the SPI clock
+    // in order to avoid missing SCK edges.
+
+    m_Synth.i_SPI_SCK = 0;
+    tick();
+    tick();
+
+    // Output the MSB first
+    // m_Synth.i_SPI_MOSI = m_SPI_OutputBuffer & 0x8000 != 0;
+    m_Synth.i_SPI_MOSI = (m_SPI_OutputBuffer & 0x8000) ? 1 : 0;
+    // printf("C++ : m_Synth.i_SPI_MOSI = %d \n", m_Synth.i_SPI_MOSI);
+    m_SPI_OutputBuffer = m_SPI_OutputBuffer << 1;
+    tick();
+    tick();
+
+    m_Synth.i_SPI_SCK = 1;
+    tick();
+    tick();
+
+    // Input the MSB first
+    m_SPI_InputBuffer = (m_SPI_InputBuffer << 1) | (m_Synth.o_SPI_MISO != 0);
+    tick();
+    tick();
+
+    // It takes 256 ticks to make a sample.
+    // There are 8 ticks per SPI tick, so we only have to wait 32
+    // SPI ticks between collecting samples.
+    if (++m_SPI_TickCounter >= 256 / 8)
+    {
+        m_SPI_TickCounter = 0;
+
+        auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
+        m_SampleBuffer.push_front(sample);
+
+        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
+    }
+}
+
+
 void Synth::tick()
 {
     m_Synth.i_Clock = 0;
     m_Synth.eval();
     m_Synth.i_Clock = 1;
     m_Synth.eval();
-
-    if (m_Synth.o_SampleReady)
-    {
-        int16_t sample = m_Synth.o_Sample;
-        m_SampleBuffer.push_front(sample);
-
-        // // TODO: Generate an "expected" sample as well
-        // int16_t expectedSample = static_cast<int16_t>(
-        //     0x7fff *
-        //     std::sin(
-        //         2.0 * M_PI * 440.0 * m_t
-        //         + std::sin(2.0 * M_PI * 880.0 * m_t)
-        //     )
-        //     / 16.0
-        // );
-        // fprintf(m_DataFile, "%zu,%d,%d\n", m_SampleCounter++, sample, expectedSample);
-
-        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
-
-    }
-
-    // We execute 256 clock cycles for each audio sample (at 44.1 kHz),
-    // so our running clock frequency is 11.2896 MHz (period = 88.577 ns).
-    // Note that adding additional operators, voices, or increasing the
-    // audio sampling rate will increase the running frequency.
-    m_t += 1.0 / (256 * 44.1e3);
 }
 
 
@@ -62,8 +76,6 @@ void Synth::reset()
     m_Synth.i_Reset = 1;
     tick();
     m_Synth.i_Reset = 0;
-
-    m_t = 0.0;
 }
 
 
@@ -94,13 +106,38 @@ void Synth::setNoteOn(uint8_t voiceNum, bool noteOn)
 }
 
 
+
+void Synth::spiSendReceive()
+{
+    if (m_SPI_SendQueue.empty())
+    {
+        m_SPI_OutputBuffer = 0;
+    }
+    else
+    {
+        m_SPI_OutputBuffer = m_SPI_SendQueue.front();
+        printf("Will output             %04x (%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n", m_SPI_OutputBuffer,
+            ((m_SPI_OutputBuffer & 0x8000) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x4000) ? '1' : '0'),
+            ((m_SPI_OutputBuffer & 0x2000) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x1000) ? '1' : '0'),
+            ((m_SPI_OutputBuffer & 0x0800) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0400) ? '1' : '0'),
+            ((m_SPI_OutputBuffer & 0x0200) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0100) ? '1' : '0'),
+            ((m_SPI_OutputBuffer & 0x0080) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0040) ? '1' : '0'),
+            ((m_SPI_OutputBuffer & 0x0020) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0010) ? '1' : '0'),
+            ((m_SPI_OutputBuffer & 0x0008) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0004) ? '1' : '0'),
+            ((m_SPI_OutputBuffer & 0x0002) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0001) ? '1' : '0')
+
+        );
+        m_SPI_SendQueue.pop();
+    }
+
+    for (int i = 0; i < 16; i++) spiTick();
+}
+
+
 void Synth::writeRegister(uint16_t registerNumber, uint16_t value)
 {
-    m_Synth.i_RegisterWriteNumber = registerNumber;
-    m_Synth.i_RegisterWriteValue = value;
-    m_Synth.i_RegisterWriteEnable = 1;
-    tick();
-    m_Synth.i_RegisterWriteEnable = 0;
+    m_SPI_SendQueue.push(registerNumber);
+    m_SPI_SendQueue.push(value);
 }
 
 
@@ -131,15 +168,8 @@ void Synth::writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t
 }
 
 
-void Synth::writeVoiceRegister(uint8_t voiceNum, uint8_t parameter, uint16_t value)
-{
-    const uint16_t registerNumber = (0b10 << 14) | (parameter << 8) | voiceNum;
-    writeRegister(registerNumber, value);
-}
-
-
 void Synth::writeGlobalRegister(uint8_t parameter, uint16_t value)
 {
-    const uint16_t registerNumber = (0b01 << 14) | (parameter << 8);
+    const uint16_t registerNumber = (0b10 << 14) | (parameter << 8);
     writeRegister(registerNumber, value);
 }

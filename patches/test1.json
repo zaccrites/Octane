@@ -11,21 +11,21 @@
             "levels": [1000, 500],
             "rates": [1000, 500, 250],
             "waveform": "sine",
-            "frequency_ratio": 2.00
+            "frequency_ratio": 0.50
         },
         {
             "comment": "Operator 2",
             "levels": [1000, 500],
             "rates": [1000, 500, 250],
             "waveform": "sine",
-            "frequency_ratio": 3.5
+            "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 3",
             "levels": [1000, 500],
             "rates": [1000, 500, 250],
             "waveform": "sine",
-            "frequency_ratio": 4.4
+            "frequency_ratio": 2.00
         },
 
 

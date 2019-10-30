@@ -5,6 +5,7 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <deque>
+#include <queue>
 
 #include "Vsynth.h"
 
@@ -20,13 +21,15 @@ public:
     Synth& operator=(const Synth&) = delete;
 
     void tick();
+    void spiTick();
     void reset();
     void writeRegister(uint16_t registerNumber, uint16_t registerValue);
+
+    void spiSendReceive();
 
     void setNoteOn(uint8_t voiceNum, bool noteOn);
 
     void writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value);
-    void writeVoiceRegister(uint8_t voiceNum, uint8_t parameter, uint16_t value);
     void writeGlobalRegister(uint8_t parameter, uint16_t value);
 
     void writeSampleBytes(uint8_t* pRawStream, size_t number);
@@ -66,8 +69,10 @@ private:
 
     bool m_NoteOnState[32];
 
-    /// Time elapsed since last reset
-    double m_t;
+    std::queue<uint16_t> m_SPI_SendQueue;
+    uint16_t m_SPI_TickCounter;
+    uint16_t m_SPI_OutputBuffer;
+    uint16_t m_SPI_InputBuffer;
 
 };
 

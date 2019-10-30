@@ -79,6 +79,18 @@ int main(int argc, const char** argv)
     synth.reset();
 
 
+    // uint16_t phaseStep0 = phaseStepForFrequency(440.0);
+    // synth.writeOperatorRegister(0, 7, Synth::OP_PARAM_PHASE_STEP, phaseStep0);
+    // synth.spiSendReceive();
+    // synth.spiSendReceive();
+
+    // // ???
+    // synth.spiSendReceive();
+    // return 0;
+
+
+
+
     for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
@@ -100,15 +112,24 @@ int main(int argc, const char** argv)
         uint16_t algorithmWords[8] = {
             //       7654321
             //xxxxxx mmmmmmm nnn c
-            0b000000'0000000'000'0,  // OP1
+            // 0b000000'0000000'000'0,  // OP1
             // 0b000000'0000001'000'1,  // OP2
-            0b000000'0000000'001'1,  // OP2
-            0b000000'0000000'001'1,  // OP3
+            // 0b000000'0000000'000'0,  // OP3
+            // 0b000000'0000000'000'0,  // OP4
+            // 0b000000'0000000'000'0,  // OP5
+            // 0b000000'0000000'000'0,  // OP6
+            // 0b000000'0000000'000'0,  // OP7
+            // 0b000000'0000000'000'0,  // OP8
+
+            0b000000'0000000'000'1,  // OP1
+            0b000000'0000000'000'0,  // OP2
+            0b000000'0000000'000'0,  // OP3
             0b000000'0000000'000'0,  // OP4
             0b000000'0000000'000'0,  // OP5
             0b000000'0000000'000'0,  // OP6
             0b000000'0000000'000'0,  // OP7
             0b000000'0000000'000'0,  // OP8
+
         };
 
 
@@ -173,7 +194,7 @@ int main(int argc, const char** argv)
         //     synth.setNoteOn(0, false);
         // }
 
-        synth.tick();
+        synth.spiSendReceive();
 
         // printf("rBuffer.size() = %d \n", rBuffer.size());
 
