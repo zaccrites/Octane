@@ -13,6 +13,9 @@ module stage_modulator (
     // verilator lint_on UNUSED
     output logic signed [16:0] o_Phase,
 
+    input logic i_NoteOn,
+    output logic o_NoteOn,
+
     input VoiceOperatorID_t i_VoiceOperator,
     output VoiceOperatorID_t o_VoiceOperator,
 
@@ -42,6 +45,7 @@ logic signed [15:0] r_OperatorOutput [7:0];
 logic signed [16:0] r_ModulatedPhase [7:0];
 AlgorithmWord_t r_AlgorithmWord [7:0];
 VoiceOperatorID_t r_VoiceOperator [7:0];
+logic r_NoteOn [7:0];
 
 AlgorithmWord_t r_Algorithm [`NUM_VOICE_OPERATORS];
 
@@ -65,6 +69,7 @@ always_ff @ (posedge i_Clock) begin
     r_ModulatedPhase[0] <= {1'b0, i_Phase};
     // r_ModulatedPhase[0] <= {1'b0, i_Phase[15:1]};  // Do I need to divide modulators by number of modulators (plus one for the original phase, which is also divided)?
 
+    r_NoteOn[0] <= i_NoteOn;
     r_AlgorithmWord[0] <= r_Algorithm[i_VoiceOperator];
     r_VoiceOperator[0] <= i_VoiceOperator;
     // ----------------------------------------------------------
@@ -87,6 +92,7 @@ always_ff @ (posedge i_Clock) begin
             r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1];
         end
 
+        r_NoteOn[i] <= r_NoteOn[i - 1];
         r_VoiceOperator[i] <= r_VoiceOperator[i - 1];
         r_AlgorithmWord[i] <= r_AlgorithmWord[i - 1];
     end
@@ -98,6 +104,7 @@ end
 assign o_Phase = r_ModulatedPhase[7];
 assign o_AlgorithmWord = r_AlgorithmWord[7];
 assign o_VoiceOperator = r_VoiceOperator[7];
+assign o_NoteOn = r_NoteOn[7];
 
 
 endmodule

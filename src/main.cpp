@@ -168,10 +168,10 @@ int main(int argc, const char** argv)
 
     for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
-        // if (voiceNum == 0)
-        // {
-        //     synth.setNoteOn(voiceNum, true);
-        // }
+        // if (voiceNum < 16)
+        {
+            synth.setNoteOn(voiceNum, true);
+        }
     }
 
     double seconds = playAudio ? 2.0 : 0.3;
@@ -194,14 +194,26 @@ int main(int argc, const char** argv)
         //     synth.setNoteOn(0, false);
         // }
 
-        for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-        {
-            double voiceOnTime = voiceNum * (seconds / 32.0);
-            if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
-            {
-                synth.setNoteOn(voiceNum, true);
-            }
-        }
+        // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+        // {
+        //     double voiceOnTime = voiceNum * (seconds / 32.0);
+        //     if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
+        //     {
+        //         printf("t = %f, setting voice %d on \n", t, voiceNum);
+        //         synth.setNoteOn(voiceNum, true);
+        //     }
+        // }
+
+        // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum += 2)
+        // {
+        //     double voiceOnTime = voiceNum * (seconds / 32.0);
+        //     if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
+        //     {
+        //         synth.setNoteOn(voiceNum, true);
+        //         synth.setNoteOn(voiceNum + 1, true);
+        //     }
+        // }
+
 
         synth.spiSendReceive();
 

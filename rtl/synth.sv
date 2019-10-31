@@ -100,10 +100,9 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-// TODO: Trim these down
-VoiceOperatorID_t r_VoiceOperator [31:0];
-AlgorithmWord_t r_AlgorithmWord [31:0];
-
+VoiceOperatorID_t r_VoiceOperator [5];
+AlgorithmWord_t r_AlgorithmWord [5];
+logic r_NoteOn [5];
 
 logic signed [16:0] w_ModulatedPhase;
 logic unsigned [15:0] w_RawPhase;
@@ -113,9 +112,11 @@ stage_phase_accumulator phase_accumulator (
     .i_Clock                     (i_Clock),
     .i_VoiceOperator             (r_VoiceOperator[0]),
     .o_VoiceOperator             (r_VoiceOperator[1]),
+    .o_NoteOn                    (r_NoteOn[0]),
 
     .o_Phase                     (w_RawPhase),
 
+    .i_NoteOnConfigWriteEnable   (w_NoteOnConfigWriteEnable),
     .i_PhaseStepConfigWriteEnable(w_PhaseStepWriteEnable),
     .i_ConfigWriteAddr  (w_VoiceOpRegWriteIndex),
     .i_ConfigWriteData  (w_RegisterWriteValue)
@@ -131,6 +132,8 @@ stage_modulator modulator (
     .i_Phase       (w_RawPhase),
     .o_Phase       (w_ModulatedPhase),
 
+    .i_NoteOn      (r_NoteOn[0]),
+    .o_NoteOn      (r_NoteOn[1]),
 
     .o_AlgorithmWord      (r_AlgorithmWord[2]),
 
@@ -152,6 +155,9 @@ stage_waveform_generator waveform_generator (
     .i_Phase   (w_ModulatedPhase),
     .o_Waveform(w_RawWaveform),
 
+    .i_NoteOn      (r_NoteOn[1]),
+    .o_NoteOn      (r_NoteOn[2]),
+
     .i_VoiceOperator(r_VoiceOperator[2]),
     .o_VoiceOperator(r_VoiceOperator[3]),
 
@@ -165,6 +171,8 @@ logic signed [15:0] w_AttenuatedWaveform;
 stage_envelope_attenuator envelope_attenuator (
     .i_Clock        (i_Clock),
 
+    .i_NoteOn         (r_NoteOn[2]),
+
     .i_VoiceOperator  (r_VoiceOperator[3]),
     .o_VoiceOperator  (r_VoiceOperator[4]),
 
@@ -175,7 +183,6 @@ stage_envelope_attenuator envelope_attenuator (
     .o_Waveform     (w_AttenuatedWaveform),
 
     .i_EnvelopeConfigWriteEnable(w_EnvelopeConfigWriteEnable),
-    .i_NoteOnConfigWriteEnable  (w_NoteOnConfigWriteEnable),
     .i_ConfigWriteAddr          (w_VoiceOpRegWriteIndex),
     .i_ConfigWriteData          (w_RegisterWriteValue)
 );

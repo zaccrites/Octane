@@ -8,6 +8,8 @@ module stage_envelope_attenuator (
     input VoiceOperatorID_t i_VoiceOperator,
     output VoiceOperatorID_t o_VoiceOperator,
 
+    input logic i_NoteOn,
+
     input AlgorithmWord_t i_AlgorithmWord,
     output AlgorithmWord_t o_AlgorithmWord,
 
@@ -15,9 +17,12 @@ module stage_envelope_attenuator (
     output signed [15:0] o_Waveform,
 
     input logic [4:0] i_EnvelopeConfigWriteEnable,
-    input logic [1:0] i_NoteOnConfigWriteEnable,
     input VoiceOperatorID_t i_ConfigWriteAddr,
+    //
+    // Not all of the config data bits are used
+    // verilator lint_off UNUSED
     input logic [15:0] i_ConfigWriteData
+    // verilator lint_on UNUSED
 );
 
 
@@ -37,9 +42,6 @@ always_ff @ (posedge i_Clock) begin
     end
 end
 
-
-/// Stored per-voice
-logic [31:0] r_NoteOnConfig;
 
 typedef logic unsigned [13:0] EnvelopeLevel_t;
 typedef logic unsigned [11:0] EnvelopeRate_t;
@@ -112,9 +114,6 @@ logic signed [31:0] r_AttenuatedWaveformProduct [3];
 
 always_ff @ (posedge i_Clock) begin
 
-    if (i_NoteOnConfigWriteEnable[1]) r_NoteOnConfig[31:16] <= i_ConfigWriteData;
-    if (i_NoteOnConfigWriteEnable[0]) r_NoteOnConfig[15:0] <= i_ConfigWriteData;
-
     // TODO: Ensure that two of these parameters are shared by each of four block RAMs.
     if (i_EnvelopeConfigWriteEnable[0]) r_AttackLevelConfig[i_ConfigWriteAddr] <= i_ConfigWriteData[13:0];
     if (i_EnvelopeConfigWriteEnable[1]) r_SustainLevelConfig[i_ConfigWriteAddr] <= i_ConfigWriteData[13:0];
@@ -127,7 +126,7 @@ always_ff @ (posedge i_Clock) begin
 
     r_DoEnvelopCalc <= w_DoEnvelopeCalc;
     r_EnvelopeState <= r_EnvelopeStates[i_VoiceOperator];
-    r_NoteOn <= r_NoteOnConfig[getVoiceID(i_VoiceOperator)];
+    r_NoteOn <= i_NoteOn;
     r_RawWaveform <= i_Waveform;
 
     r_AttackLevel <= r_AttackLevelConfig[i_VoiceOperator];

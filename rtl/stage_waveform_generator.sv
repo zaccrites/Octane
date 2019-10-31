@@ -10,6 +10,8 @@ module stage_waveform_generator (
     input AlgorithmWord_t i_AlgorithmWord,
     output AlgorithmWord_t o_AlgorithmWord,
 
+    input logic i_NoteOn,
+    output logic o_NoteOn,
 
     // For sine waves, we ignore the sign bit completely
     // (though the other inverted bits in a two's complement representation
@@ -30,6 +32,7 @@ logic unsigned [14:0] r_SineTable[16 * 1024];
 
 VoiceOperatorID_t r_VoiceOperator [2];
 AlgorithmWord_t r_AlgorithmWord [2];
+logic r_NoteOn [2];
 
 
 /// Negate the output in the second half of the waveform
@@ -62,6 +65,7 @@ always_ff @ (posedge i_Clock) begin
 
     r_VoiceOperator[0] <= i_VoiceOperator;
     r_AlgorithmWord[0] <= i_AlgorithmWord;
+    r_NoteOn[0] <= i_NoteOn;
     // ----------------------------------------------------------
 
     // Clock 2
@@ -71,6 +75,7 @@ always_ff @ (posedge i_Clock) begin
 
     r_VoiceOperator[1] <= r_VoiceOperator[0];
     r_AlgorithmWord[1] <= r_AlgorithmWord[0];
+    r_NoteOn[1] <= r_NoteOn[0];
     // ----------------------------------------------------------
 
     // Clock 3
@@ -79,6 +84,7 @@ always_ff @ (posedge i_Clock) begin
 
     o_VoiceOperator <= r_VoiceOperator[1];
     o_AlgorithmWord <= r_AlgorithmWord[1];
+    o_NoteOn <= r_NoteOn[1];
     // ----------------------------------------------------------
 
 end
