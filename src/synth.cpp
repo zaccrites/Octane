@@ -4,7 +4,6 @@
 #include <algorithm>  // for std::fill_n
 
 
-// TODO: Find a better way
 Synth::Synth() :
     m_Synth {},
     m_SampleBuffer {},
@@ -12,7 +11,7 @@ Synth::Synth() :
     m_DataFile { fopen("data.csv", "w") },
     m_NoteOnState {},
     m_SPI_SendQueue {},
-    m_SPI_TickCounter {0},   // Start a little ahead so that we look for samples significantly before they are likely to change
+    m_SPI_TickCounter {0},
     m_SPI_OutputBuffer {0},
     m_SPI_InputBuffer {0}
 {
@@ -27,20 +26,14 @@ Synth::~Synth()
 
 void Synth::spiTick()
 {
-    // The FPGA clock runs 8x as fast as the SPI clock
+    // The FPGA clock runs 4x as fast as the SPI clock
     // in order to avoid missing SCK edges.
-
-    // It takes 256 ticks to make a sample.
-    // There are 8 ticks per SPI tick, so we only have to wait 32
-    // SPI ticks between collecting samples.
 
     m_Synth.i_SPI_SCK = 0;
     tick();
 
     // Output the MSB first
-    // m_Synth.i_SPI_MOSI = m_SPI_OutputBuffer & 0x8000 != 0;
     m_Synth.i_SPI_MOSI = (m_SPI_OutputBuffer & 0x8000) ? 1 : 0;
-    // printf("C++ : m_Synth.i_SPI_MOSI = %d \n", m_Synth.i_SPI_MOSI);
     m_SPI_OutputBuffer = m_SPI_OutputBuffer << 1;
     tick();
 
@@ -49,34 +42,7 @@ void Synth::spiTick()
 
     // Input the MSB first
     m_SPI_InputBuffer = (m_SPI_InputBuffer << 1) | (m_Synth.o_SPI_MISO != 0);
-    // if (collectNewSample)
-        // printf("m_SPI_InputBuffer            = %04x (%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n", m_SPI_InputBuffer,
-        //     ((m_SPI_InputBuffer & 0x8000) ? '1' : '0'), ((m_SPI_InputBuffer & 0x4000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x2000) ? '1' : '0'), ((m_SPI_InputBuffer & 0x1000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0800) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0400) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0200) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0100) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0080) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0040) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0020) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0010) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0008) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0004) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0002) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0001) ? '1' : '0')
-        // );
     tick();
-
-
-    // if (m_SPI_InputBuffer % 16 == 0)
-    // {
-    //     printf("After 16 cycles, m_SPI_InputBuffer = %04x (%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n", m_SPI_InputBuffer,
-    //         ((m_SPI_InputBuffer & 0x8000) ? '1' : '0'), ((m_SPI_InputBuffer & 0x4000) ? '1' : '0'),
-    //         ((m_SPI_InputBuffer & 0x2000) ? '1' : '0'), ((m_SPI_InputBuffer & 0x1000) ? '1' : '0'),
-    //         ((m_SPI_InputBuffer & 0x0800) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0400) ? '1' : '0'),
-    //         ((m_SPI_InputBuffer & 0x0200) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0100) ? '1' : '0'),
-    //         ((m_SPI_InputBuffer & 0x0080) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0040) ? '1' : '0'),
-    //         ((m_SPI_InputBuffer & 0x0020) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0010) ? '1' : '0'),
-    //         ((m_SPI_InputBuffer & 0x0008) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0004) ? '1' : '0'),
-    //         ((m_SPI_InputBuffer & 0x0002) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0001) ? '1' : '0')
-    //     );
-    // }
-
 
     const bool collectNewSample = ++m_SPI_TickCounter >= 256 / 4;
     if (collectNewSample)
@@ -84,21 +50,8 @@ void Synth::spiTick()
         m_SPI_TickCounter = 0;
 
         auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
-
         m_SampleBuffer.push_front(sample);
         fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
-
-        // printf("Latching m_SPI_InputBuffer     %04x (%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c) < \n", m_SPI_InputBuffer,
-        //     ((m_SPI_InputBuffer & 0x8000) ? '1' : '0'), ((m_SPI_InputBuffer & 0x4000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x2000) ? '1' : '0'), ((m_SPI_InputBuffer & 0x1000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0800) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0400) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0200) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0100) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0080) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0040) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0020) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0010) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0008) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0004) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0002) ? '1' : '0'), ((m_SPI_InputBuffer & 0x0001) ? '1' : '0')
-        // );
-
     }
 }
 
@@ -158,22 +111,11 @@ void Synth::spiSendReceive()
     if (m_SPI_SendQueue.empty())
     {
         // Put some dummy values in the queue
-        // Synth::writeGlobalRegister(GLOBAL_PARAM_DUMMY, 0xffff);
-        m_SPI_OutputBuffer = 0b10'111111'00000000;
+        m_SPI_OutputBuffer = 0;
     }
     else
     {
         m_SPI_OutputBuffer = m_SPI_SendQueue.front();
-        // printf("Will output             %04x (%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n", m_SPI_OutputBuffer,
-        //     ((m_SPI_OutputBuffer & 0x8000) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x4000) ? '1' : '0'),
-        //     ((m_SPI_OutputBuffer & 0x2000) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x1000) ? '1' : '0'),
-        //     ((m_SPI_OutputBuffer & 0x0800) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0400) ? '1' : '0'),
-        //     ((m_SPI_OutputBuffer & 0x0200) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0100) ? '1' : '0'),
-        //     ((m_SPI_OutputBuffer & 0x0080) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0040) ? '1' : '0'),
-        //     ((m_SPI_OutputBuffer & 0x0020) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0010) ? '1' : '0'),
-        //     ((m_SPI_OutputBuffer & 0x0008) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0004) ? '1' : '0'),
-        //     ((m_SPI_OutputBuffer & 0x0002) ? '1' : '0'), ((m_SPI_OutputBuffer & 0x0001) ? '1' : '0')
-        // );
         m_SPI_SendQueue.pop();
     }
 
