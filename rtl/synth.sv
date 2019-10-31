@@ -73,11 +73,11 @@ always_comb begin
 
     w_PhaseStepWriteEnable = voiceOpRegWriteEnable(6'h00);
     w_AlgorithmWriteEnable = voiceOpRegWriteEnable(6'h01);
-    w_EnvelopeConfigWriteEnable[0] = voiceOpRegWriteEnable(6'h01);  // ATTACK LEVEL
-    w_EnvelopeConfigWriteEnable[1] = voiceOpRegWriteEnable(6'h02);  // SUSTAIN LEVEL
-    w_EnvelopeConfigWriteEnable[2] = voiceOpRegWriteEnable(6'h03);  // ATTACK RATE
-    w_EnvelopeConfigWriteEnable[3] = voiceOpRegWriteEnable(6'h04);  // DECAY RATE
-    w_EnvelopeConfigWriteEnable[4] = voiceOpRegWriteEnable(6'h05);  // RELEASE RATE
+    w_EnvelopeConfigWriteEnable[0] = voiceOpRegWriteEnable(6'h02);  // ATTACK LEVEL
+    w_EnvelopeConfigWriteEnable[1] = voiceOpRegWriteEnable(6'h03);  // SUSTAIN LEVEL
+    w_EnvelopeConfigWriteEnable[2] = voiceOpRegWriteEnable(6'h04);  // ATTACK RATE
+    w_EnvelopeConfigWriteEnable[3] = voiceOpRegWriteEnable(6'h05);  // DECAY RATE
+    w_EnvelopeConfigWriteEnable[4] = voiceOpRegWriteEnable(6'h06);  // RELEASE RATE
 
 end
 

@@ -121,6 +121,15 @@ int main(int argc, const char** argv)
             // 0b000000'0000000'000'0,  // OP7
             // 0b000000'0000000'000'0,  // OP8
 
+            // 0b000000'0000000'000'0,  // OP1
+            // 0b000000'0000000'000'0,  // OP2
+            // 0b000000'0000000'000'0,  // OP3
+            // 0b000000'0000000'000'0,  // OP4
+            // 0b000000'0000000'000'0,  // OP5
+            // 0b000000'0000000'000'0,  // OP6
+            // 0b000000'0000000'001'1,  // OP7
+            // 0b000000'0000000'001'1,  // OP8
+
             0b000000'0000000'000'0,  // OP1
             0b000000'0000000'000'0,  // OP2
             0b000000'0000000'000'0,  // OP3
@@ -144,14 +153,29 @@ int main(int argc, const char** argv)
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM, algorithmWords[opNum]);
 
             // TODO: Change actual levels to match modulation index (function of frequency and set level), if is a modulator
-            auto fixOperatorLevel = [](uint16_t level, bool isCarrier) {
+            auto fixOperatorLevel = [](uint16_t level, bool isCarrier) -> uint16_t {
                 double multiplier = static_cast<double>(level) / 1000.0;
                 return static_cast<uint16_t>(0x3fff * multiplier);
             };
             // ... that will affect the rate as well, since the time to reach the level should be the same regardless of note frequency played
-            auto fixOperatorRate = [](uint16_t rate, bool isCarrier) {
+            auto fixOperatorRate = [](uint16_t rate, bool isCarrier) -> uint16_t {
                 double multiplier = static_cast<double>(rate) / 1000.0;
-                return static_cast<uint16_t>(0x1fff * multiplier);
+
+                // TODO: A simple linear function like this is probably not
+                // good enough. I want a rate of 10 or so to last a long time,
+                // but it still reaches the maximum level in a fraction of a
+                // second. Conversely I want 1000 to reach the maximum value
+                // almost instantly, but if I divide the multiplier by 32 then
+                // it takes an unacceably long time.
+                //
+                // I may need to do this to the level function above as well.
+                // Human perception of loudness is logarithmic, so I may need
+                // to do something similar so that a level of 500 seems twice
+                // as loud as 250, four times as lou as 125, half as loud
+                // as 1000, etc.
+                //
+                // http://hyperphysics.phy-astr.gsu.edu/hbase/Sound/loud.html
+                return static_cast<uint16_t>(0x0fff * multiplier);
             };
 
             bool isCarrier = true;  // TODO
@@ -168,7 +192,7 @@ int main(int argc, const char** argv)
 
     for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
-        // if (voiceNum < 16)
+        if (voiceNum == 0)
         {
             synth.setNoteOn(voiceNum, true);
         }

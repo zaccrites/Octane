@@ -153,7 +153,6 @@ always_ff @ (posedge i_Clock) begin
         default: begin
             r_EnvelopeStates[r_VoiceOperator[0]].Level <= 0;
             if (r_NoteOn) begin
-
                 r_EnvelopeStates[r_VoiceOperator[0]].Region <= ATTACK;
             end
         end
