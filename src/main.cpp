@@ -121,14 +121,14 @@ int main(int argc, const char** argv)
             // 0b000000'0000000'000'0,  // OP7
             // 0b000000'0000000'000'0,  // OP8
 
-            0b000000'0000000'000'1,  // OP1
+            0b000000'0000000'000'0,  // OP1
             0b000000'0000000'000'0,  // OP2
             0b000000'0000000'000'0,  // OP3
             0b000000'0000000'000'0,  // OP4
             0b000000'0000000'000'0,  // OP5
             0b000000'0000000'000'0,  // OP6
             0b000000'0000000'000'0,  // OP7
-            0b000000'0000000'000'0,  // OP8
+            0b000000'0000000'000'1,  // OP8
 
         };
 
@@ -168,10 +168,10 @@ int main(int argc, const char** argv)
 
     for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
-        // if (voiceNum == 1)
-        {
-            synth.setNoteOn(voiceNum, true);
-        }
+        // if (voiceNum == 0)
+        // {
+        //     synth.setNoteOn(voiceNum, true);
+        // }
     }
 
     double seconds = playAudio ? 2.0 : 0.3;
@@ -180,7 +180,7 @@ int main(int argc, const char** argv)
     // double noteOn = false;
     while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
     {
-        // double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
+        double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
         // double onTime = seconds * 0.0;
         // double offTime = seconds * 0.8;
         // if ( ! noteOn && t > onTime && t < offTime)
@@ -193,6 +193,15 @@ int main(int argc, const char** argv)
         //     noteOn = false;
         //     synth.setNoteOn(0, false);
         // }
+
+        for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+        {
+            double voiceOnTime = voiceNum * (seconds / 32.0);
+            if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
+            {
+                synth.setNoteOn(voiceNum, true);
+            }
+        }
 
         synth.spiSendReceive();
 

@@ -10,33 +10,31 @@ module synth (
     input logic i_SPI_MOSI,
     output logic o_SPI_MISO
 
-    // TODO: Use SPI interface for input and output (collect bits into a register)
-    // input logic i_RegisterWriteEnable,
-    // input logic [15:0] w_RegisterWriteNumber,
-    // input logic [15:0] w_RegisterWriteValue,
-
-    // output logic signed [15:0] o_Sample,
-    // output logic o_SampleReady
-
 );
 
 
 
-logic w_RegisterWriteEnable;
+logic w_SPI_RegisterWriteEnable;
 logic [14:0] w_RegisterWriteNumber;
 logic [15:0] w_RegisterWriteValue;
 
 spi spi0 (
     .i_Clock              (i_Clock),
+    .i_Reset              (i_Reset),
     .i_SampleReady        (w_SampleReady),
     .i_SampleToOutput     (w_Sample),
     .i_SPI_SCK            (i_SPI_SCK),
     .i_SPI_MOSI           (i_SPI_MOSI),
     .o_SPI_MISO           (o_SPI_MISO),
-    .o_RegisterWriteEnable (w_RegisterWriteEnable),
+    .o_RegisterWriteEnable (w_SPI_RegisterWriteEnable),
     .o_RegisterWriteNumber(w_RegisterWriteNumber),
     .o_RegisterWriteValue (w_RegisterWriteValue)
 );
+
+logic r_SPI_RegisterWriteEnableLast;
+logic w_RegisterWriteEnable;
+always_ff @ (posedge i_Clock) r_SPI_RegisterWriteEnableLast <= w_SPI_RegisterWriteEnable;
+assign w_RegisterWriteEnable = w_SPI_RegisterWriteEnable && ! r_SPI_RegisterWriteEnableLast;
 
 
 // Voice-operator registers use the following 16-bit address scheme:
@@ -81,10 +79,6 @@ always_comb begin
     w_EnvelopeConfigWriteEnable[3] = voiceOpRegWriteEnable(6'h04);  // DECAY RATE
     w_EnvelopeConfigWriteEnable[4] = voiceOpRegWriteEnable(6'h05);  // RELEASE RATE
 
-end
-
-always begin
-    if (w_PhaseStepWriteEnable) $display("Writing %x to phase_step (%x)", w_RegisterWriteValue, w_RegisterWriteNumber);
 end
 
 
@@ -187,8 +181,6 @@ stage_envelope_attenuator envelope_attenuator (
 );
 
 
-
-// TODO
 VoiceOperatorID_t w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
 assign w_OperatorWritebackID = r_VoiceOperator[4];

@@ -28,6 +28,7 @@ public:
     void spiSendReceive();
 
     void setNoteOn(uint8_t voiceNum, bool noteOn);
+    bool getNoteOn(uint8_t voiceNum) const;
 
     void writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value);
     void writeGlobalRegister(uint8_t parameter, uint16_t value);
@@ -46,6 +47,7 @@ public:
 public:
     static const uint8_t GLOBAL_PARAM_NOTEON_BANK0  { 0x00 };
     static const uint8_t GLOBAL_PARAM_NOTEON_BANK1  { 0x01 };
+    static const uint8_t GLOBAL_PARAM_DUMMY         { 0x3f };
 
     static const uint8_t OP_PARAM_PHASE_STEP  { 0x00 };
     static const uint8_t OP_PARAM_ALGORITHM      { 0x01 };

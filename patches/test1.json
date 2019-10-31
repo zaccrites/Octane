@@ -56,14 +56,14 @@
             "levels": [1000, 500],
             "rates": [1000, 500, 250],
             "waveform": "sine",
-            "frequency_ratio": 0.50
+            "frequency_ratio": 3.50
         },
         {
             "comment": "Operator 8",
-            "levels": [1000, 128],
-            "rates": [1000, 128, 250],
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
             "waveform": "sine",
-            "frequency_ratio": 1.00
+            "frequency_ratio": 4.40
         }
 
     ]
