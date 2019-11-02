@@ -9,23 +9,23 @@ module stage_modulator (
     // Accepts raw unsigned phase and modulates to signed phase
     // TODO: REMOVE THIS!
     // verilator lint_off UNUSED
-    input logic unsigned [15:0] i_Phase,
+    input logic [15:0] i_Phase,
     // verilator lint_on UNUSED
     output logic signed [16:0] o_Phase,
 
     input logic i_NoteOn,
     output logic o_NoteOn,
 
-    input `VOICE_OPERATOR_ID i_VoiceOperator,
-    output `VOICE_OPERATOR_ID o_VoiceOperator,
+    input logic `VOICE_OPERATOR_ID i_VoiceOperator,
+    output logic `VOICE_OPERATOR_ID o_VoiceOperator,
 
-    output `ALGORITHM_WORD o_AlgorithmWord,
+    output logic `ALGORITHM_WORD o_AlgorithmWord,
 
-    input `VOICE_OPERATOR_ID i_OperatorWritebackID,
+    input logic `VOICE_OPERATOR_ID i_OperatorWritebackID,
     input logic signed [15:0] i_OperatorWritebackValue,
 
     input logic i_AlgorithmWriteEnable,
-    input `VOICE_OPERATOR_ID i_ConfigWriteAddr,
+    input logic `VOICE_OPERATOR_ID i_ConfigWriteAddr,
     // verilator lint_off UNUSED
     input logic [15:0] i_ConfigWriteData
     // verilator lint_on UNUSED

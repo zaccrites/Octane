@@ -7,14 +7,14 @@ module stage_phase_accumulator (
 
     output logic [15:0] o_Phase,
 
-    input `VOICE_OPERATOR_ID i_VoiceOperator,
-    output `VOICE_OPERATOR_ID o_VoiceOperator,
+    input logic `VOICE_OPERATOR_ID i_VoiceOperator,
+    output logic `VOICE_OPERATOR_ID o_VoiceOperator,
 
     output logic o_NoteOn,
 
     input logic [1:0] i_NoteOnConfigWriteEnable,
     input logic i_PhaseStepConfigWriteEnable,
-    input `VOICE_OPERATOR_ID i_ConfigWriteAddr,
+    input logic `VOICE_OPERATOR_ID i_ConfigWriteAddr,
     input logic [15:0] i_ConfigWriteData
 );
 

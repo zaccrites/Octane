@@ -17,9 +17,9 @@ module spi (
     output logic [15:0] o_RegisterWriteValue,
 
     // The SPI SCK must be 8x slower than the internal clock!
-    input i_SPI_SCK,
-    input i_SPI_MOSI,
-    output o_SPI_MISO
+    input logic i_SPI_SCK,
+    input logic i_SPI_MOSI,
+    output logic o_SPI_MISO
 
 );
 

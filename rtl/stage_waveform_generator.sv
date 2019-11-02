@@ -7,8 +7,8 @@ module stage_waveform_generator (
     input `VOICE_OPERATOR_ID i_VoiceOperator,
     output `VOICE_OPERATOR_ID o_VoiceOperator,
 
-    input `ALGORITHM_WORD i_AlgorithmWord,
-    output `ALGORITHM_WORD o_AlgorithmWord,
+    input logic `ALGORITHM_WORD i_AlgorithmWord,
+    output logic `ALGORITHM_WORD o_AlgorithmWord,
 
     input logic i_NoteOn,
     output logic o_NoteOn,

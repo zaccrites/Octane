@@ -5,19 +5,19 @@
 module stage_envelope_attenuator (
     input i_Clock,
 
-    input `VOICE_OPERATOR_ID i_VoiceOperator,
-    output `VOICE_OPERATOR_ID o_VoiceOperator,
+    input logic `VOICE_OPERATOR_ID i_VoiceOperator,
+    output logic `VOICE_OPERATOR_ID o_VoiceOperator,
 
     input logic i_NoteOn,
 
-    input `ALGORITHM_WORD i_AlgorithmWord,
-    output `ALGORITHM_WORD o_AlgorithmWord,
+    input logic `ALGORITHM_WORD i_AlgorithmWord,
+    output logic `ALGORITHM_WORD o_AlgorithmWord,
 
-    input signed [15:0] i_Waveform,
-    output signed [15:0] o_Waveform,
+    input logic signed [15:0] i_Waveform,
+    output logic signed [15:0] o_Waveform,
 
     input logic [4:0] i_EnvelopeConfigWriteEnable,
-    input `VOICE_OPERATOR_ID i_ConfigWriteAddr,
+    input logic `VOICE_OPERATOR_ID i_ConfigWriteAddr,
     //
     // Not all of the config data bits are used
     // verilator lint_off UNUSED
@@ -43,54 +43,87 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-typedef logic [13:0] EnvelopeLevel_t;
-typedef logic [11:0] EnvelopeRate_t;
+`define ENVELOPE_LEVEL [13:0]
+`define ENVELOPE_RATE  [11:0]
+
 
 // TODO: These add up to 64 bits, so could be stored in
 // four BRAMs if one of the fields is suitably cut up.
-EnvelopeLevel_t r_AttackLevelConfig [`NUM_VOICE_OPERATORS];
-EnvelopeLevel_t r_SustainLevelConfig [`NUM_VOICE_OPERATORS];
-EnvelopeRate_t r_AttackRateConfig [`NUM_VOICE_OPERATORS];
-EnvelopeRate_t r_DecayRateConfig [`NUM_VOICE_OPERATORS];
-EnvelopeRate_t r_ReleaseRateConfig [`NUM_VOICE_OPERATORS];
+logic `ENVELOPE_LEVEL r_AttackLevelConfig  [`NUM_VOICE_OPERATORS];
+logic `ENVELOPE_LEVEL r_SustainLevelConfig [`NUM_VOICE_OPERATORS];
+logic `ENVELOPE_RATE  r_AttackRateConfig   [`NUM_VOICE_OPERATORS];
+logic `ENVELOPE_RATE  r_DecayRateConfig    [`NUM_VOICE_OPERATORS];
+logic `ENVELOPE_RATE  r_ReleaseRateConfig  [`NUM_VOICE_OPERATORS];
 
 
-typedef enum logic [2:0] {
-    MUTE,
-    ATTACK,
-    DECAY,
-    SUSTAIN,
-    RELEASE
-} EnvelopeRegion_t;
+`define ENVELOPE_STATE  [2:0]
+`define MUTE     3'd0
+`define ATTACK   3'd1
+`define DECAY    3'd2
+`define SUSTAIN  3'd3
+`define RELEASE  3'd4
 
-typedef struct packed {
-    // NOTE: Must be 16 bits or less to fit into a block RAM!
-    // TODO: Need to solve this, since levels are 14 bits now.
-    // I may have to back it off to 13 bits.
-    EnvelopeRegion_t Region;
-    EnvelopeLevel_t Level;
-} EnvelopeState_t;
+// NOTE: Must be 16 bits or less to fit into a block RAM!
+// TODO: Need to solve this, since levels are 14 bits now.
+// I may have to back it off to 13 bits.
+logic `ENVELOPE_STATE r_CurrentEnvelopeStates [`NUM_VOICE_OPERATORS];
+logic `ENVELOPE_LEVEL r_CurrentEnvelopeLevels [`NUM_VOICE_OPERATORS];
 
-EnvelopeState_t r_EnvelopeStates [`NUM_VOICE_OPERATORS];
+// function automatic `ENVELOPE_REGION getEnvelopeStateRegion;
+//     input `ENVELOPE_STATE state;
+//     getEnvelopeStateRegion = state[16:14];
+// endfunction
+
+// function automatic `ENVELOPE_LEVEL getEnvelopeStateLevel;
+//     input `ENVELOPE_STATE state;
+//     getEnvelopeStateLevel = state[13:0];
+// endfunction
+
+
+
+
 
 `define LEVEL_MAX  14'h3fff
 
-function EnvelopeLevel_t increaseLevel(EnvelopeLevel_t level, EnvelopeRate_t rate);
+// function EnvelopeLevel_t increaseLevel(EnvelopeLevel_t level, EnvelopeRate_t rate);
+//     if (level > `LEVEL_MAX - extendRateConfig(rate))
+//         return `LEVEL_MAX;
+//     else
+//         return level + extendRateConfig(rate);
+// endfunction
+
+function automatic `ENVELOPE_LEVEL increaseLevel;
+    input `ENVELOPE_LEVEL level;
+    input `ENVELOPE_RATE rate;
     if (level > `LEVEL_MAX - extendRateConfig(rate))
-        return `LEVEL_MAX;
+        increaseLevel = `LEVEL_MAX;
     else
-        return level + extendRateConfig(rate);
+        increaseLevel = level + extendRateConfig(rate);
 endfunction
 
-function EnvelopeLevel_t decreaseLevel(EnvelopeLevel_t level, EnvelopeRate_t rate);
+// function EnvelopeLevel_t decreaseLevel(EnvelopeLevel_t level, EnvelopeRate_t rate);
+//     if (extendRateConfig(rate) > level)
+//         return 0;
+//     else
+//         return level - extendRateConfig(rate);
+// endfunction
+
+function automatic `ENVELOPE_LEVEL decreaseLevel;
+    input `ENVELOPE_LEVEL level;
+    input `ENVELOPE_RATE rate;
     if (extendRateConfig(rate) > level)
-        return 0;
+        decreaseLevel = 0;
     else
-        return level - extendRateConfig(rate);
+        decreaseLevel = level - extendRateConfig(rate);
 endfunction
 
-function EnvelopeLevel_t extendRateConfig(EnvelopeRate_t rateConfig);
-    return {2'b0, rateConfig};
+// function EnvelopeLevel_t extendRateConfig(EnvelopeRate_t rateConfig);
+    // return {2'b0, rateConfig};
+// endfunction
+
+function automatic `ENVELOPE_LEVEL extendRateConfig;
+    input `ENVELOPE_RATE rate;
+    extendRateConfig = {2'b0, rate};
 endfunction
 
 
@@ -99,14 +132,15 @@ logic `ALGORITHM_WORD r_AlgorithmWord [4];
 
 
 logic r_DoEnvelopCalc;
-EnvelopeState_t r_EnvelopeState;
+logic `ENVELOPE_STATE r_EnvelopeState;
+logic `ENVELOPE_LEVEL r_EnvelopeLevel;
 logic r_NoteOn;
 
-EnvelopeLevel_t r_AttackLevel;
-EnvelopeLevel_t r_SustainLevel;
-EnvelopeRate_t r_AttackRate;
-EnvelopeRate_t r_DecayRate;
-EnvelopeRate_t r_ReleaseRate;
+logic `ENVELOPE_LEVEL r_AttackLevel;
+logic `ENVELOPE_LEVEL r_SustainLevel;
+logic `ENVELOPE_RATE r_AttackRate;
+logic `ENVELOPE_RATE r_DecayRate;
+logic `ENVELOPE_RATE r_ReleaseRate;
 
 logic signed [15:0] r_RawWaveform;
 logic signed [31:0] r_AttenuatedWaveformProduct [3];
@@ -125,7 +159,8 @@ always_ff @ (posedge i_Clock) begin
     // ----------------------------------------------------------
 
     r_DoEnvelopCalc <= w_DoEnvelopeCalc;
-    r_EnvelopeState <= r_EnvelopeStates[i_VoiceOperator];
+    r_EnvelopeState <= r_CurrentEnvelopeStates[i_VoiceOperator];
+    r_EnvelopeLevel <= r_CurrentEnvelopeLevels[i_VoiceOperator];
     r_NoteOn <= i_NoteOn;
     r_RawWaveform <= i_Waveform;
 
@@ -147,55 +182,55 @@ always_ff @ (posedge i_Clock) begin
     // If it is a critical path then it may make sense to
     // split up into one stage for each arm of the state machine.
 
-    case (r_EnvelopeState.Region)
+    case (r_EnvelopeState)
 
-        // MUTE:
+        // `MUTE:
         default: begin
-            r_EnvelopeStates[r_VoiceOperator[0]].Level <= 0;
+            r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= 0;
             if (r_NoteOn) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Region <= ATTACK;
+                r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `ATTACK;
             end
         end
 
-        ATTACK: begin
+        `ATTACK: begin
             if (r_DoEnvelopCalc) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Level <= increaseLevel(r_EnvelopeState.Level, r_AttackRate);
+                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= increaseLevel(r_EnvelopeLevel, r_AttackRate);
             end
 
             if ( ! r_NoteOn) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Region <= RELEASE;
+                r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `RELEASE;
             end
-            else if (r_EnvelopeState.Level >= r_AttackLevel) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Region <= DECAY;
+            else if (r_EnvelopeLevel >= r_AttackLevel) begin
+                r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `DECAY;
             end
         end
 
-        DECAY: begin
+        `DECAY: begin
             if (r_DoEnvelopCalc) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Level <= decreaseLevel(r_EnvelopeState.Level, r_DecayRate);
+                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= decreaseLevel(r_EnvelopeLevel, r_DecayRate);
             end
 
             if ( ! r_NoteOn) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Region <= RELEASE;
+                r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `RELEASE;
             end
-            else if (r_EnvelopeState.Level <= r_SustainLevel) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Region <= SUSTAIN;
+            else if (r_EnvelopeLevel <= r_SustainLevel) begin
+                r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `SUSTAIN;
             end
         end
 
-        SUSTAIN: begin
-            r_EnvelopeStates[r_VoiceOperator[0]].Level <= r_SustainLevel;
+        `SUSTAIN: begin
+            r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= r_SustainLevel;
             if ( ! r_NoteOn) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Region <= RELEASE;
+                r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `RELEASE;
             end
         end
 
-        RELEASE: begin
+        `RELEASE: begin
             if (r_DoEnvelopCalc) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Level <= decreaseLevel(r_EnvelopeState.Level, r_ReleaseRate);
+                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= decreaseLevel(r_EnvelopeLevel, r_ReleaseRate);
             end
-            if (r_EnvelopeState.Level == 0) begin
-                r_EnvelopeStates[r_VoiceOperator[0]].Region <= MUTE;
+            if (r_EnvelopeLevel == 0) begin
+                r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `MUTE;
             end
         end
 
@@ -206,7 +241,7 @@ always_ff @ (posedge i_Clock) begin
     // Clocks 2-5 : Attenuate output sample
     // ----------------------------------------------------------
 
-    r_AttenuatedWaveformProduct[0] <= r_RawWaveform * $signed({1'b0, r_EnvelopeState.Level, 1'b0});
+    r_AttenuatedWaveformProduct[0] <= r_RawWaveform * $signed({1'b0, r_EnvelopeLevel, 1'b0});
     r_AttenuatedWaveformProduct[1] <= r_AttenuatedWaveformProduct[0];
     r_AttenuatedWaveformProduct[2] <= r_AttenuatedWaveformProduct[1];
     o_Waveform <= {r_AttenuatedWaveformProduct[2][30:16], 1'b0};
