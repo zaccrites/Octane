@@ -52,12 +52,18 @@ assign w_RegisterWriteParameter = w_RegisterWriteNumber[14:8];
 logic [7:0] w_VoiceOpRegWriteIndex;
 assign w_VoiceOpRegWriteIndex = w_RegisterWriteNumber[7:0];
 
-function logic voiceOpRegWriteEnable(logic [5:0] parameterBits);
-    return w_RegisterWriteEnable && w_RegisterWriteParameter == {1'b1, parameterBits};
+function voiceOpRegWriteEnable;
+    input logic [5:0] parameterBits;
+begin
+    voiceOpRegWriteEnable = w_RegisterWriteEnable && w_RegisterWriteParameter == {1'b1, parameterBits};
+end
 endfunction
 
-function logic globalRegWriteEnable(logic [5:0] parameterBits);
-    return w_RegisterWriteEnable && w_RegisterWriteParameter == {1'b0, parameterBits};
+function globalRegWriteEnable;
+    input logic [5:0] parameterBits;
+begin
+    globalRegWriteEnable = w_RegisterWriteEnable && w_RegisterWriteParameter == {1'b0, parameterBits};
+end
 endfunction
 
 logic [1:0] w_NoteOnConfigWriteEnable;

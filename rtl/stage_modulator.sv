@@ -77,7 +77,7 @@ always_ff @ (posedge i_Clock) begin
     // Clocks 2-8
     // ----------------------------------------------------------
     for (i = 1; i <= 7; i++) begin
-        if (r_AlgorithmWord[i - 1].ModulateWithOP[i - 1]) begin
+        if (getModulateWithOP(r_AlgorithmWord[i - 1], i - 1)) begin
             r_ModulatedPhase[i] <= r_ModulatedPhase[i - 1] + r_OperatorOutput[i - 1];
         end
         else begin

@@ -35,7 +35,7 @@ logic signed [20:0] r_SampleBuffer;
 always_comb begin
 
     // Carrier compensation table
-    case (i_AlgorithmWord.NumCarriers)
+    case (getNumCarriers(i_AlgorithmWord))
         3'd0: w_CarrierCompsensationFactor = 16'h7fff;
         3'd1: w_CarrierCompsensationFactor = 16'h4000;
         3'd2: w_CarrierCompsensationFactor = 16'h2aaa;
@@ -62,7 +62,7 @@ always_ff @ (posedge i_Clock) begin
     r_VoiceOperator[2] <= r_VoiceOperator[1];
     r_VoiceOperator[3] <= r_VoiceOperator[2];
 
-    r_IsCarrier[0] <= i_AlgorithmWord.IsACarrier;
+    r_IsCarrier[0] <= getIsCarrier(i_AlgorithmWord);
     r_IsCarrier[1] <= r_IsCarrier[0];
     r_IsCarrier[2] <= r_IsCarrier[1];
     r_IsCarrier[3] <= r_IsCarrier[2];
