@@ -145,16 +145,29 @@ int main(int argc, const char** argv)
 
             bool isCarrier = algorithmWords[opNum] & 0x0001;
 
-            // TODO
+
+            // TODO: Clean this all up. Put into a Patch class that can
+            // do all these calculations and output real values to pass
+            // to the microcontroller after loading the binary configuration.
+
             auto modulationIndexForLevel = [](uint16_t level) -> double {
                 // Vary linearly up to I=15
                 return level * 15.0 / 1000.0;
             };
 
-            auto fixOperatorLevel = [modulationIndexForLevel, phaseStep, isCarrier](uint16_t level) -> uint16_t {
+            auto carrierAmplitudeForLevel = [](uint16_t level) -> double {
+                // 1000 is 100% intensity, but 500 is half as loud (10% intensity).
+                // 250 is a quarter as loud (1% intensity), etc.
+                const double exponent = std::log(10) / std::log(2);
+                return std::pow(level, exponent) / std::pow(1000.0, exponent);
+            };
+
+
+            auto fixOperatorLevel = [carrierAmplitudeForLevel, modulationIndexForLevel, phaseStep, isCarrier](uint16_t level) -> uint16_t {
                 if (isCarrier)
                 {
-                    double multiplier = static_cast<double>(level) / 1000.0;
+                    double multiplier = carrierAmplitudeForLevel(level);
+                    printf("multiplier for level %d is %f \n", level, multiplier);
                     return static_cast<uint16_t>(0x3fff * multiplier);
                 }
                 else
@@ -163,11 +176,11 @@ int main(int argc, const char** argv)
                     return static_cast<uint16_t>(modulationIndex * phaseStep);
                 }
             };
-            auto fixOperatorRate = [modulationIndexForLevel, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
+            auto fixOperatorRate = [carrierAmplitudeForLevel, modulationIndexForLevel, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
 
                 if (isCarrier)
                 {
-                    double multiplier = static_cast<double>(rate) / 1000.0;
+                    double multiplier = carrierAmplitudeForLevel(rate);
                     return static_cast<uint16_t>(0x0fff * multiplier);
                 }
                 else

@@ -8,15 +8,15 @@
     "operators": [
         {
             "comment": "Operator 1",
-            "levels": [1000, 1000],
-            "rates": [1000, 500, 250],
+            "levels": [1000, 1],
+            "rates": [1, 1000, 250],
             "waveform": "sine",
             "frequency_ratio": 0.50
         },
         {
             "comment": "Operator 2",
-            "levels": [1000, 1000],
-            "rates": [1000, 500, 250],
+            "levels": [125, 125],
+            "rates": [1000, 1000, 250],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
