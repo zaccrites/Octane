@@ -102,25 +102,16 @@ int main(int argc, const char** argv)
         // else
         {
             // noteBaseFrequency = 1000.0;
-            // noteBaseFrequency = 523.251;  // C5
+            noteBaseFrequency = 523.251;  // C5
         }
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
-        noteBaseFrequency = 440.0;
+        // noteBaseFrequency = 440.0;
 
 
         // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
         uint16_t algorithmWords[8] = {
             //       7654321
             //xxxxxx mmmmmmm nnn c
-            // 0b000000'0000000'000'0,  // OP1
-            // 0b000000'0000001'000'1,  // OP2
-            // 0b000000'0000000'000'0,  // OP3
-            // 0b000000'0000000'000'0,  // OP4
-            // 0b000000'0000000'000'0,  // OP5
-            // 0b000000'0000000'000'0,  // OP6
-            // 0b000000'0000000'000'0,  // OP7
-            // 0b000000'0000000'000'0,  // OP8
-
             0b000000'0000000'000'0,  // OP1
             0b000000'0000001'000'1,  // OP2
             0b000000'0000000'000'0,  // OP3
@@ -129,9 +120,6 @@ int main(int argc, const char** argv)
             0b000000'0000000'000'0,  // OP6
             0b000000'0000000'000'0,  // OP7
             0b000000'0000000'000'0,  // OP8
-
-
-
 
             // 0b000000'0000000'000'0,  // OP1
             // 0b000000'0000000'000'0,  // OP2
@@ -143,8 +131,6 @@ int main(int argc, const char** argv)
             // 0b000000'0000000'001'1,  // OP8
         };
 
-
-        // synth.writeVoiceRegister(voiceNum, Synth::VOICE_PARAM_NOTEON, false);
         synth.setNoteOn(voiceNum, false);
 
         for (uint16_t opNum = 0; opNum < 8; opNum++)
@@ -160,13 +146,13 @@ int main(int argc, const char** argv)
             bool isCarrier = algorithmWords[opNum] & 0x0001;
 
             // TODO
-            const double modulationIndex = 13.0;
+            auto modulationIndexForLevel = [](uint16_t level) -> double {
+                // Vary linearly up to I=15
+                return level * 15.0 / 1000.0;
+            };
 
             // TODO: Change actual levels to match modulation index (function of frequency and set level), if is a modulator
-            auto fixOperatorLevel = [voiceNum, opNum, modulationIndex, phaseStep, isCarrier](uint16_t level) -> uint16_t {
-                if (voiceNum != 0) return 0;
-                if (opNum >= 2) return 0;
-
+            auto fixOperatorLevel = [modulationIndex, phaseStep, isCarrier](uint16_t level) -> uint16_t {
                 if (isCarrier)
                 {
                     double multiplier = static_cast<double>(level) / 1000.0;
@@ -174,28 +160,12 @@ int main(int argc, const char** argv)
                 }
                 else
                 {
-                    if (voiceNum == 0)
-                        printf("For phaseStep of %d, modulator amplitude is %d \n", phaseStep, static_cast<uint16_t>(modulationIndex * phaseStep));
                     return static_cast<uint16_t>(modulationIndex * phaseStep);
                 }
             };
             // ... that will affect the rate as well, since the time to reach the level should be the same regardless of note frequency played
             auto fixOperatorRate = [modulationIndex, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
 
-                // TODO: A simple linear function like this is probably not
-                // good enough. I want a rate of 10 or so to last a long time,
-                // but it still reaches the maximum level in a fraction of a
-                // second. Conversely I want 1000 to reach the maximum value
-                // almost instantly, but if I divide the multiplier by 32 then
-                // it takes an unacceably long time.
-                //
-                // I may need to do this to the level function above as well.
-                // Human perception of loudness is logarithmic, so I may need
-                // to do something similar so that a level of 500 seems twice
-                // as loud as 250, four times as lou as 125, half as loud
-                // as 1000, etc.
-                //
-                // http://hyperphysics.phy-astr.gsu.edu/hbase/Sound/loud.html
                 if (isCarrier)
                 {
                     double multiplier = static_cast<double>(rate) / 1000.0;
