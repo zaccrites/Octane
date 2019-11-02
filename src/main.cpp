@@ -151,8 +151,7 @@ int main(int argc, const char** argv)
                 return level * 15.0 / 1000.0;
             };
 
-            // TODO: Change actual levels to match modulation index (function of frequency and set level), if is a modulator
-            auto fixOperatorLevel = [modulationIndex, phaseStep, isCarrier](uint16_t level) -> uint16_t {
+            auto fixOperatorLevel = [modulationIndexForLevel, phaseStep, isCarrier](uint16_t level) -> uint16_t {
                 if (isCarrier)
                 {
                     double multiplier = static_cast<double>(level) / 1000.0;
@@ -160,11 +159,11 @@ int main(int argc, const char** argv)
                 }
                 else
                 {
+                    double modulationIndex = modulationIndexForLevel(level);
                     return static_cast<uint16_t>(modulationIndex * phaseStep);
                 }
             };
-            // ... that will affect the rate as well, since the time to reach the level should be the same regardless of note frequency played
-            auto fixOperatorRate = [modulationIndex, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
+            auto fixOperatorRate = [modulationIndexForLevel, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
 
                 if (isCarrier)
                 {
@@ -173,9 +172,8 @@ int main(int argc, const char** argv)
                 }
                 else
                 {
-                    // TODO
-                    return 0x0fff;
-                    // return modulationIndex * phaseStep / 4;
+                    double modulationIndex = modulationIndexForLevel(rate);
+                    return static_cast<uint16_t>(modulationIndex * phaseStep) / 4;
                 }
             };
 
