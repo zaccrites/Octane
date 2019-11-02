@@ -5,16 +5,16 @@
 module stage_phase_accumulator (
     input i_Clock,
 
-    output logic unsigned [15:0] o_Phase,
+    output logic [15:0] o_Phase,
 
-    input VoiceOperatorID_t i_VoiceOperator,
-    output VoiceOperatorID_t o_VoiceOperator,
+    input `VOICE_OPERATOR_ID i_VoiceOperator,
+    output `VOICE_OPERATOR_ID o_VoiceOperator,
 
     output logic o_NoteOn,
 
     input logic [1:0] i_NoteOnConfigWriteEnable,
     input logic i_PhaseStepConfigWriteEnable,
-    input VoiceOperatorID_t i_ConfigWriteAddr,
+    input `VOICE_OPERATOR_ID i_ConfigWriteAddr,
     input logic [15:0] i_ConfigWriteData
 );
 
@@ -23,15 +23,15 @@ module stage_phase_accumulator (
 /// When we add the signed modulation phase to this unsigned value (which
 /// we make signed by prepending a 0 sign bit), we get a 17-bit signed phase
 /// value which we can pass to the waveform generator.
-logic unsigned [15:0] r_PhaseAccumulators [`NUM_VOICE_OPERATORS];
-logic unsigned [15:0] r_PhaseStepConfig [`NUM_VOICE_OPERATORS];
+logic [15:0] r_PhaseAccumulators [`NUM_VOICE_OPERATORS];
+logic [15:0] r_PhaseStepConfig [`NUM_VOICE_OPERATORS];
 
 /// Stored per-voice
 logic [31:0] r_NoteOnConfig;
 
 
 // Pipeline registers
-VoiceOperatorID_t r_VoiceOperator;
+logic `VOICE_OPERATOR_ID r_VoiceOperator;
 logic signed [15:0] r_AccumulatedPhase;
 logic signed [15:0] r_PhaseStep;
 logic r_NoteOn;

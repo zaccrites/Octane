@@ -104,12 +104,13 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-VoiceOperatorID_t r_VoiceOperator [5];
-AlgorithmWord_t r_AlgorithmWord [5];
+// VoiceOperatorID_t r_VoiceOperator [5];
+logic `VOICE_OPERATOR_ID r_VoiceOperator [5];
+logic `ALGORITHM_WORD r_AlgorithmWord [5];
 logic r_NoteOn [5];
 
 logic signed [16:0] w_ModulatedPhase;
-logic unsigned [15:0] w_RawPhase;
+logic [15:0] w_RawPhase;
 
 
 stage_phase_accumulator phase_accumulator (
@@ -191,7 +192,7 @@ stage_envelope_attenuator envelope_attenuator (
 );
 
 
-VoiceOperatorID_t w_OperatorWritebackID;
+logic `VOICE_OPERATOR_ID w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
 assign w_OperatorWritebackID = r_VoiceOperator[4];
 assign w_OperatorWritebackValue = w_AttenuatedWaveform;

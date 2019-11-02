@@ -4,11 +4,11 @@
 module stage_waveform_generator (
     input i_Clock,
 
-    input VoiceOperatorID_t i_VoiceOperator,
-    output VoiceOperatorID_t o_VoiceOperator,
+    input `VOICE_OPERATOR_ID i_VoiceOperator,
+    output `VOICE_OPERATOR_ID o_VoiceOperator,
 
-    input AlgorithmWord_t i_AlgorithmWord,
-    output AlgorithmWord_t o_AlgorithmWord,
+    input `ALGORITHM_WORD i_AlgorithmWord,
+    output `ALGORITHM_WORD o_AlgorithmWord,
 
     input logic i_NoteOn,
     output logic o_NoteOn,
@@ -27,11 +27,11 @@ module stage_waveform_generator (
 
 // TODO: Make this a RAM written externally at boot.
 initial $readmemh("roms/sine_rom.hex", r_SineTable);
-logic unsigned [14:0] r_SineTable[16 * 1024];
+logic [14:0] r_SineTable[16 * 1024];
 
 
-VoiceOperatorID_t r_VoiceOperator [2];
-AlgorithmWord_t r_AlgorithmWord [2];
+logic `VOICE_OPERATOR_ID r_VoiceOperator [2];
+logic `ALGORITHM_WORD r_AlgorithmWord [2];
 logic r_NoteOn [2];
 
 
@@ -40,7 +40,7 @@ logic w_NegateOutput;
 /// Negate the phase index to the table in the second and fourth quadrant.
 logic w_NegatePhase;
 /// These are the actual (possibly inverted) phase index bits.
-logic unsigned [13:0] w_RawPhaseArgument;
+logic [13:0] w_RawPhaseArgument;
 
 always_comb begin
     // <sign, ignored> = i_Phase[16];
@@ -51,9 +51,9 @@ end
 
 
 logic r_NegateOutput [2];
-logic unsigned [13:0] r_PhaseArgument;
-logic unsigned [14:0] r_RawQuarterWaveSine;
-logic unsigned [15:0] w_QuarterWaveSine;
+logic [13:0] r_PhaseArgument;
+logic [14:0] r_RawQuarterWaveSine;
+logic [15:0] w_QuarterWaveSine;
 assign w_QuarterWaveSine = {1'b0, r_RawQuarterWaveSine};
 
 always_ff @ (posedge i_Clock) begin

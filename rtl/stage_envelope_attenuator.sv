@@ -5,19 +5,19 @@
 module stage_envelope_attenuator (
     input i_Clock,
 
-    input VoiceOperatorID_t i_VoiceOperator,
-    output VoiceOperatorID_t o_VoiceOperator,
+    input `VOICE_OPERATOR_ID i_VoiceOperator,
+    output `VOICE_OPERATOR_ID o_VoiceOperator,
 
     input logic i_NoteOn,
 
-    input AlgorithmWord_t i_AlgorithmWord,
-    output AlgorithmWord_t o_AlgorithmWord,
+    input `ALGORITHM_WORD i_AlgorithmWord,
+    output `ALGORITHM_WORD o_AlgorithmWord,
 
     input signed [15:0] i_Waveform,
     output signed [15:0] o_Waveform,
 
     input logic [4:0] i_EnvelopeConfigWriteEnable,
-    input VoiceOperatorID_t i_ConfigWriteAddr,
+    input `VOICE_OPERATOR_ID i_ConfigWriteAddr,
     //
     // Not all of the config data bits are used
     // verilator lint_off UNUSED
@@ -29,7 +29,7 @@ module stage_envelope_attenuator (
 // At the start of every 256 cycles, we increment a counter.
 // One bit of this counter is used to divide the main clock
 // for envelope calculation.
-logic unsigned [7:0] r_ClockCounter;
+logic [7:0] r_ClockCounter;
 logic w_DoEnvelopeCalc;
 always_comb w_DoEnvelopeCalc = r_ClockCounter[4];
 
@@ -43,8 +43,8 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-typedef logic unsigned [13:0] EnvelopeLevel_t;
-typedef logic unsigned [11:0] EnvelopeRate_t;
+typedef logic [13:0] EnvelopeLevel_t;
+typedef logic [11:0] EnvelopeRate_t;
 
 // TODO: These add up to 64 bits, so could be stored in
 // four BRAMs if one of the fields is suitably cut up.
@@ -94,8 +94,8 @@ function EnvelopeLevel_t extendRateConfig(EnvelopeRate_t rateConfig);
 endfunction
 
 
-VoiceOperatorID_t r_VoiceOperator [4];
-AlgorithmWord_t r_AlgorithmWord [4];
+logic `VOICE_OPERATOR_ID r_VoiceOperator [4];
+logic `ALGORITHM_WORD r_AlgorithmWord [4];
 
 
 logic r_DoEnvelopCalc;

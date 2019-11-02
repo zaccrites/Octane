@@ -6,10 +6,10 @@
 module stage_sample_generator (
     input i_Clock,
 
-    input VoiceOperatorID_t i_VoiceOperator,
+    input `VOICE_OPERATOR_ID i_VoiceOperator,
 
     // verilator lint_off UNUSED
-    input AlgorithmWord_t i_AlgorithmWord,
+    input `ALGORITHM_WORD i_AlgorithmWord,
     // verilator lint_on UNUSED
 
     input logic signed [15:0] i_OperatorOutput,
@@ -20,7 +20,7 @@ module stage_sample_generator (
 );
 
 
-VoiceOperatorID_t r_VoiceOperator [4];
+logic `VOICE_OPERATOR_ID r_VoiceOperator [4];
 logic r_IsCarrier [4];
 
 logic signed [31:0] r_CompensatedCarrierOutputProduct [3];

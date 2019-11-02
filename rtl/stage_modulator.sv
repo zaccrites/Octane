@@ -16,16 +16,16 @@ module stage_modulator (
     input logic i_NoteOn,
     output logic o_NoteOn,
 
-    input VoiceOperatorID_t i_VoiceOperator,
-    output VoiceOperatorID_t o_VoiceOperator,
+    input `VOICE_OPERATOR_ID i_VoiceOperator,
+    output `VOICE_OPERATOR_ID o_VoiceOperator,
 
-    output AlgorithmWord_t o_AlgorithmWord,
+    output `ALGORITHM_WORD o_AlgorithmWord,
 
-    input VoiceOperatorID_t i_OperatorWritebackID,
+    input `VOICE_OPERATOR_ID i_OperatorWritebackID,
     input logic signed [15:0] i_OperatorWritebackValue,
 
     input logic i_AlgorithmWriteEnable,
-    input VoiceOperatorID_t i_ConfigWriteAddr,
+    input `VOICE_OPERATOR_ID i_ConfigWriteAddr,
     // verilator lint_off UNUSED
     input logic [15:0] i_ConfigWriteData
     // verilator lint_on UNUSED
@@ -37,11 +37,11 @@ logic signed [15:0] r_OperatorOutputMemory [7] [`NUM_VOICE_OPERATORS];
 
 logic signed [15:0] r_OperatorOutput [7:0];
 logic signed [16:0] r_ModulatedPhase [7:0];
-AlgorithmWord_t r_AlgorithmWord [7:0];
-VoiceOperatorID_t r_VoiceOperator [7:0];
+logic `ALGORITHM_WORD r_AlgorithmWord [7:0];
+logic `VOICE_OPERATOR_ID r_VoiceOperator [7:0];
 logic r_NoteOn [7:0];
 
-AlgorithmWord_t r_Algorithm [`NUM_VOICE_OPERATORS];
+logic `ALGORITHM_WORD r_Algorithm [`NUM_VOICE_OPERATORS];
 
 
 integer i;

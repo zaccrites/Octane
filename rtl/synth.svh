@@ -3,26 +3,27 @@
 `define SYNTH_SVH
 
 
-typedef logic [10:0] AlgorithmWord_t;
+// typedef logic [10:0] AlgorithmWord_t;
+`define ALGORITHM_WORD  [10:0]
 
-function automatic logic getModulateWithOP;
-    input AlgorithmWord_t word;
+function automatic getModulateWithOP;
+    input `ALGORITHM_WORD word;
     input integer opNum;
     // getModulateWithOP = word[10:4];
     assert(0 <= opNum && opNum <= 6);
     getModulateWithOP = word[4 + opNum];
 endfunction
 
-function automatic logic unsigned [2:0] getNumCarriers;
+function automatic [2:0] getNumCarriers;
     // verilator lint_off UNUSED
-    input AlgorithmWord_t word;
+    input `ALGORITHM_WORD word;
     // verilator lint_on UNUSED
     getNumCarriers = word[3:1];
 endfunction
 
-function automatic logic getIsCarrier;
+function automatic getIsCarrier;
     // verilator lint_off UNUSED
-    input AlgorithmWord_t word;
+    input `ALGORITHM_WORD word;
     // verilator lint_on UNUSED
     getIsCarrier = word[0];
 endfunction
@@ -33,14 +34,18 @@ endfunction
 `define NUM_VOICE_OPERATORS   (`NUM_VOICES * `NUM_OPERATORS)
 
 
-typedef logic unsigned [7:0] VoiceOperatorID_t;
-typedef logic unsigned [2:0] OperatorID_t;
-typedef logic unsigned [4:0] VoiceID_t;
+// typedef logic [7:0] VoiceOperatorID_t;
+// typedef logic [2:0] OperatorID_t;
+// typedef logic [4:0] VoiceID_t;
+
+`define VOICE_OPERATOR_ID [7:0]
+`define OPERATOR_ID [2:0]
+`define VOICE_ID [4:0]
 
 
-function automatic OperatorID_t getOperatorID;
+function automatic `OPERATOR_ID getOperatorID;
     // verilator lint_off UNUSED
-    input VoiceOperatorID_t voiceOperator;
+    input `VOICE_OPERATOR_ID voiceOperator;
     // verilator lint_on UNUSED
 begin
     getOperatorID = voiceOperator[7:5];
@@ -48,9 +53,9 @@ end
 endfunction
 
 
-function automatic VoiceID_t getVoiceID;
+function automatic `VOICE_ID getVoiceID;
     // verilator lint_off UNUSED
-    input VoiceOperatorID_t voiceOperator;
+    input `VOICE_OPERATOR_ID voiceOperator;
     // verilator lint_on UNUSED
 begin
     getVoiceID = voiceOperator[4:0];
@@ -58,11 +63,11 @@ end
 endfunction
 
 
-function automatic VoiceOperatorID_t makeVoiceOperatorID;
-    input VoiceID_t voice;
-    input OperatorID_t operator;
+function automatic `VOICE_OPERATOR_ID makeVoiceOperatorID;
+    input `VOICE_ID voice;
+    input `OPERATOR_ID operator;
 begin
-    return {operator, voice};
+    makeVoiceOperatorID = {operator, voice};
 end
 endfunction
 
