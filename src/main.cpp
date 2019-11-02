@@ -105,7 +105,7 @@ int main(int argc, const char** argv)
             // noteBaseFrequency = 523.251;  // C5
         }
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
-        noteBaseFrequency = 100.0;
+        noteBaseFrequency = 440.0;
 
 
         // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
@@ -121,6 +121,18 @@ int main(int argc, const char** argv)
             // 0b000000'0000000'000'0,  // OP7
             // 0b000000'0000000'000'0,  // OP8
 
+            0b000000'0000000'000'0,  // OP1
+            0b000000'0000001'000'1,  // OP2
+            0b000000'0000000'000'0,  // OP3
+            0b000000'0000000'000'0,  // OP4
+            0b000000'0000000'000'0,  // OP5
+            0b000000'0000000'000'0,  // OP6
+            0b000000'0000000'000'0,  // OP7
+            0b000000'0000000'000'0,  // OP8
+
+
+
+
             // 0b000000'0000000'000'0,  // OP1
             // 0b000000'0000000'000'0,  // OP2
             // 0b000000'0000000'000'0,  // OP3
@@ -129,16 +141,6 @@ int main(int argc, const char** argv)
             // 0b000000'0000000'000'0,  // OP6
             // 0b000000'0000000'001'1,  // OP7
             // 0b000000'0000000'001'1,  // OP8
-
-            0b000000'0000000'000'0,  // OP1
-            0b000000'0000000'000'0,  // OP2
-            0b000000'0000000'000'0,  // OP3
-            0b000000'0000000'000'0,  // OP4
-            0b000000'0000000'000'0,  // OP5
-            0b000000'0000000'000'0,  // OP6
-            0b000000'0000000'000'0,  // OP7
-            0b000000'0000000'000'1,  // OP8
-
         };
 
 
@@ -152,14 +154,33 @@ int main(int argc, const char** argv)
             // TODO: Use JSON
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM, algorithmWords[opNum]);
 
+            uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
+
+            bool isCarrier = algorithmWords[opNum] & 0x0001;
+
+            // TODO
+            const double modulationIndex = 13.0;
+
             // TODO: Change actual levels to match modulation index (function of frequency and set level), if is a modulator
-            auto fixOperatorLevel = [](uint16_t level, bool isCarrier) -> uint16_t {
-                double multiplier = static_cast<double>(level) / 1000.0;
-                return static_cast<uint16_t>(0x3fff * multiplier);
+            auto fixOperatorLevel = [voiceNum, opNum, modulationIndex, phaseStep, isCarrier](uint16_t level) -> uint16_t {
+                if (voiceNum != 0) return 0;
+                if (opNum >= 2) return 0;
+
+                if (isCarrier)
+                {
+                    double multiplier = static_cast<double>(level) / 1000.0;
+                    return static_cast<uint16_t>(0x3fff * multiplier);
+                }
+                else
+                {
+                    if (voiceNum == 0)
+                        printf("For phaseStep of %d, modulator amplitude is %d \n", phaseStep, static_cast<uint16_t>(modulationIndex * phaseStep));
+                    return static_cast<uint16_t>(modulationIndex * phaseStep);
+                }
             };
             // ... that will affect the rate as well, since the time to reach the level should be the same regardless of note frequency played
-            auto fixOperatorRate = [](uint16_t rate, bool isCarrier) -> uint16_t {
-                double multiplier = static_cast<double>(rate) / 1000.0;
+            auto fixOperatorRate = [modulationIndex, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
 
                 // TODO: A simple linear function like this is probably not
                 // good enough. I want a rate of 10 or so to last a long time,
@@ -175,18 +196,26 @@ int main(int argc, const char** argv)
                 // as 1000, etc.
                 //
                 // http://hyperphysics.phy-astr.gsu.edu/hbase/Sound/loud.html
-                return static_cast<uint16_t>(0x0fff * multiplier);
+                if (isCarrier)
+                {
+                    double multiplier = static_cast<double>(rate) / 1000.0;
+                    return static_cast<uint16_t>(0x0fff * multiplier);
+                }
+                else
+                {
+                    // TODO
+                    return 0x0fff;
+                    // return modulationIndex * phaseStep / 4;
+                }
             };
 
-            bool isCarrier = true;  // TODO
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, fixOperatorLevel(opConfig.getAttackLevel(), isCarrier));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, fixOperatorLevel(opConfig.getSustainLevel(), isCarrier));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, fixOperatorRate(opConfig.getAttackRate(), isCarrier));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, fixOperatorRate(opConfig.getDecayRate(), isCarrier));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, fixOperatorRate(opConfig.getReleaseRate(), isCarrier));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, fixOperatorLevel(opConfig.getAttackLevel()));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, fixOperatorLevel(opConfig.getSustainLevel()));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, fixOperatorRate(opConfig.getAttackRate()));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, fixOperatorRate(opConfig.getDecayRate()));
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, fixOperatorRate(opConfig.getReleaseRate()));
 
-            uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
+
         }
     }
 

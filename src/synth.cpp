@@ -50,6 +50,10 @@ void Synth::spiTick()
         m_SPI_TickCounter = 0;
 
         auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
+
+        // TODO: Remove
+        sample *= 32;
+
         m_SampleBuffer.push_front(sample);
         fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
     }

@@ -31,6 +31,7 @@ spi spi0 (
     .o_RegisterWriteValue (w_RegisterWriteValue)
 );
 
+// Only trigger a register write on the SPI write-enable rising edge
 logic r_SPI_RegisterWriteEnableLast;
 logic w_RegisterWriteEnable;
 always_ff @ (posedge i_Clock) r_SPI_RegisterWriteEnableLast <= w_SPI_RegisterWriteEnable;
@@ -192,6 +193,20 @@ VoiceOperatorID_t w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
 assign w_OperatorWritebackID = r_VoiceOperator[4];
 assign w_OperatorWritebackValue = w_AttenuatedWaveform;
+
+always_ff @ (posedge i_Clock) begin
+    if (w_OperatorWritebackValue != 0) begin
+        // $display("w_OperatorWritebackID is [%0d.%0d], w_OperatorWritebackValue is %d",
+        //     getVoiceID(r_VoiceOperator[4]), getOperatorID(r_VoiceOperator[4]),
+        //     w_OperatorWritebackValue
+        // );
+
+
+    end
+
+
+
+end
 
 
 logic w_SampleReady;

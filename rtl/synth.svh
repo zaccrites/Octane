@@ -42,5 +42,13 @@ function VoiceID_t getVoiceID (
 endfunction
 
 
+function VoiceOperatorID_t makeVoiceOperatorID (
+    VoiceID_t voice,
+    OperatorID_t operator
+);
+    return {operator, voice};
+endfunction
+
+
 
 `endif
