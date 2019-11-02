@@ -31,7 +31,7 @@ public:
     bool getNoteOn(uint8_t voiceNum) const;
 
     void writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value);
-    void writeGlobalRegister(uint8_t parameter, uint16_t value);
+    void populateSineTable();
 
     void writeSampleBytes(uint8_t* pRawStream, size_t number);
     const std::deque<int16_t>& getSampleBuffer() const
@@ -45,9 +45,6 @@ public:
     }
 
 public:
-    static const uint8_t GLOBAL_PARAM_NOTEON_BANK0  { 0x00 };
-    static const uint8_t GLOBAL_PARAM_NOTEON_BANK1  { 0x01 };
-    static const uint8_t GLOBAL_PARAM_DUMMY         { 0x3f };
 
     static const uint8_t OP_PARAM_PHASE_STEP  { 0x00 };
     static const uint8_t OP_PARAM_ALGORITHM      { 0x01 };
@@ -58,9 +55,9 @@ public:
     static const uint8_t OP_PARAM_ENVELOPE_DECAY_RATE     { 0x05 };
     static const uint8_t OP_PARAM_ENVELOPE_RELEASE_RATE   { 0x06 };
 
+    static const uint8_t PARAM_NOTEON_BANK0  { 0x10 };
+    static const uint8_t PARAM_NOTEON_BANK1  { 0x11 };
 
-    // static const uint8_t OP_WAVEFORM_SINE  { 0x0000 };
-    // static const uint8_t OP_WAVEFORM_SQUARE { 0x0001 };
 
 private:
     Vsynth m_Synth;

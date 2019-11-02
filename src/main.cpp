@@ -77,6 +77,7 @@ int main(int argc, const char** argv)
 
     Synth synth;
     synth.reset();
+    synth.populateSineTable();
 
 
     // uint16_t phaseStep0 = phaseStepForFrequency(440.0);
@@ -167,7 +168,7 @@ int main(int argc, const char** argv)
                 if (isCarrier)
                 {
                     double multiplier = carrierAmplitudeForLevel(level);
-                    printf("multiplier for level %d is %f \n", level, multiplier);
+                    // printf("multiplier for level %d is %f \n", level, multiplier);
                     return static_cast<uint16_t>(0x3fff * multiplier);
                 }
                 else

@@ -92,11 +92,16 @@ void Synth::setNoteOn(uint8_t voiceNum, bool noteOn)
 
     if (bank == 0)
     {
-        writeGlobalRegister(GLOBAL_PARAM_NOTEON_BANK0, newRegisterValue);
+        // TODO: This isn't really a "voice op" parameter anymore.
+        // Need to reorganize registers now that I need all 14 bits
+        // of a "global" address for the sine table.
+        // If I can write the whole thing at once then this problem
+        // probably goes away (could just have 8 bit addresses, honestly).
+        writeOperatorRegister(0, 0, PARAM_NOTEON_BANK0, newRegisterValue);
     }
     else
     {
-        writeGlobalRegister(GLOBAL_PARAM_NOTEON_BANK1, newRegisterValue);
+        writeOperatorRegister(0, 0, PARAM_NOTEON_BANK1, newRegisterValue);
     }
 }
 
@@ -152,15 +157,35 @@ void Synth::writeSampleBytes(uint8_t* pRawStream, size_t number)
 }
 
 
-void Synth::writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value)
+// TODO: Extract this to a common file in MCU
+#include <cmath>
+void Synth::populateSineTable()
 {
-    const uint16_t registerNumber = (0b11 << 14) | (parameter << 8) | (operatorNum << 5) | voiceNum;
-    writeRegister(registerNumber, value);
+    const uint16_t TABLE_SIZE = 16 * 1024;
+    const uint16_t BIT_DEPTH = 15;
+    const uint16_t MAX_RANGE = 1 << BIT_DEPTH;
+    const uint16_t MASK = MAX_RANGE - 1;
+
+    for (uint16_t i = 0; i < TABLE_SIZE; i++)
+    {
+        // https://zipcpu.com/dsp/2017/08/26/quarterwave.html
+        const double phase =
+            2.0 * M_PI *
+            (2.0 * static_cast<double>(i) + 1) /
+            (2.0 * static_cast<double>(TABLE_SIZE) * 4.0);
+
+        // https://stackoverflow.com/a/12946226
+        const double sineValue = std::sin(phase);
+        const uint16_t value = static_cast<uint16_t>(sineValue * MAX_RANGE) & MASK;
+
+        uint16_t registerNumber = (0b11 << 14) | i;
+        writeRegister(registerNumber, value);
+    }
 }
 
 
-void Synth::writeGlobalRegister(uint8_t parameter, uint16_t value)
+void Synth::writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value)
 {
-    const uint16_t registerNumber = (0b10 << 14) | (parameter << 8);
+    const uint16_t registerNumber = (0b10 << 14) | (parameter << 8) | (operatorNum << 5) | voiceNum;
     writeRegister(registerNumber, value);
 }

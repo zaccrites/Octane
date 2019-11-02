@@ -43,29 +43,51 @@ assign w_RegisterWriteEnable = w_SPI_RegisterWriteEnable && ! r_SPI_RegisterWrit
 //     - O (3 bits) represents the zero-based operator number.
 //
 // Global registers use the following 16-bit address scheme:
-//   10 PPPPPP RRRRRRRR
-//     - P (6 bits) represents the parameter type.
-//     - R (8 bits) are reserved.
+//   10 PPPPPPPPPPPPPP
+//     - P (14 bits) represents the parameter.
 //
-logic [6:0] w_RegisterWriteParameter;
-assign w_RegisterWriteParameter = w_RegisterWriteNumber[14:8];
-logic [7:0] w_VoiceOpRegWriteIndex;
-assign w_VoiceOpRegWriteIndex = w_RegisterWriteNumber[7:0];
+
+
+
+// Voice-operator registers use the following 16-bit address scheme:
+//   11 PPPPPP VVVVV OOO
+//     - P (6 bits) represents the parameter type.
+//     - V (5 bits) represents the zero-based voice number.
+//     - O (3 bits) represents the zero-based operator number.
+//
+// Global registers use the following 16-bit address scheme:
+//   10 PPPPPPPPPPPPPP
+//     - P (14 bits) represents the parameter.
+//
+
+
+
+
+
+logic [5:0] w_VoiceOperatorRegisterWriteParameter;
+logic [7:0] w_VoiceOperatorRegisterWriteAddress;
+assign w_VoiceOperatorRegisterWriteParameter = w_RegisterWriteNumber[13:8];
+assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[7:0];
+
+
+
+// logic [6:0] w_RegisterWriteParameter;
+// assign w_RegisterWriteParameter = w_RegisterWriteNumber[14:8];
+// logic [7:0] w_VoiceOperatorRegisterWriteAddress;
+// assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[7:0];
+// logic [13:0] w_GlobalRegWriteIndex;
+// assign w_GlobalRegWriteIndex = w_RegisterWriteNumber[13:0];
 
 function voiceOpRegWriteEnable;
     input logic [5:0] parameterBits;
 begin
-    voiceOpRegWriteEnable = w_RegisterWriteEnable && w_RegisterWriteParameter == {1'b1, parameterBits};
+    voiceOpRegWriteEnable =
+        w_RegisterWriteEnable && w_RegisterWriteNumber[14] == 1'b0 &&
+        w_VoiceOperatorRegisterWriteParameter == parameterBits;
 end
 endfunction
 
-function globalRegWriteEnable;
-    input logic [5:0] parameterBits;
-begin
-    globalRegWriteEnable = w_RegisterWriteEnable && w_RegisterWriteParameter == {1'b0, parameterBits};
-end
-endfunction
-
+logic w_SineTableWriteEnable;
 logic [1:0] w_NoteOnConfigWriteEnable;
 logic [4:0] w_EnvelopeConfigWriteEnable;
 logic w_AlgorithmWriteEnable;
@@ -73,8 +95,11 @@ logic w_PhaseStepWriteEnable;
 
 always_comb begin
 
-    w_NoteOnConfigWriteEnable[0] = globalRegWriteEnable(6'h00);
-    w_NoteOnConfigWriteEnable[1] = globalRegWriteEnable(6'h01);
+    w_SineTableWriteEnable = w_RegisterWriteEnable && w_RegisterWriteNumber[14] == 1'b1;
+
+    // TODO: Could compress these into a single parameter
+    w_NoteOnConfigWriteEnable[0] = voiceOpRegWriteEnable(6'h10);
+    w_NoteOnConfigWriteEnable[1] = voiceOpRegWriteEnable(6'h11);
 
     w_PhaseStepWriteEnable = voiceOpRegWriteEnable(6'h00);
     w_AlgorithmWriteEnable = voiceOpRegWriteEnable(6'h01);
@@ -123,7 +148,7 @@ stage_phase_accumulator phase_accumulator (
 
     .i_NoteOnConfigWriteEnable   (w_NoteOnConfigWriteEnable),
     .i_PhaseStepConfigWriteEnable(w_PhaseStepWriteEnable),
-    .i_ConfigWriteAddr  (w_VoiceOpRegWriteIndex),
+    .i_ConfigWriteAddr  (w_VoiceOperatorRegisterWriteAddress),
     .i_ConfigWriteData  (w_RegisterWriteValue)
 );
 
@@ -143,7 +168,7 @@ stage_modulator modulator (
     .o_AlgorithmWord      (r_AlgorithmWord[2]),
 
     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
-    .i_ConfigWriteAddr  (w_VoiceOpRegWriteIndex),
+    .i_ConfigWriteAddr  (w_VoiceOperatorRegisterWriteAddress),
     .i_ConfigWriteData  (w_RegisterWriteValue),
 
     .i_OperatorWritebackID   (w_OperatorWritebackID),
@@ -161,6 +186,10 @@ stage_waveform_generator waveform_generator (
 
     .i_NoteOn      (r_NoteOn[1]),
     .o_NoteOn      (r_NoteOn[2]),
+
+    .i_SineTableWriteEnable (w_SineTableWriteEnable),
+    .i_SineTableWriteAddress(w_RegisterWriteNumber[13:0]),
+    .i_SineTableWriteValue  (w_RegisterWriteValue),
 
     .i_VoiceOperator(r_VoiceOperator[2]),
     .o_VoiceOperator(r_VoiceOperator[3]),
@@ -187,7 +216,7 @@ stage_envelope_attenuator envelope_attenuator (
     .o_Waveform     (w_AttenuatedWaveform),
 
     .i_EnvelopeConfigWriteEnable(w_EnvelopeConfigWriteEnable),
-    .i_ConfigWriteAddr          (w_VoiceOpRegWriteIndex),
+    .i_ConfigWriteAddr          (w_VoiceOperatorRegisterWriteAddress),
     .i_ConfigWriteData          (w_RegisterWriteValue)
 );
 
@@ -196,6 +225,13 @@ logic `VOICE_OPERATOR_ID w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
 assign w_OperatorWritebackID = r_VoiceOperator[4];
 assign w_OperatorWritebackValue = w_AttenuatedWaveform;
+
+
+always @ (posedge i_Clock) begin
+    // $display("w_RawWaveform = %d", w_RawWaveform);
+    // $display("w_RawWaveform = %d", w_RawWaveform);
+    // $display("w_AttenuatedWaveform = %d", w_AttenuatedWaveform);
+end
 
 
 logic w_SampleReady;

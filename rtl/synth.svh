@@ -9,8 +9,7 @@
 function automatic getModulateWithOP;
     input `ALGORITHM_WORD word;
     input integer opNum;
-    // getModulateWithOP = word[10:4];
-    assert(0 <= opNum && opNum <= 6);
+    // assert(0 <= opNum && opNum <= 6);
     getModulateWithOP = word[4 + opNum];
 endfunction
 
@@ -33,10 +32,6 @@ endfunction
 `define NUM_OPERATORS         8
 `define NUM_VOICE_OPERATORS   (`NUM_VOICES * `NUM_OPERATORS)
 
-
-// typedef logic [7:0] VoiceOperatorID_t;
-// typedef logic [2:0] OperatorID_t;
-// typedef logic [4:0] VoiceID_t;
 
 `define VOICE_OPERATOR_ID [7:0]
 `define OPERATOR_ID [2:0]

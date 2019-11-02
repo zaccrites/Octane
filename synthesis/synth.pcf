@@ -1,0 +1,18 @@
+
+# TODO: Assign these properly based on global clock inputs, etc.
+#   What to do with leftover pins?
+
+# iCE40UP5K Pinout
+# https://www.latticesemi.com/view_document?document_id=51971
+# TODO: Wht about DPIO vs PIO? Other pin types?
+
+# https://github.com/YosysHQ/nextpnr/blob/master/ice40/examples/blinky/blinky.pcf
+# https://www.reddit.com/r/FPGA/comments/99fiip/how_to_understand_pin_mapping_lattice_ice40_ultra/
+
+
+set_io i_Clock  37
+set_io i_Reset  35
+set_io i_SPI_SCK  36
+set_io i_SPI_MOSI  43
+set_io o_SPI_MISO  38
+
