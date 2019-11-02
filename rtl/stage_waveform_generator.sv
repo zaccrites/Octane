@@ -34,11 +34,17 @@ module stage_waveform_generator (
 logic [15:0] w_SineTableOutput;
 // verilator lint_on UNUSED
 
+
+// Write address takes priority when writing (SPRAM has a shared read/write port)
+logic [13:0] w_SineTableIndex;
+assign w_SineTableIndex = i_SineTableWriteEnable ? i_SineTableWriteAddress : r_PhaseArgument;
+
+
 `ifdef YOSYS
 
 SB_SPRAM256KA sine_spram (
     .CLOCK(i_Clock),
-    .ADDRESS(r_PhaseArgument),
+    .ADDRESS(w_SineTableIndex),
     .DATAIN(i_SineTableWriteValue),
     .MASKWREN(4'b1111),
     .WREN(i_SineTableWriteEnable),
@@ -56,7 +62,7 @@ assign w_SineTableOutput = r_SineTable[r_PhaseArgument];
 
 always_ff @ (posedge i_Clock) begin
     if (i_SineTableWriteEnable)
-        r_SineTable[i_SineTableWriteAddress] <= i_SineTableWriteValue;
+        r_SineTable[w_SineTableIndex] <= i_SineTableWriteValue;
 end
 
 `endif
