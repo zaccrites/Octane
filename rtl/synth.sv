@@ -1,7 +1,6 @@
 
 `include "synth.svh"
 
-
 module synth (
     input logic i_Clock,
     input logic i_Reset,
@@ -11,7 +10,6 @@ module synth (
     output logic o_SPI_MISO
 
 );
-
 
 
 logic w_SPI_RegisterWriteEnable;
@@ -83,7 +81,6 @@ always_comb begin
 end
 
 
-// TODO: Move into its own module?
 /// Track the currently active voice operator
 always_ff @ (posedge i_Clock) begin
     // Each clock cycle will compute a new value for a voice operator.
@@ -138,7 +135,6 @@ stage_modulator modulator (
 
     .o_AlgorithmWord      (r_AlgorithmWord[2]),
 
-    // TODO: Set these if register written above
     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
     .i_ConfigWriteAddr  (w_VoiceOpRegWriteIndex),
     .i_ConfigWriteData  (w_RegisterWriteValue),
@@ -193,20 +189,6 @@ VoiceOperatorID_t w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
 assign w_OperatorWritebackID = r_VoiceOperator[4];
 assign w_OperatorWritebackValue = w_AttenuatedWaveform;
-
-always_ff @ (posedge i_Clock) begin
-    if (w_OperatorWritebackValue != 0) begin
-        // $display("w_OperatorWritebackID is [%0d.%0d], w_OperatorWritebackValue is %d",
-        //     getVoiceID(r_VoiceOperator[4]), getOperatorID(r_VoiceOperator[4]),
-        //     w_OperatorWritebackValue
-        // );
-
-
-    end
-
-
-
-end
 
 
 logic w_SampleReady;
