@@ -37,6 +37,9 @@ add_custom_command(
         --asc octane.asc
         2>&1 | tee nextpnr.log
 
+    # TODO: Use -c option to verify meets desired performance?
+    COMMAND icetime -mit octane.asc | tee icetime.log
+
     OUTPUT octane.asc
     DEPENDS
         octane.json
@@ -47,7 +50,7 @@ add_custom_command(
 
 add_custom_target(fpga_bitstream DEPENDS octane.bin)
 add_custom_command(
-    COMMAND icepack octane.asc octane.bin
+    COMMAND icepack octane.asc octane.bin | icepack.log
 
     OUTPUT octane.bin
     DEPENDS octane.asc
