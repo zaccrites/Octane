@@ -32,11 +32,15 @@ SECTIONS
 
     .init_array :
     {
+        . = ALIGN(4);
         _sinit_array = .;
+        KEEP(*(SORT(.preinit_array)))
+        KEEP(*(SORT(.preinit_array*)))
         KEEP(*(SORT(.init_array)))
         KEEP(*(SORT(.init_array*)))
         KEEP(*(SORT(.ctors)))
         KEEP(*(SORT(.ctors*)))
+        . = ALIGN(4);
         _einit_array = .;
     } > FLASH
 

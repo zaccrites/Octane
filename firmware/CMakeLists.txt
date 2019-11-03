@@ -24,11 +24,11 @@ project(octane_firmware VERSION 0.1.0 LANGUAGES CXX C ASM)
 
 add_executable(firmware
     "src/vectors.s"
-    "src/init.c"
-    "src/main.c"
+    "src/init.cpp"
+    "src/main.cpp"
 )
 
-target_include_directories(firmware PRIVATE SYSTEM
+target_include_directories(firmware SYSTEM PRIVATE
     "include/CMSIS"
     "include/device"
 )
@@ -69,14 +69,34 @@ target_compile_definitions(firmware PRIVATE
 
 
 target_compile_options(firmware PRIVATE
-    -mthumb -mcpu=cortex-m4 -mthumb-interwork -mlong-calls
-    -std=gnu11 -O2 -pedantic
-    -fno-rtti -fno-exceptions
-    -ffunction-sections -fdata-sections
-    -nostdlib -nostartfiles -ffreestanding
-    -MMD -MP
-    -Wall -Wextra
-    -Wold-style-cast -Wnull-dereference -Wdouble-promotion
-    -Wlogical-op -Wuseless-cast -Wshadow
+    -mcpu=cortex-m4
+    -mthumb
+    -mthumb-interwork
+    -mlong-calls
+
+    -std=gnu++17
+    -pedantic
+
+    -O2
+    # TODO: debugging symbols?
+
+    -fno-rtti
+    -fno-exceptions
+    -fno-non-call-exceptions
+    -fno-use-cxa-atexit
+    -fdiagnostics-color
+    -ffunction-sections
+    -fdata-sections
+    -ffreestanding
+
+    -Wall
+    -Wextra
+    -Wold-style-cast
+    -Wnull-dereference
+    -Wdouble-promotion
+    -Wlogical-op
+    -Wuseless-cast
+    -Wshadow
     -Werror=switch
 )
+
