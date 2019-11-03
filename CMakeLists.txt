@@ -11,6 +11,7 @@ find_package(SDL2 REQUIRED)
 
 
 add_subdirectory(Vmodules)
+add_subdirectory(synthesis)
 
 
 

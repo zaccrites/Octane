@@ -23,6 +23,24 @@ TODO
 
 ## Development
 
-TODO
+    sudo apt install build-essential cmake python3-venv
 
-    sudo apt install build-essential cmake ninja-build python3-venv libsdl2-dev
+
+### Simulator
+
+    sudo apt install build-essential verilator libsdl2-dev
+
+
+### Synthesis
+
+This project uses the open-source [IceStorm](http://www.clifford.at/icestorm/)
+toolchain to synthesize the design, perform place-and-route, and generate
+the bitstream.
+
+    TODO: Instructions for installing/building tools or just create
+    a script that does it
+
+
+### Firmware
+
+    sudo apt install openocd gcc-arm-none-eabi

@@ -6,12 +6,6 @@
             "folder_exclude_patterns": [
                 "vendor"
             ]
-        },
-        {
-            "path": "../synth_OLD",
-            "folder_exclude_patterns": [
-                "vendor"
-            ]
         }
     ]
 }
