@@ -1,9 +1,0 @@
-
-*.sublime-workspace
-
-# TODO: Just ignore build/ folder
-*.o
-*.d
-*.bin
-*.elf
-*.list
