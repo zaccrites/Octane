@@ -48,35 +48,11 @@ assign w_RegisterWriteEnable = w_SPI_RegisterWriteEnable && ! r_SPI_RegisterWrit
 //
 
 
-
-// Voice-operator registers use the following 16-bit address scheme:
-//   11 PPPPPP VVVVV OOO
-//     - P (6 bits) represents the parameter type.
-//     - V (5 bits) represents the zero-based voice number.
-//     - O (3 bits) represents the zero-based operator number.
-//
-// Global registers use the following 16-bit address scheme:
-//   10 PPPPPPPPPPPPPP
-//     - P (14 bits) represents the parameter.
-//
-
-
-
-
-
 logic [5:0] w_VoiceOperatorRegisterWriteParameter;
 logic [7:0] w_VoiceOperatorRegisterWriteAddress;
 assign w_VoiceOperatorRegisterWriteParameter = w_RegisterWriteNumber[13:8];
 assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[7:0];
 
-
-
-// logic [6:0] w_RegisterWriteParameter;
-// assign w_RegisterWriteParameter = w_RegisterWriteNumber[14:8];
-// logic [7:0] w_VoiceOperatorRegisterWriteAddress;
-// assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[7:0];
-// logic [13:0] w_GlobalRegWriteIndex;
-// assign w_GlobalRegWriteIndex = w_RegisterWriteNumber[13:0];
 
 function voiceOpRegWriteEnable;
     input logic [5:0] parameterBits;
@@ -129,7 +105,6 @@ always_ff @ (posedge i_Clock) begin
 end
 
 
-// VoiceOperatorID_t r_VoiceOperator [5];
 logic `VOICE_OPERATOR_ID r_VoiceOperator [5];
 logic `ALGORITHM_WORD r_AlgorithmWord [5];
 logic r_NoteOn [5];
@@ -225,13 +200,6 @@ logic `VOICE_OPERATOR_ID w_OperatorWritebackID;
 logic signed [15:0] w_OperatorWritebackValue;
 assign w_OperatorWritebackID = r_VoiceOperator[4];
 assign w_OperatorWritebackValue = w_AttenuatedWaveform;
-
-
-always @ (posedge i_Clock) begin
-    // $display("w_RawWaveform = %d", w_RawWaveform);
-    // $display("w_RawWaveform = %d", w_RawWaveform);
-    // $display("w_AttenuatedWaveform = %d", w_AttenuatedWaveform);
-end
 
 
 logic w_SampleReady;
