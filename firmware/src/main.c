@@ -30,12 +30,36 @@ volatile uint32_t presses = 2;
 
 // A 32-bit counter allows for about 50 days of millisecond counting.
 // A 64-bit counter would allow for 213 billion days of millisecond counting.
-volatile uint32_t ticks = 2;
+// volatile uint32_t ticks = 2;
+volatile uint32_t ticks;
 void SysTick_Handler(void)
 {
-    ticks += 1;
+    // ticks += 1;
 
-    GPIOD->BSRR = (ticks % 2 == 0) ? GPIO_BSRR_BS0 : GPIO_BSRR_BR0;
+    // // GPIOD->BSRR = (ticks % 2 == 0) ? GPIO_BSRR_BS0 : GPIO_BSRR_BR0;
+
+
+    // static bool blueOn = false;
+    // if (ticks++ >= 1000)
+    // {
+    //     ticks = 0;
+    //     blueOn = ! blueOn;
+    // }
+
+    // GPIOD->BSRR = blueOn ? GPIO_BSRR_BS15 : GPIO_BSRR_BR15;
+
+    GPIOD->BSRR = GPIO_BSRR_BR15;
+
+    GPIOD->ODR ^= (1 << 0);
+    // GPIOD->BSRR = GPIO_BSRR_BS0;
+
+
+
+    // GPIOD->BSRR = blueOn ? GPIO_BSRR_BS15 : GPIO_BSRR_BR15;
+    // GPIOD->BSRR = blueOn ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
+
+    // GPIOD->BSRR = GPIO_BSRR_BR15;
+
 
     // if (ticks % 250 == 0)
     // {
@@ -107,6 +131,8 @@ void sysinit(void)
 
     // Configure LEDs as outputs
     GPIOD->MODER |=
+        (0x01 << 0) |
+
         (0x01 << 24) |
         (0x01 << 26) |
         (0x01 << 28) |
@@ -164,10 +190,38 @@ void sysinit(void)
 
 
     // Increment a counter every millisecond
-    SysTick_Config(8000);
+    // GPIOD->BSRR = GPIO_BSRR_BS13;
+    // if (SysTick_Config(8000) == 0)
+    // {
+    //     // Success
+    //     GPIOD->BSRR = GPIO_BSRR_BR13;
+    // }
+
+
+
+
+
+ //  SysTick->LOAD  = (uint32_t)(8000 - 1UL);                         /* set reload register */
+ //  NVIC_SetPriority (SysTick_IRQn, (1UL << __NVIC_PRIO_BITS) - 1UL); /* set Priority for Systick Interrupt */
+ //  SysTick->VAL   = 0UL;                                             /* Load the SysTick Counter Value */
+ // SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
+ //                   SysTick_CTRL_TICKINT_Msk   |
+ //                   SysTick_CTRL_ENABLE_Msk;                         /* Enable SysTick IRQ and SysTick Timer */
+
+
+
+    const uint32_t MAIN_CLOCK_FREQ = 8000000;
+    SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
 
     NVIC_EnableIRQ(TIM2_IRQn);
+
     __enable_irq();
+
+
+
+
+
+
 }
 
 
@@ -180,119 +234,20 @@ volatile bool waiting = true;
 
 int main()
 {
+    ticks = 0;
 
-  sysinit();
+    sysinit();
 
-    // USART2->CR1 |= USART_CR1_TE;  // start transmit
-    // sendString("\r\nSTM32F4DISCOVERY Booted up!\r\n");
-    // sendString("===========================================\r\n");
-
-
-    // const auto deviceId = DeviceId::get();
-    // uint8_t deviceIdBytes[DeviceId::LENGTH];
-    // char deviceIdHexString[2 * DeviceId::LENGTH + 1];
-    // deviceId.get_bytes(&deviceIdBytes[0]);
-    // stringio::hexlify(sizeof(deviceIdBytes), &deviceIdBytes[0], &deviceIdHexString[0]);
+    GPIOD->BSRR = GPIO_BSRR_BS15;
 
 
-    // char buffer[256];
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%d for 0) == %d \r\n", 0); sendString(buffer);
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%d for 1) == %d \r\n", 1); sendString(buffer);
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%d for 10) == %d \r\n", 10); sendString(buffer);
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%d for 15) == %d \r\n", 15); sendString(buffer);
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%d for 101) == %d \r\n", 101); sendString(buffer);
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%d for 9876) == %d \r\n", 9876); sendString(buffer);
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%d for 123456) == %d \r\n", 123456); sendString(buffer);
-    // stringio::snprintf(buffer, sizeof(buffer), "Test(%%x for 0xff) == 0x%x \r\n", 0xff); sendString(buffer);
-
-    // bool redLedOn = false;
-
-    uint32_t counter = 0;
     while (1)
     {
-
-        // bool currentButtonHeldState = (GPIOA->IDR & 0x01) != 0;
-        // if (currentButtonHeldState != lastButtonStateHeld)
-        // {
-        //     // Detected change in button state.
-        //     // If the debounce cooldown is over, then handle the event.
-        //     if (ticks > buttonCooldownExpiration)
-        //     {
-
-        //         if (currentButtonHeldState)
-        //         {
-        //             presses += 1;
-        //         }
-
-        //         // Save previous state to detect press AND release events.
-        //         lastButtonStateHeld = currentButtonHeldState;
-
-        //         // Prevent a bounce from re-triggering the event for 25 ms
-        //         buttonCooldownExpiration = ticks + 25;
-        //     }
-        // }
-
-        if (waiting)
-        {
-            // TODO: Wait for data ready signal from LIS3DSH?
-            // Can this be ready via SPI, or do I have to use DRDY hardware line?
-            continue;
-        }
-
-        // redLedOn = ! redLedOn;
-        // if (redLedOn)
-        // {
-            GPIOD->BSRR = GPIO_BSRR_BS14;
-        // }
-        // else
-        // {
-            // GPIOD->BSRR = GPIO_BSRR_BR14;
-        // }
-
-
-
-
-        GPIOD->BSRR = GPIO_BSRR_BS14;
-        // =====================================================================
-
-        // Read info from LIS3DSH motion sensor
-        // GPIOE->BSRR |= GPIO_BSRR_BR3;  // activate chip select
-
-        // // First send the register to read.
-        // uint8_t data =
-        //     ((lis3dsh::WHO_AM_I & 0x7f) << 1) |  // register to read
-        //     ((0x0001 & 0x1) << 0);  // read mode
-
-        // SPI1->DR = data;
-
-        // // wait for transmit and receive to finish
-        // // (TODO: Figure out how to use interrupts)
-        // while ((SPI1->SR & SPI_SR_TXE) == 0 &&
-        //        (SPI1->SR & SPI_SR_RXNE) != 0);
-
-        // uint8_t sensorData = SPI1->DR;
-
-        // GPIOE->BSRR |= GPIO_BSRR_BS3;  // deactivate chip select
-        // =====================================================================
-        GPIOD->BSRR = GPIO_BSRR_BR14;
-
-
-        // stringio::snprintf(buffer, sizeof(buffer), "Sensor Data: 0x%d  (Line %d) \r\n", sensorData, __LINE__);
-        // sendString(buffer);
-
-
-
-
-
-        counter += 1;
-
-
-        waiting = true;
-        // GPIOD->BSRR = GPIO_BSRR_BS14;
-
     }
 
 }
+
+
 
 
 
@@ -314,24 +269,86 @@ void TIM2_IRQHandler(void)
     //     GPIOD->BSRR = value;
     // };
 
+    // // const bool useCirclePattern = presses % 2 == 0;
+    // if (TIM2->SR & TIM_SR_CC1IF)
+    // {
+    //     // if (useCirclePattern)
+    //     // {
+    //     //     GPIOD->BSRR =
+    //     //         GPIO_BSRR_BS12 |
+    //     //         GPIO_BSRR_BR13 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
+    //     // }
+    //     // else
+    //     // {
+    //     //     setLeds(true, true, false, false);
+    //     // }
+    //     TIM2->SR &= ~TIM_SR_CC1IF;
+    // }
+    // else if (TIM2->SR & TIM_SR_CC2IF)
+    // {
+    //     GPIOD->BSRR = GPIO_BSRR_BS15;
+    //     // if (useCirclePattern)
+    //     // {
+    //     //     GPIOD->BSRR =
+    //     //         GPIO_BSRR_BS13 |
+    //     //         GPIO_BSRR_BR12 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
+    //     // }
+    //     TIM2->SR &= ~TIM_SR_CC2IF;
+    // }
+    // else if (TIM2->SR & TIM_SR_CC3IF)
+    // {
+    //     // if (useCirclePattern)
+    //     // {
+    //     //     GPIOD->BSRR =
+    //     //         GPIO_BSRR_BS14 |
+    //     //         GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR15;
+    //     // }
+    //     // else
+    //     // {
+    //     //     setLeds(false, false, true, true);
+    //     // }
+    //     TIM2->SR &= ~TIM_SR_CC3IF;
+    // }
+    // else if (TIM2->SR & TIM_SR_UIF)
+    // {
+    //     waiting = false;
+    //     GPIOD->BSRR = GPIO_BSRR_BR15;
+    //     // if (useCirclePattern)
+    //     // {
+    //     //     GPIOD->BSRR =
+    //     //         GPIO_BSRR_BS15 |
+    //     //         GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR14;
+    //     // }
+    //     TIM2->SR &= ~TIM_SR_UIF;
+    // }
+
+
+
+
     // const bool useCirclePattern = presses % 2 == 0;
     if (TIM2->SR & TIM_SR_CC1IF)
     {
-        // if (useCirclePattern)
-        // {
-        //     GPIOD->BSRR =
-        //         GPIO_BSRR_BS12 |
-        //         GPIO_BSRR_BR13 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
-        // }
-        // else
-        // {
-        //     setLeds(true, true, false, false);
-        // }
+        static bool green = true;
+        green = ! green;
+
+        if (green)
+        {
+            GPIOD->BSRR = GPIO_BSRR_BS12 | GPIO_BSRR_BR14;
+        }
+        else
+        {
+            GPIOD->BSRR = GPIO_BSRR_BR12 | GPIO_BSRR_BS14;
+        }
+
+        // GPIOD->BSRR = green ? GPIO_BSRR_BS15 : GPIO_BSRR_BR15;
+        // GPIOD->BSRR = green ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
+
+
         TIM2->SR &= ~TIM_SR_CC1IF;
     }
     else if (TIM2->SR & TIM_SR_CC2IF)
     {
-        GPIOD->BSRR = GPIO_BSRR_BS15;
+        // GPIOD->BSRR = GPIO_BSRR_BS15;
         // if (useCirclePattern)
         // {
         //     GPIOD->BSRR =
@@ -356,8 +373,8 @@ void TIM2_IRQHandler(void)
     }
     else if (TIM2->SR & TIM_SR_UIF)
     {
-        waiting = false;
-        GPIOD->BSRR = GPIO_BSRR_BR15;
+        // waiting = false;
+        // GPIOD->BSRR = GPIO_BSRR_BR15;
         // if (useCirclePattern)
         // {
         //     GPIOD->BSRR =
@@ -366,4 +383,9 @@ void TIM2_IRQHandler(void)
         // }
         TIM2->SR &= ~TIM_SR_UIF;
     }
+
+
+
+
+
 }

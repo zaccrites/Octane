@@ -122,7 +122,7 @@ target_compile_definitions(firmware PRIVATE
 
 target_compile_options(firmware PRIVATE
     -mthumb -mcpu=cortex-m4 -mthumb-interwork -mlong-calls
-    -std=gnu11 -Os -pedantic
+    -std=gnu11 -O2 -pedantic
     -fno-rtti -fno-exceptions
     -ffunction-sections -fdata-sections
     -nostdlib -nostartfiles -ffreestanding

@@ -58,34 +58,34 @@ extern uint32_t _ebss;
 
 
 
-// static void InitBssSection()
-// {
-//     // .bss section is aligned to 4 bytes, so we can init four bytes at a time
-//     uint32_t* pDest = &_sbss;
-//     while (pDest != &_ebss)
-//     {
-//         *pDest++ = 0x00000000;
-//     }
-// }
+static void InitBssSection()
+{
+    // .bss section is aligned to 4 bytes, so we can init four bytes at a time
+    uint32_t* pDest = &_sbss;
+    while (pDest != &_ebss)
+    {
+        *pDest++ = 0x00000000;
+    }
+}
 
 
-// static void InitDataSection()
-// {
-//     // .data section is aligned to 4 bytes, so we can init four bytes at a time
-//     uint32_t* pSrc = &_sidata;
-//     uint32_t* pDest = &_sdata;
-//     while (pDest != &_edata)
-//     {
-//         *pDest++ = *pSrc++;
-//     }
-// }
+static void InitDataSection()
+{
+    // .data section is aligned to 4 bytes, so we can init four bytes at a time
+    uint32_t* pSrc = &_sidata;
+    uint32_t* pDest = &_sdata;
+    while (pDest != &_edata)
+    {
+        *pDest++ = *pSrc++;
+    }
+}
 
 
 // extern "C" void _start(void)
 void _start(void)
 {
-    // InitBssSection();
-    // InitDataSection();
+    InitBssSection();
+    InitDataSection();
     // InitStaticConstructors();
 
     // TODO: Call .ctor functions, libc_init_arrays, etc.
