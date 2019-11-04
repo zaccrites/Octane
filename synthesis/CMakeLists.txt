@@ -50,7 +50,7 @@ add_custom_command(
 
 add_custom_target(fpga_bitstream DEPENDS octane.bin)
 add_custom_command(
-    COMMAND icepack octane.asc octane.bin | icepack.log
+    COMMAND icepack octane.asc octane.bin | tee icepack.log
 
     OUTPUT octane.bin
     DEPENDS octane.asc

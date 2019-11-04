@@ -69,28 +69,9 @@ logic `ENVELOPE_RATE  r_ReleaseRateConfig  [`NUM_VOICE_OPERATORS];
 logic `ENVELOPE_STATE r_CurrentEnvelopeStates [`NUM_VOICE_OPERATORS];
 logic `ENVELOPE_LEVEL r_CurrentEnvelopeLevels [`NUM_VOICE_OPERATORS];
 
-// function automatic `ENVELOPE_REGION getEnvelopeStateRegion;
-//     input `ENVELOPE_STATE state;
-//     getEnvelopeStateRegion = state[16:14];
-// endfunction
-
-// function automatic `ENVELOPE_LEVEL getEnvelopeStateLevel;
-//     input `ENVELOPE_STATE state;
-//     getEnvelopeStateLevel = state[13:0];
-// endfunction
-
-
-
 
 
 `define LEVEL_MAX  14'h3fff
-
-// function EnvelopeLevel_t increaseLevel(EnvelopeLevel_t level, EnvelopeRate_t rate);
-//     if (level > `LEVEL_MAX - extendRateConfig(rate))
-//         return `LEVEL_MAX;
-//     else
-//         return level + extendRateConfig(rate);
-// endfunction
 
 function automatic `ENVELOPE_LEVEL increaseLevel;
     input `ENVELOPE_LEVEL level;
@@ -101,13 +82,6 @@ function automatic `ENVELOPE_LEVEL increaseLevel;
         increaseLevel = level + extendRateConfig(rate);
 endfunction
 
-// function EnvelopeLevel_t decreaseLevel(EnvelopeLevel_t level, EnvelopeRate_t rate);
-//     if (extendRateConfig(rate) > level)
-//         return 0;
-//     else
-//         return level - extendRateConfig(rate);
-// endfunction
-
 function automatic `ENVELOPE_LEVEL decreaseLevel;
     input `ENVELOPE_LEVEL level;
     input `ENVELOPE_RATE rate;
@@ -117,23 +91,19 @@ function automatic `ENVELOPE_LEVEL decreaseLevel;
         decreaseLevel = level - extendRateConfig(rate);
 endfunction
 
-// function EnvelopeLevel_t extendRateConfig(EnvelopeRate_t rateConfig);
-    // return {2'b0, rateConfig};
-// endfunction
-
 function automatic `ENVELOPE_LEVEL extendRateConfig;
     input `ENVELOPE_RATE rate;
     extendRateConfig = {2'b0, rate};
 endfunction
 
 
-logic `VOICE_OPERATOR_ID r_VoiceOperator [4];
-logic `ALGORITHM_WORD r_AlgorithmWord [4];
+logic `VOICE_OPERATOR_ID r_VoiceOperator [15];
+logic `ALGORITHM_WORD r_AlgorithmWord [15];
 
 
 logic r_DoEnvelopCalc;
 logic `ENVELOPE_STATE r_EnvelopeState;
-logic `ENVELOPE_LEVEL r_EnvelopeLevel;
+logic `ENVELOPE_LEVEL r_EnvelopeLevel [15];
 logic r_NoteOn;
 
 logic `ENVELOPE_LEVEL r_AttackLevel;
@@ -142,10 +112,11 @@ logic `ENVELOPE_RATE r_AttackRate;
 logic `ENVELOPE_RATE r_DecayRate;
 logic `ENVELOPE_RATE r_ReleaseRate;
 
-logic signed [15:0] r_RawWaveform;
-logic signed [31:0] r_AttenuatedWaveformProduct [3];
+logic signed [15:0] r_RawWaveform [15];
+logic signed [30:0] r_AttenuatedWaveformProduct [14:1];
 
 
+integer i;
 always_ff @ (posedge i_Clock) begin
 
     // TODO: Ensure that two of these parameters are shared by each of four block RAMs.
@@ -160,9 +131,9 @@ always_ff @ (posedge i_Clock) begin
 
     r_DoEnvelopCalc <= w_DoEnvelopeCalc;
     r_EnvelopeState <= r_CurrentEnvelopeStates[i_VoiceOperator];
-    r_EnvelopeLevel <= r_CurrentEnvelopeLevels[i_VoiceOperator];
+    r_EnvelopeLevel[0] <= r_CurrentEnvelopeLevels[i_VoiceOperator];
     r_NoteOn <= i_NoteOn;
-    r_RawWaveform <= i_Waveform;
+    r_RawWaveform[0] <= i_Waveform;
 
     r_AttackLevel <= r_AttackLevelConfig[i_VoiceOperator];
     r_SustainLevel <= r_SustainLevelConfig[i_VoiceOperator];
@@ -194,26 +165,26 @@ always_ff @ (posedge i_Clock) begin
 
         `ATTACK: begin
             if (r_DoEnvelopCalc) begin
-                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= increaseLevel(r_EnvelopeLevel, r_AttackRate);
+                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= increaseLevel(r_EnvelopeLevel[0], r_AttackRate);
             end
 
             if ( ! r_NoteOn) begin
                 r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `RELEASE;
             end
-            else if (r_EnvelopeLevel >= r_AttackLevel) begin
+            else if (r_EnvelopeLevel[0] >= r_AttackLevel) begin
                 r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `DECAY;
             end
         end
 
         `DECAY: begin
             if (r_DoEnvelopCalc) begin
-                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= decreaseLevel(r_EnvelopeLevel, r_DecayRate);
+                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= decreaseLevel(r_EnvelopeLevel[0], r_DecayRate);
             end
 
             if ( ! r_NoteOn) begin
                 r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `RELEASE;
             end
-            else if (r_EnvelopeLevel <= r_SustainLevel) begin
+            else if (r_EnvelopeLevel[0] <= r_SustainLevel) begin
                 r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `SUSTAIN;
             end
         end
@@ -227,9 +198,9 @@ always_ff @ (posedge i_Clock) begin
 
         `RELEASE: begin
             if (r_DoEnvelopCalc) begin
-                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= decreaseLevel(r_EnvelopeLevel, r_ReleaseRate);
+                r_CurrentEnvelopeLevels[r_VoiceOperator[0]] <= decreaseLevel(r_EnvelopeLevel[0], r_ReleaseRate);
             end
-            if (r_EnvelopeLevel == 0) begin
+            if (r_EnvelopeLevel[0] == 0) begin
                 r_CurrentEnvelopeStates[r_VoiceOperator[0]] <= `MUTE;
             end
         end
@@ -238,27 +209,40 @@ always_ff @ (posedge i_Clock) begin
 
     // ----------------------------------------------------------
 
-    // Clocks 2-5 : Attenuate output sample
+    // Clocks 2-15 : Attenuate output sample
     // ----------------------------------------------------------
 
-    r_AttenuatedWaveformProduct[0] <= r_RawWaveform * $signed({1'b0, r_EnvelopeLevel, 1'b0});
-    r_AttenuatedWaveformProduct[1] <= r_AttenuatedWaveformProduct[0];
-    r_AttenuatedWaveformProduct[2] <= r_AttenuatedWaveformProduct[1];
-    o_Waveform <= {r_AttenuatedWaveformProduct[2][30:16], 1'b0};
+    // Pipeline a (14 bit unsigned)x(16 bit signed) multiply by repeated addition
+    r_AttenuatedWaveformProduct[1] <= r_EnvelopeLevel[0][0] ? {{15{r_RawWaveform[0][15]}}, r_RawWaveform[0]} : 0;
+    r_AttenuatedWaveformProduct[2] <= r_AttenuatedWaveformProduct[1] + (r_EnvelopeLevel[1][1] ? {{14{r_RawWaveform[1][15]}}, r_RawWaveform[1], 1'b0} : 0);
+    r_AttenuatedWaveformProduct[3] <= r_AttenuatedWaveformProduct[2] + (r_EnvelopeLevel[2][2] ? {{13{r_RawWaveform[2][15]}}, r_RawWaveform[2], 2'b0} : 0);
+    r_AttenuatedWaveformProduct[4] <= r_AttenuatedWaveformProduct[3] + (r_EnvelopeLevel[3][3] ? {{12{r_RawWaveform[3][15]}}, r_RawWaveform[3], 3'b0} : 0);
+    r_AttenuatedWaveformProduct[5] <= r_AttenuatedWaveformProduct[4] + (r_EnvelopeLevel[4][4] ? {{11{r_RawWaveform[4][15]}}, r_RawWaveform[4], 4'b0} : 0);
+    r_AttenuatedWaveformProduct[6] <= r_AttenuatedWaveformProduct[5] + (r_EnvelopeLevel[5][5] ? {{10{r_RawWaveform[5][15]}}, r_RawWaveform[5], 5'b0} : 0);
+    r_AttenuatedWaveformProduct[7] <= r_AttenuatedWaveformProduct[6] + (r_EnvelopeLevel[6][6] ? {{9{r_RawWaveform[6][15]}}, r_RawWaveform[6], 6'b0} : 0);
+    r_AttenuatedWaveformProduct[8] <= r_AttenuatedWaveformProduct[7] + (r_EnvelopeLevel[7][7] ? {{8{r_RawWaveform[7][15]}}, r_RawWaveform[7], 7'b0} : 0);
+    r_AttenuatedWaveformProduct[9] <= r_AttenuatedWaveformProduct[8] + (r_EnvelopeLevel[8][8] ? {{7{r_RawWaveform[8][15]}}, r_RawWaveform[8], 8'b0} : 0);
+    r_AttenuatedWaveformProduct[10] <= r_AttenuatedWaveformProduct[9] + (r_EnvelopeLevel[9][9] ? {{6{r_RawWaveform[9][15]}}, r_RawWaveform[9], 9'b0} : 0);
+    r_AttenuatedWaveformProduct[11] <= r_AttenuatedWaveformProduct[10] + (r_EnvelopeLevel[10][10] ? {{5{r_RawWaveform[10][15]}}, r_RawWaveform[10], 10'b0} : 0);
+    r_AttenuatedWaveformProduct[12] <= r_AttenuatedWaveformProduct[11] + (r_EnvelopeLevel[11][11] ? {{4{r_RawWaveform[11][15]}}, r_RawWaveform[11], 11'b0} : 0);
+    r_AttenuatedWaveformProduct[13] <= r_AttenuatedWaveformProduct[12] + (r_EnvelopeLevel[12][12] ? {{3{r_RawWaveform[12][15]}}, r_RawWaveform[12], 12'b0} : 0);
+    r_AttenuatedWaveformProduct[14] <= r_AttenuatedWaveformProduct[13] + (r_EnvelopeLevel[13][13] ? {{2{r_RawWaveform[13][15]}}, r_RawWaveform[13], 13'b0} : 0);
 
-    r_VoiceOperator[1] <= r_VoiceOperator[0];
-    r_VoiceOperator[2] <= r_VoiceOperator[1];
-    r_VoiceOperator[3] <= r_VoiceOperator[2];
-    o_VoiceOperator <= r_VoiceOperator[3];
-
-    r_AlgorithmWord[1] <= r_AlgorithmWord[0];
-    r_AlgorithmWord[2] <= r_AlgorithmWord[1];
-    r_AlgorithmWord[3] <= r_AlgorithmWord[2];
-    o_AlgorithmWord <= r_AlgorithmWord[3];
+    for (i = 1; i <= 14; i++) begin
+        r_RawWaveform[i] <= r_RawWaveform[i - 1];
+        r_EnvelopeLevel[i] <= r_EnvelopeLevel[i - 1];
+        r_AlgorithmWord[i] <= r_AlgorithmWord[i - 1];
+        r_VoiceOperator[i] <= r_VoiceOperator[i - 1];
+    end
 
     // ----------------------------------------------------------
 
 end
+
+
+assign o_AlgorithmWord = r_AlgorithmWord[14];
+assign o_VoiceOperator = r_VoiceOperator[14];
+assign o_Waveform = {r_AttenuatedWaveformProduct[14][29:15], 1'b0};
 
 
 endmodule

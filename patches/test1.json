@@ -15,8 +15,8 @@
         },
         {
             "comment": "Operator 2",
-            "levels": [1000, 1000],
-            "rates": [1000, 1000, 250],
+            "levels": [1000, 800],
+            "rates": [200, 1000, 250],
             "waveform": "sine",
             "frequency_ratio": 1.00
         },
