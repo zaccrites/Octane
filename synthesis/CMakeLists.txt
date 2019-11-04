@@ -37,8 +37,9 @@ add_custom_command(
         --asc octane.asc
         2>&1 | tee nextpnr.log
 
-    # TODO: Use -c option to verify meets desired performance?
-    COMMAND icetime -mit octane.asc | tee icetime.log
+    # Current timing target: 35 MHz (subject to change)
+    # That would be enough for two pipeline stalls at 44.1 kHz output
+    COMMAND icetime -mit octane.asc -c 35 | tee icetime.log
 
     OUTPUT octane.asc
     DEPENDS
