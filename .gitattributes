@@ -5,3 +5,6 @@
 # download these at build time, but I'm skipping that for now.
 vendor/* linguist-vendored
 
+
+firmware/include/CMSIS/* linguist-vendored
+firmware/include/device/* linguist-vendored
