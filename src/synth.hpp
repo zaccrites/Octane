@@ -55,6 +55,9 @@ public:
     static const uint8_t OP_PARAM_ENVELOPE_DECAY_RATE     { 0x05 };
     static const uint8_t OP_PARAM_ENVELOPE_RELEASE_RATE   { 0x06 };
 
+    static const uint8_t OP_PARAM_FEEDBACK_LEVEL   { 0x07 };
+
+
     static const uint8_t PARAM_NOTEON_BANK0  { 0x10 };
     static const uint8_t PARAM_NOTEON_BANK1  { 0x11 };
 

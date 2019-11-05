@@ -121,15 +121,6 @@ int main(int argc, const char** argv)
             0b000000'0000000'000'0,  // OP6
             0b000000'0000000'000'0,  // OP7
             0b000000'0000000'000'0,  // OP8
-
-            // 0b000000'0000000'000'0,  // OP1
-            // 0b000000'0000000'000'0,  // OP2
-            // 0b000000'0000000'000'0,  // OP3
-            // 0b000000'0000000'000'0,  // OP4
-            // 0b000000'0000000'000'0,  // OP5
-            // 0b000000'0000000'000'0,  // OP6
-            // 0b000000'0000000'001'1,  // OP7
-            // 0b000000'0000000'001'1,  // OP8
         };
 
         synth.setNoteOn(voiceNum, false);
@@ -137,6 +128,10 @@ int main(int argc, const char** argv)
         for (uint16_t opNum = 0; opNum < 8; opNum++)
         {
             auto opConfig = patchConfig.getOperatorConfig(opNum);
+
+            // TODO: Use JSON
+            uint8_t feedbackLevel = (opNum == 0) ? 255 : 0;
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_FEEDBACK_LEVEL, feedbackLevel);
 
             // TODO: Use JSON
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM, algorithmWords[opNum]);
@@ -209,7 +204,8 @@ int main(int argc, const char** argv)
         }
     }
 
-    double seconds = playAudio ? 2.0 : 0.3;
+    // Add some overhead for setting up the sine table
+    double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
     auto& rBuffer = synth.getSampleBuffer();
 
     // double noteOn = false;

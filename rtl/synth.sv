@@ -1,6 +1,7 @@
 
 `include "synth.svh"
 
+
 module synth (
     input logic i_Clock,
     input logic i_Reset,
@@ -68,6 +69,7 @@ logic [1:0] w_NoteOnConfigWriteEnable;
 logic [4:0] w_EnvelopeConfigWriteEnable;
 logic w_AlgorithmWriteEnable;
 logic w_PhaseStepWriteEnable;
+logic w_FeedbackLevelConfigWriteEnable;
 
 always_comb begin
 
@@ -84,6 +86,7 @@ always_comb begin
     w_EnvelopeConfigWriteEnable[2] = voiceOpRegWriteEnable(6'h04);  // ATTACK RATE
     w_EnvelopeConfigWriteEnable[3] = voiceOpRegWriteEnable(6'h05);  // DECAY RATE
     w_EnvelopeConfigWriteEnable[4] = voiceOpRegWriteEnable(6'h06);  // RELEASE RATE
+    w_FeedbackLevelConfigWriteEnable = voiceOpRegWriteEnable(6'h07);
 
 end
 
@@ -143,6 +146,7 @@ stage_modulator modulator (
     .o_AlgorithmWord      (r_AlgorithmWord[2]),
 
     .i_AlgorithmWriteEnable(w_AlgorithmWriteEnable),
+    .i_FeedbackLevelConfigWriteEnable(w_FeedbackLevelConfigWriteEnable),
     .i_ConfigWriteAddr  (w_VoiceOperatorRegisterWriteAddress),
     .i_ConfigWriteData  (w_RegisterWriteValue),
 
