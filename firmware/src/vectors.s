@@ -15,14 +15,14 @@ Default_Handler:
 .weak Reset_Handler
 .thumb_func
 Reset_Handler:
-    ldr sp, =__stack_start
+    ldr sp, =_stack_start
     bl _start
     b .
 
 
 .section .isr_vector_table,"a"
 
-    .word __stack_start
+    .word _stack_start
     .word Reset_Handler
     .word NMI_Handler
     .word HardFault_Handler

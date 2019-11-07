@@ -26,11 +26,14 @@ add_executable(firmware
     "src/vectors.s"
     "src/init.cpp"
     "src/main.cpp"
+
+    "../vendor/printf/printf.c"
 )
 
 target_include_directories(firmware SYSTEM PRIVATE
     "include/CMSIS"
     "include/device"
+    "../vendor/printf"
 )
 
 
@@ -72,6 +75,8 @@ target_compile_options(firmware PRIVATE
     -mcpu=cortex-m4
     -mthumb
     -mthumb-interwork
+    # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
+    # -mfloat-abi=hard
     -mlong-calls
 
     -std=gnu++17

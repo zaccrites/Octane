@@ -2,11 +2,15 @@
 MEMORY
 {
     FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 1024K
+    /*CCMRAM (rw) : ORIGIN = 0x10000000, LENGTH = 64K*/ /* TODO: see ST App Note 4296 */
     RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
 }
 
 
-__stack_start = ORIGIN(RAM) + LENGTH(RAM);
+/* Genereate a link error if heap and stack don't fit into RAM */
+MIN_HEAP_SIZE = 32K;
+MIN_STACK_SIZE = 64K;
+
 
 
 SECTIONS
@@ -71,6 +75,21 @@ SECTIONS
         *(COMMON)
         . = ALIGN(4);
         _ebss = .;
+    } > RAM
+
+    /*
+        User heap and stack section (used to check that there is enough RAM left)
+    */
+    .user_heap_stack :
+    {
+        . = ALIGN(8);
+        PROVIDE(end = .);
+        PROVIDE(_end = .);
+        KEEP(*(.heap))
+        . = . + MIN_HEAP_SIZE;
+        . = . + MIN_STACK_SIZE;
+        PROVIDE(_stack_start = .);
+        . = ALIGN(8);
     } > RAM
 
 }
