@@ -31,7 +31,9 @@ void sysinit(void)
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIODEN | RCC_AHB1ENR_GPIOCEN;
     RCC->APB1ENR |=
         RCC_APB1ENR_TIM2EN |    // enable TIM2
-        RCC_APB1ENR_USART2EN;   // enable USART2
+        RCC_APB1ENR_USART2EN |  // enable USART2
+        RCC_APB1ENR_DACEN;
+
     RCC->APB2ENR |=
         RCC_APB2ENR_SPI1EN;     // enable SPI1
 
@@ -95,6 +97,30 @@ void sysinit(void)
 
     TIM2->CR1 |= TIM_CR1_CEN;  // Start timer
 
+
+
+
+
+    // Setup DAC2  (PA5)
+
+    // Configure USART2
+    // See manual of Figure 26 for GPIO alt function mapping
+    // GPIOA->MODER |=
+        // (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER6_Pos);  // DAC2_OUT=PA5
+    // GPIOA->AFR[0] |= ???;
+
+    DAC1->DHR12R2 = 0;
+
+    DAC1->CR =
+        DAC_CR_EN2 |
+        DAC_CR_BOFF2 |
+        // (0b111 << DAC_CR_TSEL2_Pos) |
+        0 ;
+
+
+
+
+
     const uint32_t MAIN_CLOCK_FREQ = 8000000;
     SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
 
@@ -132,14 +158,14 @@ void formatHex32(char* buffer, uint32_t value)
 {
     const char* lookupTable = "0123456789abcdef";
     const std::array<uint8_t, 8> nibbles {
-        (value & 0xf0000000) >> 28,
-        (value & 0x0f000000) >> 24,
-        (value & 0x00f00000) >> 20,
-        (value & 0x000f0000) >> 16,
-        (value & 0x0000f000) >> 12,
-        (value & 0x00000f00) >> 8,
-        (value & 0x000000f0) >> 4,
-        (value & 0x0000000f) >> 0,
+        static_cast<uint8_t>((value & 0xf0000000) >> 28),
+        static_cast<uint8_t>((value & 0x0f000000) >> 24),
+        static_cast<uint8_t>((value & 0x00f00000) >> 20),
+        static_cast<uint8_t>((value & 0x000f0000) >> 16),
+        static_cast<uint8_t>((value & 0x0000f000) >> 12),
+        static_cast<uint8_t>((value & 0x00000f00) >> 8),
+        static_cast<uint8_t>((value & 0x000000f0) >> 4),
+        static_cast<uint8_t>((value & 0x0000000f) >> 0),
     };
     for (size_t i = 0; i < nibbles.size(); i++)
     {
@@ -225,6 +251,7 @@ extern "C" void _putchar(char character)
 
     // send char to console etc.
 
+    (void)character;
 }
 
 
@@ -283,53 +310,57 @@ extern "C" void TIM2_IRQHandler(void)
         GPIOD->BSRR = value;
     };
 
-    const bool useCirclePattern = false;
+    // const bool useCirclePattern = false;
     if (TIM2->SR & TIM_SR_CC1IF)
     {
-        if (useCirclePattern)
-        {
-            GPIOD->BSRR =
-                GPIO_BSRR_BS12 |
-                GPIO_BSRR_BR13 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
-        }
-        else
+        // if (useCirclePattern)
+        // {
+        //     GPIOD->BSRR =
+        //         GPIO_BSRR_BS12 |
+        //         GPIO_BSRR_BR13 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
+        // }
+        // else
         {
             setLeds(true, true, false, false);
         }
+        DAC1->DHR12R2 = 0;  // 0V
         TIM2->SR &= ~TIM_SR_CC1IF;
     }
     else if (TIM2->SR & TIM_SR_CC2IF)
     {
-        if (useCirclePattern)
-        {
-            GPIOD->BSRR =
-                GPIO_BSRR_BS13 |
-                GPIO_BSRR_BR12 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
-        }
+        // if (useCirclePattern)
+        // {
+        //     GPIOD->BSRR =
+        //         GPIO_BSRR_BS13 |
+        //         GPIO_BSRR_BR12 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
+        // }
+        DAC1->DHR12R2 = 1241;  // 1V
         TIM2->SR &= ~TIM_SR_CC2IF;
     }
     else if (TIM2->SR & TIM_SR_CC3IF)
     {
-        if (useCirclePattern)
-        {
-            GPIOD->BSRR =
-                GPIO_BSRR_BS14 |
-                GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR15;
-        }
-        else
+        // if (useCirclePattern)
+        // {
+        //     GPIOD->BSRR =
+        //         GPIO_BSRR_BS14 |
+        //         GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR15;
+        // }
+        // else
         {
             setLeds(false, false, true, true);
         }
+        DAC1->DHR12R2 = 2482;  // 2V
         TIM2->SR &= ~TIM_SR_CC3IF;
     }
     else if (TIM2->SR & TIM_SR_UIF)
     {
-        if (useCirclePattern)
-        {
-            GPIOD->BSRR =
-                GPIO_BSRR_BS15 |
-                GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR14;
-        }
+        // if (useCirclePattern)
+        // {
+        //     GPIOD->BSRR =
+        //         GPIO_BSRR_BS15 |
+        //         GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR14;
+        // }
+        DAC1->DHR12R2 = 3724;  // 3V
         TIM2->SR &= ~TIM_SR_UIF;
     }
 
