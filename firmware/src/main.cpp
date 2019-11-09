@@ -33,10 +33,11 @@ void sysinit(void)
         RCC_APB1ENR_TIM2EN |    // enable TIM2
         RCC_APB1ENR_TIM3EN |    // enable TIM3
         RCC_APB1ENR_USART2EN |  // enable USART2
+        RCC_APB1ENR_SPI2EN |
         RCC_APB1ENR_DACEN;
 
-    RCC->APB2ENR |=
-        RCC_APB2ENR_SPI1EN;     // enable SPI1
+    // RCC->APB2ENR |=
+    //     RCC_APB2ENR_SPI1EN;     // enable SPI1
 
 
 
@@ -112,8 +113,8 @@ void sysinit(void)
 
     // Configure USART2
     // See manual of Figure 26 for GPIO alt function mapping
-    // GPIOA->MODER |=
-        // (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER6_Pos);  // DAC2_OUT=PA5
+    GPIOA->MODER |=
+        (0b11 << GPIO_MODER_MODER5_Pos);  // DAC2_OUT=PA5
     // GPIOA->AFR[0] |= ???;
 
     DAC1->DHR12R2 = 0;
@@ -131,19 +132,42 @@ void sysinit(void)
     // SPI2_MOSI = PB15
     //
     // TODO: Use alternate function for these pins so that the SPI hardware takes over
-    // GPIOB->MODER |=
-    //     (GPIO_MODER_ALTERNATE << 4) |  // TX=PA2
-    //     (GPIO_MODER_ALTERNATE << 6);   // RX=PA3
-    // GPIOB->AFR[0] |=
-    //     (7 << GPIO_AFRL_AFSEL2_Pos) |  // select USART2 AF (TX) for PA2
-    //     (7 << GPIO_AFRL_AFSEL3_Pos);   // select USART2 AF (RX) for PA3
     GPIOB->MODER |=
-        (0b01 << GPIO_MODER_MODER8_Pos)  |  // FPGA_RESET is an output
-        (0b01 << GPIO_MODER_MODER13_Pos) |  // SCK is an output
-        (0b00 << GPIO_MODER_MODER14_Pos) |  // MISO is an input
-        (0b01 << GPIO_MODER_MODER15_Pos);   // MOSI is an output
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER13_Pos) |  // SCK
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER14_Pos) |  // MISO
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER15_Pos) |  // MOSI
+        (0b01 << GPIO_MODER_MODER8_Pos);  // FPGA_RESET is an output
+
+    GPIOB->AFR[1] |=
+        (5 << GPIO_AFRH_AFSEL13_Pos) |
+        (5 << GPIO_AFRH_AFSEL14_Pos) |
+        (5 << GPIO_AFRH_AFSEL15_Pos);
 
 
+
+
+    // The FPGA acts on a rising SCK edge, both outputting the next MISO
+    // bit and sampling the current MOSI bit.
+    //
+    // I think that this means that SCK should be low at idle (CPOL=0, the default)
+    // and that SCK phase should use the first edge (CPHA=0, the default),
+    // which corresponds to the rising edge when CPOL is reset (according to section
+    // 28.3.1 "Clock phase and clock polarity" of the STM32F4xx reference manual).
+
+    SPI2->CR1 =
+        SPI_CR1_MSTR |  // act as SPI master
+        (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
+        SPI_CR1_DFF; // |   // use 16 bit frame, MSB out first
+        // SPI_CR1_SSM;    // software slave management
+
+
+    SPI2->CR2 =
+        SPI_CR2_FRF; // |  // SCK would not start until I added this
+
+    //     // TODO: Frame format for Motorola vs TI?
+        // SPI_CR2_TXEIE |  // trigger interrupt when TX buffer empty
+        // SPI_CR2_RXNEIE;  // trigger interrupt when RX buffer not empty
+    //     // TODO: Use TX and RX buffer DMA enable
 
 
 
@@ -153,10 +177,41 @@ void sysinit(void)
 
     NVIC_EnableIRQ(TIM2_IRQn);
     NVIC_EnableIRQ(TIM3_IRQn);
+    NVIC_EnableIRQ(SPI2_IRQn);
 
     __enable_irq();
 
 
+    SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI
+
+}
+
+
+
+// TODO: Make class for this
+// typedef std::pair<std::uint16_t, std::uint16_t> RegWriteCmd;
+// std::array<RegWriteCmd, 1024> regWriteCmdBuffer;
+// std::size_t regWriteCmdBufferSize;
+
+// bool queueRegWriteCmd()
+
+// TODO: Create a critical section class to disable and re-enable interrupts
+// (possibly specific interrupts) using RAII around e.g. modifying the command queue
+
+
+
+volatile uint16_t currentSample;
+volatile bool fpgaSpiReady = true;
+extern "C" void SPI2_IRQHandler()
+{
+    if (SPI2->SR & SPI_SR_TXE)
+    {
+        fpgaSpiReady = true;
+    }
+    else if (SPI2->SR & SPI_SR_RXNE)
+    {
+        currentSample = SPI2->DR;
+    }
 }
 
 
@@ -627,6 +682,9 @@ void configureFpgaRegisters()
 
 
 
+
+volatile bool fpgaLedOn = false;
+
 int main()
 {
     sysinit();
@@ -668,7 +726,16 @@ int main()
 
     // configureFpgaRegisters();
 
+
+
+    SPI2->DR = (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0;
+
+
+
     // writeOperatorRegister(0, 0, PARAM_LED_CONFIG, 0b111);
+
+    bool first = true;
+    bool lastLedState = false;
     while (1)
     {
         // uint16_t sample = fpgaSpiSend(0x0000);
@@ -678,6 +745,36 @@ int main()
 
         // DAC1->DHR12R2 = sample & 0x0fff;
         // wait?
+
+
+        // // Start the first SPI transfer
+        // GPIOD->BSRR = GPIO_BSRR_BS12;
+        // SPI2->DR = (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0;
+        // while ( ! (SPI2->SR & SPI_SR_TXE));  // wait
+
+        // GPIOD->BSRR = GPIO_BSRR_BR12;
+        // SPI2->DR = 0b0000'0000'0000'0001;
+        // while ( ! (SPI2->SR & SPI_SR_TXE));  // wait
+
+
+        // if (first || lastLedState != fpgaLedOn)
+        {
+
+
+            lastLedState = fpgaLedOn;
+
+            GPIOD->BSRR = GPIO_BSRR_BS12 | GPIO_BSRR_BR14;  // GREEN ON
+            while ( ! (SPI2->SR & SPI_SR_TXE));
+            SPI2->DR = (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0;
+            // fpgaSpiReady = false;
+
+            GPIOD->BSRR = GPIO_BSRR_BR12 | GPIO_BSRR_BS14;  // RED ON
+            while ( ! (SPI2->SR & SPI_SR_TXE));
+            SPI2->DR = fpgaLedOn ? 0x0001 : 0x0000;
+            // fpgaSpiReady = false;
+        }
+
+        first = false;
     }
 
 }
@@ -703,73 +800,31 @@ extern "C" void TIM3_IRQHandler()
 
 
 
+// GREEN LED = PD12
+// ORANGE LED = PD13
+// RED LED = PD14
+// BLUE LED = PD15
+
 extern "C" void TIM2_IRQHandler(void)
 {
-    auto setLeds = [](bool green, bool red, bool blue, bool orange) {
-        const uint32_t value {
-            (green ? GPIO_BSRR_BS12 : GPIO_BSRR_BR12) |
-            (orange ? GPIO_BSRR_BS13 : GPIO_BSRR_BR13) |
-            (red ? GPIO_BSRR_BS14 : GPIO_BSRR_BR14) |
-            (blue ? GPIO_BSRR_BS15 : GPIO_BSRR_BR15)
-        };
-        GPIOD->BSRR = value;
-    };
-
-    // const bool useCirclePattern = false;
     if (TIM2->SR & TIM_SR_CC1IF)
     {
-        // if (useCirclePattern)
-        // {
-        //     GPIOD->BSRR =
-        //         GPIO_BSRR_BS12 |
-        //         GPIO_BSRR_BR13 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
-        // }
-        // else
-        {
-            setLeds(true, true, false, false);
-        }
-        // DAC1->DHR12R2 = 0;  // 0V
-        // writeOperatorRegister(0, 0, PARAM_LED_CONFIG, 0b000);
+        GPIOD->BSRR = GPIO_BSRR_BS13;
         TIM2->SR &= ~TIM_SR_CC1IF;
     }
     else if (TIM2->SR & TIM_SR_CC2IF)
     {
-        // if (useCirclePattern)
-        // {
-        //     GPIOD->BSRR =
-        //         GPIO_BSRR_BS13 |
-        //         GPIO_BSRR_BR12 | GPIO_BSRR_BR14 | GPIO_BSRR_BR15;
-        // }
-        // DAC1->DHR12R2 = 1241;  // 1V
-        // writeOperatorRegister(0, 0, PARAM_LED_CONFIG, 0b100);
+        fpgaLedOn = true;
         TIM2->SR &= ~TIM_SR_CC2IF;
     }
     else if (TIM2->SR & TIM_SR_CC3IF)
     {
-        // if (useCirclePattern)
-        // {
-        //     GPIOD->BSRR =
-        //         GPIO_BSRR_BS14 |
-        //         GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR15;
-        // }
-        // else
-        {
-            setLeds(false, false, true, true);
-        }
-        // DAC1->DHR12R2 = 2482;  // 2V
-        // writeOperatorRegister(0, 0, PARAM_LED_CONFIG, 0b010);
+        GPIOD->BSRR = GPIO_BSRR_BR13;
         TIM2->SR &= ~TIM_SR_CC3IF;
     }
     else if (TIM2->SR & TIM_SR_UIF)
     {
-        // if (useCirclePattern)
-        // {
-        //     GPIOD->BSRR =
-        //         GPIO_BSRR_BS15 |
-        //         GPIO_BSRR_BR12 | GPIO_BSRR_BR13 | GPIO_BSRR_BR14;
-        // }
-        // DAC1->DHR12R2 = 3724;  // 3V
-        // writeOperatorRegister(0, 0, PARAM_LED_CONFIG, 0b001);
+        fpgaLedOn = false;
         TIM2->SR &= ~TIM_SR_UIF;
     }
 
