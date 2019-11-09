@@ -8,9 +8,73 @@ module synth (
 
     input logic i_SPI_SCK,
     input logic i_SPI_MOSI,
-    output logic o_SPI_MISO
+    output logic o_SPI_MISO,
 
+    // output [2:0] o_RGB
+    output logic o_LED
 );
+
+
+
+// verilator lint_off UNUSED
+logic w_LedConfigWriteEnable;
+logic [2:0] r_LedConfig;
+// verilator lint_on UNUSED
+
+assign o_LED = r_LedConfig[0];
+
+// logic [2:0] r_LedEnable;  // TODO: Use LEDDA PWM IP
+
+always_ff @ (posedge i_Clock) begin
+    if (i_Reset)
+        r_LedConfig <= 0;
+    else if (w_LedConfigWriteEnable)
+        r_LedConfig <= w_RegisterWriteValue[2:0];
+end
+
+
+
+// `ifdef YOSYS
+
+// // TODO: Use another module (and figure out LEDDA registers)
+
+// SB_RGBA_DRV
+// led_driver (
+//     .CURREN(1),
+//     // .RGBLEDEN(i_Switch[0]),
+//     .RGBLEDEN(1),
+//     .RGB0PWM(r_LedConfig[0]),
+//     .RGB1PWM(r_LedConfig[1]),
+//     .RGB2PWM(r_LedConfig[2]),
+
+//     .RGB0(o_RGB[0]),
+//     .RGB1(o_RGB[1]),
+//     .RGB2(o_RGB[2])
+// );
+
+// // defparam led_driver.CURRENT_MODE = "0b1";
+// // defparam led_driver.RGB0_CURRENT = "0b000111";
+// // defparam led_driver.RGB1_CURRENT = "0b000111";
+// // defparam led_driver.RGB2_CURRENT = "0b000111";
+
+
+// defparam led_driver.CURRENT_MODE = "0b1";
+// defparam led_driver.RGB0_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so)
+// defparam led_driver.RGB1_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so)
+// defparam led_driver.RGB2_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so, even indirectly)
+
+// `else
+// assign o_RGB = 3'b000;
+// `endif
+
+
+
+
+
+
+
+
+
 
 
 logic w_SPI_RegisterWriteEnable;
@@ -70,6 +134,7 @@ logic [4:0] w_EnvelopeConfigWriteEnable;
 logic w_AlgorithmWriteEnable;
 logic w_PhaseStepWriteEnable;
 logic w_FeedbackLevelConfigWriteEnable;
+// logic w_LedConfigWriteEnable;
 
 always_comb begin
 
@@ -78,6 +143,7 @@ always_comb begin
     // TODO: Could compress these into a single parameter
     w_NoteOnConfigWriteEnable[0] = voiceOpRegWriteEnable(6'h10);
     w_NoteOnConfigWriteEnable[1] = voiceOpRegWriteEnable(6'h11);
+    w_LedConfigWriteEnable = voiceOpRegWriteEnable(6'h12);
 
     w_PhaseStepWriteEnable = voiceOpRegWriteEnable(6'h00);
     w_AlgorithmWriteEnable = voiceOpRegWriteEnable(6'h01);

@@ -10,9 +10,17 @@
 # https://www.reddit.com/r/FPGA/comments/99fiip/how_to_understand_pin_mapping_lattice_ice40_ultra/
 
 
-set_io i_Clock  35        // 46B_G0
-set_io i_Reset  37        // 45A_G10
-set_io i_SPI_SCK   38     // 50B
-set_io i_SPI_MOSI  42     // 51A
-set_io o_SPI_MISO  36     // 48B
+set_io i_Clock  35        # 46B_G0
+set_io i_Reset  37        # 45A_G10
+
+set_io i_SPI_SCK   38     # 50B
+set_io i_SPI_MOSI  42     # 51A
+set_io o_SPI_MISO  36     # 48B
+
+
+# set_io o_RGB[0] 39
+# set_io o_RGB[1] 40
+# set_io o_RGB[2] 41
+
+set_io o_LED 43   # 49A
 
