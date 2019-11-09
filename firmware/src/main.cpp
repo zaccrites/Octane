@@ -156,13 +156,19 @@ void sysinit(void)
 
     SPI2->CR1 =
         SPI_CR1_MSTR |  // act as SPI master
-        (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
-        SPI_CR1_DFF; // |   // use 16 bit frame, MSB out first
-        // SPI_CR1_SSM;    // software slave management
+        // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
+        (0b011 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 16
+        SPI_CR1_DFF |   // use 16 bit frame, MSB out first
+
+        // SPI_CR1_CPHA |
+        // SPI_CR1_CPOL |
+
+        SPI_CR1_SSI |
+        SPI_CR1_SSM;    // software slave management
 
 
-    SPI2->CR2 =
-        SPI_CR2_FRF; // |  // SCK would not start until I added this
+    SPI2->CR2 = 0;
+        // SPI_CR2_FRF; // |  // SCK would not start until I added this
 
     //     // TODO: Frame format for Motorola vs TI?
         // SPI_CR2_TXEIE |  // trigger interrupt when TX buffer empty
@@ -728,7 +734,12 @@ int main()
 
 
 
-    SPI2->DR = (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0;
+    // SPI2->DR = (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0;
+
+    // Reset FPGA
+    GPIOB->BSRR = GPIO_BSRR_BS8;
+    for (int i = 0; i < 128; i++);
+    GPIOB->BSRR = GPIO_BSRR_BR8;
 
 
 
@@ -757,21 +768,24 @@ int main()
         // while ( ! (SPI2->SR & SPI_SR_TXE));  // wait
 
 
-        // if (first || lastLedState != fpgaLedOn)
+        if (lastLedState != fpgaLedOn)
         {
-
-
             lastLedState = fpgaLedOn;
 
             GPIOD->BSRR = GPIO_BSRR_BS12 | GPIO_BSRR_BR14;  // GREEN ON
             while ( ! (SPI2->SR & SPI_SR_TXE));
             SPI2->DR = (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0;
+            // SPI2->DR = 0b1000'0000'0000'0000;
             // fpgaSpiReady = false;
 
             GPIOD->BSRR = GPIO_BSRR_BR12 | GPIO_BSRR_BS14;  // RED ON
             while ( ! (SPI2->SR & SPI_SR_TXE));
             SPI2->DR = fpgaLedOn ? 0x0001 : 0x0000;
+            // SPI2->DR = fpgaLedOn ? 0x0000 : 0x0000;
             // fpgaSpiReady = false;
+
+            GPIOD->BSRR = GPIO_BSRR_BR12 | GPIO_BSRR_BR14;  // BOTH OFF
+
         }
 
         first = false;
