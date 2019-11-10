@@ -24,37 +24,45 @@ Synth::~Synth()
 }
 
 
-void Synth::spiTick()
-{
-    // The FPGA clock runs 4x as fast as the SPI clock
-    // in order to avoid missing SCK edges.
+// void Synth::spiTick()
+// {
 
-    m_Synth.i_SPI_SCK = 0;
-    tick();
+//     m_Synth.i_SPI_NSS = 1;
+//     m_Synth.i_SPI_SCK = 1;
+//     tick();
 
-    // Output the MSB first
-    m_Synth.i_SPI_MOSI = (m_SPI_OutputBuffer & 0x8000) ? 1 : 0;
-    m_SPI_OutputBuffer = m_SPI_OutputBuffer << 1;
-    tick();
+//     m_Synth.i_SPI_NSS = 0;
 
-    m_Synth.i_SPI_SCK = 1;
-    tick();
 
-    // Input the MSB first
-    m_SPI_InputBuffer = (m_SPI_InputBuffer << 1) | (m_Synth.o_SPI_MISO != 0);
-    tick();
+//     // The FPGA clock runs 4x as fast as the SPI clock
+//     // in order to avoid missing SCK edges.
 
-    const bool collectNewSample = ++m_SPI_TickCounter >= 256 / 4;
-    if (collectNewSample)
-    {
-        m_SPI_TickCounter = 0;
+//     m_Synth.i_SPI_SCK = 0;
+//     tick();
 
-        auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
+//     // Output the MSB first
+//     m_Synth.i_SPI_MOSI = (m_SPI_OutputBuffer & 0x8000) ? 1 : 0;
+//     m_SPI_OutputBuffer = m_SPI_OutputBuffer << 1;
+//     tick();
 
-        m_SampleBuffer.push_front(sample);
-        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
-    }
-}
+//     m_Synth.i_SPI_SCK = 1;
+//     tick();
+
+//     // Input the MSB first
+//     m_SPI_InputBuffer = (m_SPI_InputBuffer << 1) | (m_Synth.o_SPI_MISO != 0);
+//     tick();
+
+//     const bool collectNewSample = ++m_SPI_TickCounter >= 256 / 4;
+//     if (collectNewSample)
+//     {
+//         m_SPI_TickCounter = 0;
+
+//         auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
+
+//         m_SampleBuffer.push_front(sample);
+//         fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
+//     }
+// }
 
 
 void Synth::tick()
@@ -126,7 +134,64 @@ void Synth::spiSendReceive()
     }
 
     m_SPI_InputBuffer = 0;
-    for (int i = 0; i < 16; i++) spiTick();
+    for (int i = 0; i < 16; i++)
+    {
+        // Rising edge of SCK isn't used
+        if (i == 0) m_Synth.i_SPI_NSS = 1;  // The first bit pulses NSS
+        m_Synth.i_SPI_SCK = 1;
+        tick();
+
+        // Output data (MSB out first)
+        m_Synth.i_SPI_MOSI = (m_SPI_OutputBuffer & 0x8000) ? 1 : 0;
+        m_SPI_OutputBuffer = m_SPI_OutputBuffer << 1;
+        tick();
+
+        // Data is latched on the falling edge of SCK
+        m_Synth.i_SPI_SCK = 0;
+        tick();
+        m_Synth.i_SPI_NSS = 0;  // The NSS pulse should be high during the SCK falling edge
+
+        // Input the valid slave data (MSB in first)
+        m_SPI_InputBuffer = (m_SPI_InputBuffer << 1) | m_Synth.o_SPI_MISO;
+        tick();
+    }
+
+    const bool collectNewSample = ++m_SPI_TickCounter >= 16 / 4;
+    if (collectNewSample)
+    {
+        m_SPI_TickCounter = 0;
+
+        // TODO: REMOVE HACK
+        // m_SPI_InputBuffer = m_SPI_InputBuffer << 1;
+
+        auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
+        // printf(
+        //     "Collected sample %d (0x%04x) (0b%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n",
+        //     sample,
+        //     m_SPI_InputBuffer,
+
+        //     ((m_SPI_InputBuffer & 0x8000) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x4000) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x2000) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x1000) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0800) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0400) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0200) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0100) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0080) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0040) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0020) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0010) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0008) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0004) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0002) ? '1' : '0'),
+        //     ((m_SPI_InputBuffer & 0x0001) ? '1' : '0')
+        // );
+
+        m_SampleBuffer.push_front(sample);
+        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
+    }
+
 }
 
 

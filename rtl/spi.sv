@@ -17,6 +17,7 @@ module spi (
     output logic [15:0] o_RegisterWriteValue,
 
     // The SPI SCK must be 8x slower than the internal clock!
+    input logic i_SPI_NSS,
     input logic i_SPI_SCK,
     input logic i_SPI_MOSI,
     output logic o_SPI_MISO
@@ -25,10 +26,11 @@ module spi (
 
 
 logic r_SPI_SCK_last;
-logic w_SPI_SCK_rising;
-assign w_SPI_SCK_rising = ! r_SPI_SCK_last && i_SPI_SCK;
+logic w_SPI_SCK_falling;
+logic w_SPI_Sync;
+assign w_SPI_SCK_falling = r_SPI_SCK_last && ! i_SPI_SCK;
+assign w_SPI_Sync = w_SPI_SCK_falling && i_SPI_NSS;
 
-logic [3:0] r_SPI_TickCounter;
 logic [15:0] r_NextSample;
 logic [15:0] r_CurrentSample;
 
@@ -38,11 +40,10 @@ assign o_RegisterWriteNumber = r_InputBuffer[30:16];
 assign o_RegisterWriteValue = r_InputBuffer[15:0];
 
 
-integer i;
 always_ff @ (posedge i_Clock) begin
 
     if (i_Reset) begin
-        r_SPI_TickCounter <= 0;
+        r_InputBuffer <= 0;
     end
 
     if (i_SampleReady) begin
@@ -50,35 +51,52 @@ always_ff @ (posedge i_Clock) begin
     end
 
     r_SPI_SCK_last <= i_SPI_SCK;
-    if (w_SPI_SCK_rising) begin
-        if ( ! i_Reset) begin
-            r_SPI_TickCounter <= r_SPI_TickCounter + 1;
+    if (w_SPI_SCK_falling) begin
+
+        // $display("Input buffer is %b %b", r_InputBuffer[31:16], r_InputBuffer[15:0]);
+
+        if (w_SPI_Sync) begin
+            // $display("sync");
+            // Do I need additional synchronization? Possibly by "writing"
+            // to a dummy sentinel register?
+
+            // ugh
+            if ( ! i_Reset) begin
+                r_InputBuffer[31:1] <= r_InputBuffer[31] ? 0 : r_InputBuffer[30:0];
+            end
+            r_CurrentSample <= {r_NextSample[14:0], 1'b0};
+            // $display("Will next output %d (0x%04x) (0b%b)", $signed(r_NextSample), r_NextSample, r_NextSample);
         end
+        else begin
+            if ( ! i_Reset) r_InputBuffer[31:1] <= r_InputBuffer[30:0];
+            r_CurrentSample <= {r_CurrentSample[14:0], 1'b0};
+        end
+
+
+        // Input MSB first
+        if ( ! i_Reset) r_InputBuffer[0] <= i_SPI_MOSI;
 
         // Output MSB first.
-        o_SPI_MISO <= r_CurrentSample[15];
-        if (r_SPI_TickCounter == 4'b1111) begin
-            // Only update the output sample every 16 SPI ticks
-            r_CurrentSample <= r_NextSample;
+        if (w_SPI_Sync) begin
+            o_SPI_MISO <= r_NextSample[15];
+            // $display("Outputting bit %d", r_NextSample[15]);
         end
         else begin
-            r_CurrentSample[0] <= 0;
-            for (i = 1; i <= 15; i++) begin
-                r_CurrentSample[i] <= r_CurrentSample[i - 1];
-            end
+            o_SPI_MISO <= r_CurrentSample[15];
+            // $display("Outputting bit %d", r_CurrentSample[15]);
         end
 
-        // Input the register number MSB first (i.e. the 1 indicating the register write)
-        // The register value LSB will be the last bit
-        r_InputBuffer[0] <= i_SPI_MOSI;
-        if (o_RegisterWriteEnable) begin
-            r_InputBuffer[31:1] <= 0;
-        end
-        else begin
-            for (i = 1; i <= 31; i++) begin
-                r_InputBuffer[i] <= r_InputBuffer[i - 1];
-            end
-        end
+
+
+
+        // if (w_SPI_Sync) begin
+        //     if (r_InputBuffer[31] && ! i_Reset) r_InputBuffer[31:1] <= 0;
+        //     r_CurrentSample <= r_NextSample;
+        // end
+        // else begin
+        //     if ( ! i_Reset) r_InputBuffer[31:1] <= r_InputBuffer[30:0];
+        //     r_CurrentSample <= {r_CurrentSample[14:0], 1'b0};
+        // end
 
     end
 end

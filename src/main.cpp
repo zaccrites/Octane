@@ -206,6 +206,8 @@ int main(int argc, const char** argv)
 
     // Add some overhead for setting up the sine table
     double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
+    // double seconds = 0.005;
+    // double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
     auto& rBuffer = synth.getSampleBuffer();
 
     // double noteOn = false;

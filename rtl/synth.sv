@@ -6,6 +6,7 @@ module synth (
     input logic i_Clock,
     input logic i_Reset,
 
+    input logic i_SPI_NSS,
     input logic i_SPI_SCK,
     input logic i_SPI_MOSI,
     output logic o_SPI_MISO,
@@ -86,6 +87,7 @@ spi spi0 (
     .i_Reset              (i_Reset),
     .i_SampleReady        (w_SampleReady),
     .i_SampleToOutput     (w_Sample),
+    .i_SPI_NSS            (i_SPI_NSS),
     .i_SPI_SCK            (i_SPI_SCK),
     .i_SPI_MOSI           (i_SPI_MOSI),
     .o_SPI_MISO           (o_SPI_MISO),

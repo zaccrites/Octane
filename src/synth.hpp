@@ -21,7 +21,6 @@ public:
     Synth& operator=(const Synth&) = delete;
 
     void tick();
-    void spiTick();
     void reset();
     void writeRegister(uint16_t registerNumber, uint16_t registerValue);
 
