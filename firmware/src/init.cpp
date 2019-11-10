@@ -131,6 +131,9 @@ void octane::init()
         SPI_CR1_DFF |   // use 16 bit frame, MSB out first
         SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
 
+    // SPI2->CR2 = SPI_CR2_RXNEIE;
+
+
 
 
     const uint32_t MAIN_CLOCK_FREQ = 8000000;
@@ -141,5 +144,11 @@ void octane::init()
     // NVIC_EnableIRQ(SPI2_IRQn);
 
     __enable_irq();
+
+
+
+    SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI
+
+
 
 }

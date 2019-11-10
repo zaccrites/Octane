@@ -9,6 +9,10 @@ extern "C" void SysTick_Handler()
 
 }
 
+
+
+volatile bool fpgaLedOn = false;
+
 extern "C" void TIM2_IRQHandler()
 {
     if (TIM2->SR & TIM_SR_CC1IF)
@@ -18,7 +22,7 @@ extern "C" void TIM2_IRQHandler()
     }
     else if (TIM2->SR & TIM_SR_CC2IF)
     {
-        // fpgaLedOn = true;
+        fpgaLedOn = true;
         TIM2->SR &= ~TIM_SR_CC2IF;
     }
     else if (TIM2->SR & TIM_SR_CC3IF)
@@ -28,14 +32,19 @@ extern "C" void TIM2_IRQHandler()
     }
     else if (TIM2->SR & TIM_SR_UIF)
     {
-        // fpgaLedOn = false;
+        fpgaLedOn = false;
         TIM2->SR &= ~TIM_SR_UIF;
     }
 }
 
+
 extern "C" void TIM3_IRQHandler()
 {
-
+    if (TIM3->SR & TIM_SR_UIF)
+    {
+        // DAC1->DHR12R2 = currentSample >> 8;
+        TIM3->SR &= ~TIM_SR_UIF;
+    }
 }
 
 
@@ -68,5 +77,24 @@ extern "C" void HardFault_Handler()
         if (SCB->CFSR & SCB_CFSR_UNDEFINSTR_Msk) printf("UNDEFINSTR \r\n");
     }
 
+    while(true);
+}
+
+
+extern "C" void MemManage_Handler()
+{
+    printf("MemManage_Handler \r\n");
+    while(true);
+}
+
+extern "C" void BusFault_Handler()
+{
+    printf("BusFault_Handler \r\n");
+    while(true);
+}
+
+extern "C" void UsageFault_Handler()
+{
+    printf("UsageFault_Handler \r\n");
     while(true);
 }

@@ -25,19 +25,22 @@ project(octane_firmware VERSION 0.1.0 LANGUAGES CXX C ASM)
 add_executable(firmware
     "src/main.cpp"
     "src/init.cpp"
+    "src/fpga.cpp"
 
     "src/printf.cpp"
     "src/isr.cpp"
     "src/start.cpp"
     "src/vectors.s"
 
-    "../vendor/printf/printf.c"
 )
 
 target_include_directories(firmware SYSTEM PRIVATE
     "include/CMSIS"
     "include/device"
-    "../vendor/printf"
+)
+
+target_link_libraries(firmware
+    printf
 )
 
 
@@ -109,3 +112,25 @@ target_compile_options(firmware PRIVATE
     -Werror=switch
 )
 
+
+
+
+
+add_library(printf
+    "../vendor/printf/printf.c"
+)
+
+# TODO: Address this. Do I need some common options?
+target_compile_options(printf PRIVATE
+    -mcpu=cortex-m4
+    -mthumb
+    -mthumb-interwork
+    # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
+    # -mfloat-abi=hard
+    -mlong-calls
+    -O2
+)
+
+target_include_directories(printf SYSTEM PUBLIC
+    "../vendor/printf"
+)
