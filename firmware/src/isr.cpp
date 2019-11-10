@@ -11,6 +11,26 @@ extern "C" void SysTick_Handler()
 
 
 
+// The system freezes when this interrupt triggers for some reason...
+
+// volatile uint16_t lastSample;
+// volatile bool fpgaSpiReady = true;
+// extern "C" void SPI2_Handler()
+// {
+//     if (SPI2->SR & SPI_SR_RXNE)
+//     {
+//         lastSample = SPI2->DR;
+//     }
+//     else if (SPI2->SR & SPI_SR_TXE)
+//     {
+//         // fpgaSpiReady = true;
+//     }
+
+
+// }
+
+
+
 volatile bool fpgaLedOn = false;
 
 extern "C" void TIM2_IRQHandler()
@@ -38,10 +58,15 @@ extern "C" void TIM2_IRQHandler()
 }
 
 
+extern uint16_t lastSample;
+volatile bool newSampleAvailable = false;
+volatile uint16_t currentSample;
 extern "C" void TIM3_IRQHandler()
 {
     if (TIM3->SR & TIM_SR_UIF)
     {
+        newSampleAvailable = true;
+        currentSample = lastSample;
         // DAC1->DHR12R2 = currentSample >> 8;
         TIM3->SR &= ~TIM_SR_UIF;
     }

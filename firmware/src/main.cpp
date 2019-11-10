@@ -14,6 +14,10 @@
 extern volatile bool fpgaLedOn;
 
 
+extern volatile bool newSampleAvailable;
+extern volatile uint16_t currentSample;
+
+
 int main()
 {
     GPIOD->BSRR = GPIO_BSRR_BS12;
@@ -37,7 +41,10 @@ int main()
     // );
 
 
-    int i = 0;
+    // SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
+
+
+    // int i = 0;
     while (true)
     {
         // printf("Hello World! %d \r\n", i++);
@@ -47,13 +54,21 @@ int main()
         {
             fpgaLedOnLast = fpgaLedOn;
 
+            SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
             octane::fpga::writeRegister(
                 (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
                 fpgaLedOn ? 0x0001 : 0x0000
             );
+            SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS
+
         }
 
-
+        // if (newSampleAvailable)
+        // {
+        //     printf("New sample: 0x%04x \r\n", currentSample);
+        //     DAC1->DHR12R2 = currentSample >> 8;
+        //     newSampleAvailable = false;
+        // }
 
     }
 

@@ -104,12 +104,14 @@ void octane::init()
     //
     // TODO: Use alternate function for these pins so that the SPI hardware takes over
     GPIOB->MODER |=
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER12_Pos) |  // NSS
         (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER13_Pos) |  // SCK
         (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER14_Pos) |  // MISO
         (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER15_Pos) |  // MOSI
         (0b01 << GPIO_MODER_MODER8_Pos);  // FPGA_RESET is an output
 
     GPIOB->AFR[1] |=
+        (5 << GPIO_AFRH_AFSEL12_Pos) |
         (5 << GPIO_AFRH_AFSEL13_Pos) |
         (5 << GPIO_AFRH_AFSEL14_Pos) |
         (5 << GPIO_AFRH_AFSEL15_Pos);
@@ -128,10 +130,31 @@ void octane::init()
         SPI_CR1_MSTR |  // act as SPI master
         // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
         (0b011 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 16
-        SPI_CR1_DFF |   // use 16 bit frame, MSB out first
-        SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
+        SPI_CR1_DFF;   // use 16 bit frame, MSB out first
+        // SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
 
-    // SPI2->CR2 = SPI_CR2_RXNEIE;
+    SPI2->CR2 =
+        SPI_CR2_FRF |  // ???
+        SPI_CR2_SSOE |  // drive NSS low when communicating with slave
+        SPI_CR2_RXNEIE;  // trigger interrupt when data is received
+        // TODO: Use TX/RX buffer DMA enable
+
+
+    // SPI2->CR1 =
+    //     SPI_CR1_MSTR |  // act as SPI master
+    //     // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
+    //     (0b011 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 16
+    //     SPI_CR1_DFF;   // use 16 bit frame, MSB out first
+    //     // SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
+
+    // SPI2->CR2 =
+    //     SPI_CR2_FRF |  // use TI mode
+    //     SPI_CR2_SSOE |  // drive NSS low when communicating with slave
+    //     SPI_CR2_RXNEIE;  // trigger interrupt when data is received
+    //     // TODO: Use TX/RX buffer DMA enable
+
+    // // Data is valid on the falling edge of SCK when NSS is low
+    // // Synchronize on the falling edge of SCK when NSS is high
 
 
 
@@ -140,14 +163,13 @@ void octane::init()
     SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
 
     NVIC_EnableIRQ(TIM2_IRQn);
-    // NVIC_EnableIRQ(TIM3_IRQn);
+    NVIC_EnableIRQ(TIM3_IRQn);
     // NVIC_EnableIRQ(SPI2_IRQn);
 
     __enable_irq();
 
 
 
-    SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI
 
 
 

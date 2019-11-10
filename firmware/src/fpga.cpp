@@ -12,6 +12,13 @@
 #include <stm32f4xx.h>
 
 
+
+uint16_t lastSample;
+// bool fpgaSpiReady = true;
+
+
+
+
 namespace octane::fpga
 {
 
@@ -157,6 +164,11 @@ void writeRegister(uint16_t registerNumber, uint16_t value)
     SPI2->DR = registerNumber;
     while ( ! (SPI2->SR & SPI_SR_TXE));
     SPI2->DR = value;
+
+    // TODO: Remove this
+    while ( ! (SPI2->SR & SPI_SR_RXNE));
+    lastSample = SPI2->DR;
+
 }
 
 
