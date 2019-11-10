@@ -1,0 +1,72 @@
+
+
+#include <printf.h>
+#include <stm32f4xx.h>
+
+
+extern "C" void SysTick_Handler()
+{
+
+}
+
+extern "C" void TIM2_IRQHandler()
+{
+    if (TIM2->SR & TIM_SR_CC1IF)
+    {
+        GPIOD->BSRR = GPIO_BSRR_BS13;
+        TIM2->SR &= ~TIM_SR_CC1IF;
+    }
+    else if (TIM2->SR & TIM_SR_CC2IF)
+    {
+        // fpgaLedOn = true;
+        TIM2->SR &= ~TIM_SR_CC2IF;
+    }
+    else if (TIM2->SR & TIM_SR_CC3IF)
+    {
+        GPIOD->BSRR = GPIO_BSRR_BR13;
+        TIM2->SR &= ~TIM_SR_CC3IF;
+    }
+    else if (TIM2->SR & TIM_SR_UIF)
+    {
+        // fpgaLedOn = false;
+        TIM2->SR &= ~TIM_SR_UIF;
+    }
+}
+
+extern "C" void TIM3_IRQHandler()
+{
+
+}
+
+
+
+
+extern "C" void HardFault_Handler()
+{
+
+    printf("HardFault_Handler \r\n");
+    printf("  SCB->HFSR = 0x%08x \r\n", SCB->HFSR);
+
+    // http://blog.feabhas.com/2013/02/developing-a-generic-hard-fault-handler-for-arm-cortex-m3cortex-m4/
+    if (SCB->HFSR & SCB_HFSR_FORCED_Msk)
+    {
+        printf("  SCB->CFSR = 0x%08x \r\n", SCB->CFSR);
+
+        if (SCB->CFSR & SCB_CFSR_BFARVALID_Msk) printf("BFARVALID \r\n");
+        if (SCB->CFSR & SCB_CFSR_LSPERR_Msk) printf("LSPERR \r\n");
+        if (SCB->CFSR & SCB_CFSR_STKERR_Msk) printf("STKERR \r\n");
+        if (SCB->CFSR & SCB_CFSR_UNSTKERR_Msk) printf("UNSTKERR \r\n");
+        if (SCB->CFSR & SCB_CFSR_IMPRECISERR_Msk) printf("IMPRECISERR \r\n");
+        if (SCB->CFSR & SCB_CFSR_PRECISERR_Msk) printf("PRECISERR \r\n");
+        if (SCB->CFSR & SCB_CFSR_IBUSERR_Msk) printf("IBUSERR \r\n");
+
+        if (SCB->CFSR & SCB_CFSR_DIVBYZERO_Msk) printf("DIVBYZERO \r\n");
+        if (SCB->CFSR & SCB_CFSR_UNALIGNED_Msk) printf("UNALIGNED \r\n");
+        if (SCB->CFSR & SCB_CFSR_NOCP_Msk) printf("NOCP \r\n");
+        if (SCB->CFSR & SCB_CFSR_INVPC_Msk) printf("INVPC \r\n");
+        if (SCB->CFSR & SCB_CFSR_INVSTATE_Msk) printf("INVSTATE \r\n");
+        if (SCB->CFSR & SCB_CFSR_UNDEFINSTR_Msk) printf("UNDEFINSTR \r\n");
+    }
+
+    while(true);
+}

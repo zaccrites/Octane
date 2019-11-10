@@ -23,9 +23,13 @@ project(octane_firmware VERSION 0.1.0 LANGUAGES CXX C ASM)
 
 
 add_executable(firmware
-    "src/vectors.s"
-    "src/init.cpp"
     "src/main.cpp"
+    "src/init.cpp"
+
+    "src/printf.cpp"
+    "src/isr.cpp"
+    "src/start.cpp"
+    "src/vectors.s"
 
     "../vendor/printf/printf.c"
 )
