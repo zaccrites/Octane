@@ -50,13 +50,14 @@ int main()
         // printf("Hello World! %d \r\n", i++);
 
         static bool fpgaLedOnLast = false;
-        if (fpgaLedOn != fpgaLedOnLast)
+        // if (fpgaLedOn != fpgaLedOnLast)
         {
             fpgaLedOnLast = fpgaLedOn;
 
             SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
             octane::fpga::writeRegister(
                 (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
+                // 0x0001
                 fpgaLedOn ? 0x0001 : 0x0000
             );
             SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS

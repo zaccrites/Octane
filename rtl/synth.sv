@@ -2,6 +2,9 @@
 `include "synth.svh"
 
 
+
+
+
 module synth (
     input logic i_Clock,
     input logic i_Reset,
@@ -23,6 +26,7 @@ logic [2:0] r_LedConfig;
 // verilator lint_on UNUSED
 
 assign o_LED = r_LedConfig[0];
+// assign o_LED = 1;
 
 // logic [2:0] r_LedEnable;  // TODO: Use LEDDA PWM IP
 
@@ -32,6 +36,12 @@ always_ff @ (posedge i_Clock) begin
     else if (w_LedConfigWriteEnable)
         r_LedConfig <= w_RegisterWriteValue[2:0];
 end
+
+
+
+
+// verilator lint_off UNUSED
+
 
 
 
@@ -157,6 +167,14 @@ always_comb begin
     w_FeedbackLevelConfigWriteEnable = voiceOpRegWriteEnable(6'h07);
 
 end
+
+logic w_SampleReady;
+logic signed [15:0] w_Sample;
+
+assign w_SampleReady = 1;
+assign w_Sample = 16'h1234;
+
+endmodule /*
 
 
 /// Track the currently active voice operator
@@ -290,3 +308,5 @@ stage_sample_generator sample_generator (
 
 
 endmodule
+
+*/

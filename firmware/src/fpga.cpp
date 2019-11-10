@@ -160,14 +160,24 @@ void writeRegister(uint16_t registerNumber, uint16_t value)
     // m_SPI_SendQueue.push(registerNumber);
     // m_SPI_SendQueue.push(value);
 
+
+
     while ( ! (SPI2->SR & SPI_SR_TXE));
     SPI2->DR = registerNumber;
     while ( ! (SPI2->SR & SPI_SR_TXE));
     SPI2->DR = value;
 
-    // TODO: Remove this
-    while ( ! (SPI2->SR & SPI_SR_RXNE));
-    lastSample = SPI2->DR;
+    // // These need to be reversed for some reason...
+    // while ( ! (SPI2->SR & SPI_SR_TXE));
+    // SPI2->DR = value;
+    // while ( ! (SPI2->SR & SPI_SR_TXE));
+    // SPI2->DR = registerNumber;
+
+
+
+    // // TODO: Remove this
+    // while ( ! (SPI2->SR & SPI_SR_RXNE));
+    // lastSample = SPI2->DR;
 
 }
 

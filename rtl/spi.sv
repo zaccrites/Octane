@@ -27,9 +27,9 @@ module spi (
 
 logic r_SPI_SCK_last;
 logic w_SPI_SCK_falling;
-logic w_SPI_Sync;
+// logic w_SPI_Sync;
 assign w_SPI_SCK_falling = r_SPI_SCK_last && ! i_SPI_SCK;
-assign w_SPI_Sync = w_SPI_SCK_falling && i_SPI_NSS;
+// assign w_SPI_Sync = w_SPI_SCK_falling && i_SPI_NSS;
 
 logic [15:0] r_NextSample;
 logic [15:0] r_CurrentSample;
@@ -55,7 +55,7 @@ always_ff @ (posedge i_Clock) begin
 
         // $display("Input buffer is %b %b", r_InputBuffer[31:16], r_InputBuffer[15:0]);
 
-        if (w_SPI_Sync) begin
+        if (i_SPI_NSS) begin
             // $display("sync");
             // Do I need additional synchronization? Possibly by "writing"
             // to a dummy sentinel register?
@@ -77,7 +77,7 @@ always_ff @ (posedge i_Clock) begin
         if ( ! i_Reset) r_InputBuffer[0] <= i_SPI_MOSI;
 
         // Output MSB first.
-        if (w_SPI_Sync) begin
+        if (i_SPI_NSS) begin
             o_SPI_MISO <= r_NextSample[15];
             // $display("Outputting bit %d", r_NextSample[15]);
         end

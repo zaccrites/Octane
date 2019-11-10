@@ -126,20 +126,6 @@ void octane::init()
     // which corresponds to the rising edge when CPOL is reset (according to section
     // 28.3.1 "Clock phase and clock polarity" of the STM32F4xx reference manual).
 
-    SPI2->CR1 =
-        SPI_CR1_MSTR |  // act as SPI master
-        // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
-        (0b011 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 16
-        SPI_CR1_DFF;   // use 16 bit frame, MSB out first
-        // SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
-
-    SPI2->CR2 =
-        SPI_CR2_FRF |  // ???
-        SPI_CR2_SSOE |  // drive NSS low when communicating with slave
-        SPI_CR2_RXNEIE;  // trigger interrupt when data is received
-        // TODO: Use TX/RX buffer DMA enable
-
-
     // SPI2->CR1 =
     //     SPI_CR1_MSTR |  // act as SPI master
     //     // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
@@ -148,13 +134,27 @@ void octane::init()
     //     // SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
 
     // SPI2->CR2 =
-    //     SPI_CR2_FRF |  // use TI mode
+    //     SPI_CR2_FRF |  // ???
     //     SPI_CR2_SSOE |  // drive NSS low when communicating with slave
     //     SPI_CR2_RXNEIE;  // trigger interrupt when data is received
     //     // TODO: Use TX/RX buffer DMA enable
 
-    // // Data is valid on the falling edge of SCK when NSS is low
-    // // Synchronize on the falling edge of SCK when NSS is high
+
+    SPI2->CR1 =
+        SPI_CR1_MSTR |  // act as SPI master
+        // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
+        (0b011 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 16
+        SPI_CR1_DFF;   // use 16 bit frame, MSB out first
+        // SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
+
+    SPI2->CR2 =
+        SPI_CR2_FRF |  // use TI mode
+        SPI_CR2_SSOE |  // drive NSS low when communicating with slave
+        SPI_CR2_RXNEIE;  // trigger interrupt when data is received
+        // TODO: Use TX/RX buffer DMA enable
+
+    // Data is valid on the falling edge of SCK
+    // Synchronize on the falling edge of SCK when NSS is high
 
 
 
