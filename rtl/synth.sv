@@ -22,10 +22,10 @@ module synth (
 
 // verilator lint_off UNUSED
 logic w_LedConfigWriteEnable;
-logic [2:0] r_LedConfig;
+logic [15:0] r_LedConfig;
 // verilator lint_on UNUSED
 
-assign o_LED = r_LedConfig[0];
+assign o_LED = | r_LedConfig[7:4];
 // assign o_LED = 1;
 
 // logic [2:0] r_LedEnable;  // TODO: Use LEDDA PWM IP
@@ -34,7 +34,7 @@ always_ff @ (posedge i_Clock) begin
     if (i_Reset)
         r_LedConfig <= 0;
     else if (w_LedConfigWriteEnable)
-        r_LedConfig <= w_RegisterWriteValue[2:0];
+        r_LedConfig <= w_RegisterWriteValue;
 end
 
 
@@ -131,6 +131,14 @@ assign w_VoiceOperatorRegisterWriteParameter = w_RegisterWriteNumber[13:8];
 assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[7:0];
 
 
+always_ff @ (posedge i_Clock) begin
+    if (w_PhaseStepWriteEnable) begin
+        $display("Wrote phase step = %d", w_RegisterWriteValue);
+    end
+end
+
+
+
 function voiceOpRegWriteEnable;
     input logic [5:0] parameterBits;
 begin
@@ -168,13 +176,22 @@ always_comb begin
 
 end
 
+
+
+// TODO: Remove
+`ifdef YOSYS
+
 logic w_SampleReady;
 logic signed [15:0] w_Sample;
-
 assign w_SampleReady = 1;
 assign w_Sample = 16'h1234;
 
-endmodule /*
+endmodule
+
+
+
+
+`else
 
 
 /// Track the currently active voice operator
@@ -309,4 +326,4 @@ stage_sample_generator sample_generator (
 
 endmodule
 
-*/
+`endif

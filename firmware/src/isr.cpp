@@ -15,19 +15,23 @@ extern "C" void SysTick_Handler()
 
 // volatile uint16_t lastSample;
 // volatile bool fpgaSpiReady = true;
-// extern "C" void SPI2_Handler()
-// {
-//     if (SPI2->SR & SPI_SR_RXNE)
-//     {
-//         lastSample = SPI2->DR;
-//     }
-//     else if (SPI2->SR & SPI_SR_TXE)
-//     {
-//         // fpgaSpiReady = true;
-//     }
+extern "C" void SPI2_Handler()
+{
+    if (SPI2->SR & SPI_SR_RXNE)
+    {
+        // lastSample = SPI2->DR;
+    }
+    else if (SPI2->SR & SPI_SR_TXE)
+    {
+        // fpgaSpiReady = true;
+
+        // this is wrong
+        GPIOB->BSRR = GPIO_BSRR_BS12;  // pull NSS high
+
+    }
 
 
-// }
+}
 
 
 

@@ -5,7 +5,7 @@
 
 
 const uint32_t GPIO_MODER_INPUT = 0b00;
-const uint32_t GPIO_MODER_OUTPUT = 0b10;
+const uint32_t GPIO_MODER_OUTPUT = 0b01;
 const uint32_t GPIO_MODER_ALTERNATE = 0b10;
 const uint32_t GPIO_MODER_ANALOG = 0b11;
 
@@ -104,14 +104,17 @@ void octane::init()
     //
     // TODO: Use alternate function for these pins so that the SPI hardware takes over
     GPIOB->MODER |=
-        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER12_Pos) |  // NSS
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER12_Pos) |  // NSS
         (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER13_Pos) |  // SCK
         (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER14_Pos) |  // MISO
         (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER15_Pos) |  // MOSI
-        (0b01 << GPIO_MODER_MODER8_Pos);  // FPGA_RESET is an output
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER8_Pos);  // FPGA_RESET is an output
+
+    // GPIOB->OTYPER |=
+    //     GPIO_OTYPER_OT12;  // Set NSS as open-drain pin, pulled up by external resistor
 
     GPIOB->AFR[1] |=
-        (5 << GPIO_AFRH_AFSEL12_Pos) |
+        // (5 << GPIO_AFRH_AFSEL12_Pos) |
         (5 << GPIO_AFRH_AFSEL13_Pos) |
         (5 << GPIO_AFRH_AFSEL14_Pos) |
         (5 << GPIO_AFRH_AFSEL15_Pos);
@@ -144,12 +147,13 @@ void octane::init()
         SPI_CR1_MSTR |  // act as SPI master
         // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
         (0b011 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 16
-        SPI_CR1_DFF;   // use 16 bit frame, MSB out first
-        // SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
+        SPI_CR1_DFF |   // use 16 bit frame, MSB out first
+        SPI_CR1_CPHA |
+        SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
 
     SPI2->CR2 =
-        SPI_CR2_FRF |  // use TI mode
-        SPI_CR2_SSOE |  // drive NSS low when communicating with slave
+        // SPI_CR2_FRF |  // use TI mode
+        // SPI_CR2_SSOE |  // drive NSS low when communicating with slave
         SPI_CR2_RXNEIE;  // trigger interrupt when data is received
         // TODO: Use TX/RX buffer DMA enable
 

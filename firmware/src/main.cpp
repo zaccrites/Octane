@@ -41,26 +41,39 @@ int main()
     // );
 
 
-    // SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
+    SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
 
 
     // int i = 0;
+    bool fpgaLedOnLast = false;
+
+    int counter = 0;
     while (true)
     {
         // printf("Hello World! %d \r\n", i++);
 
-        static bool fpgaLedOnLast = false;
+        if (newSampleAvailable)
+        {
+            counter += 1;
+            if (counter < 1000) continue;
+            else counter = 0;
+        }
+
         // if (fpgaLedOn != fpgaLedOnLast)
         {
             fpgaLedOnLast = fpgaLedOn;
 
-            SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
+            // SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
             octane::fpga::writeRegister(
                 (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
-                // 0x0001
-                fpgaLedOn ? 0x0001 : 0x0000
+                // 0x0001,
+                // fpgaLedOn ? 0x0001 : 0x0000,
+                // fpgaLedOn ? 0xf731 : 0xf730
+
+                fpgaLedOn ? 0xffff : 0xff0f
+                // fpgaLedOn ? 0xfff0 : 0xff00
             );
-            SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS
+            // SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS
 
         }
 

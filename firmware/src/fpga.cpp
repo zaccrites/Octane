@@ -89,6 +89,10 @@ void reset()
 {
     // TODO: This is a BSP thing
 
+    // Set NSS high until a write is requested
+    GPIOB->BSRR = GPIO_BSRR_BS12;
+
+
     GPIOB->BSRR = GPIO_BSRR_BS8;
     // wait?
     GPIOB->BSRR = GPIO_BSRR_BR8;
@@ -162,22 +166,55 @@ void writeRegister(uint16_t registerNumber, uint16_t value)
 
 
 
-    while ( ! (SPI2->SR & SPI_SR_TXE));
-    SPI2->DR = registerNumber;
-    while ( ! (SPI2->SR & SPI_SR_TXE));
-    SPI2->DR = value;
-
-    // // These need to be reversed for some reason...
-    // while ( ! (SPI2->SR & SPI_SR_TXE));
-    // SPI2->DR = value;
     // while ( ! (SPI2->SR & SPI_SR_TXE));
     // SPI2->DR = registerNumber;
+    // while ( ! (SPI2->SR & SPI_SR_TXE));
+    // SPI2->DR = value;
+
+    // These need to be reversed for some reason... or do they? idk
+
+
+    // SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
+
+
+    GPIOD->BSRR = GPIO_BSRR_BS12;  // LED
+
+    GPIOB->BSRR = GPIO_BSRR_BR12;  // pull NSS low
+
+    while (SPI2->SR & SPI_SR_TXE == 0);
+    SPI2->DR = registerNumber;
+
+    // while (SPI2->SR & SPI_SR_TXE == 0);
+    // while (SPI2->SR & SPI_SR_BSY == 0);
+    // while (SPI2->SR & SPI_SR_RXNE == 0);
 
 
 
-    // // TODO: Remove this
+    // GPIOB->BSRR = GPIO_BSRR_BS12;  // release NSS
+    // SPI2->DR = value;
+
+    // while ( ! (SPI2->SR & SPI_SR_TXE));
+    // SPI2->DR = registerNumber;
+    // while ( ! (SPI2->SR & SPI_SR_TXE));
+
+
+    // while ( ! (SPI2->SR & SPI_SR_TXE));
+
+
+
+
+
+    // GPIOD->BSRR = GPIO_BSRR_BR12;  // LED
+
+    // SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS
+
+    // TODO: Remove this
     // while ( ! (SPI2->SR & SPI_SR_RXNE));
     // lastSample = SPI2->DR;
+
+
+
+
 
 }
 

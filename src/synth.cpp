@@ -11,11 +11,12 @@ Synth::Synth() :
     m_DataFile { fopen("data.csv", "w") },
     m_NoteOnState {},
     m_SPI_SendQueue {},
-    m_SPI_TickCounter {0},
-    m_SPI_OutputBuffer {0},
-    m_SPI_InputBuffer {0}
+    m_SPI_TickCounter {0}
 {
     std::fill_n(m_NoteOnState, 32, false);
+
+    m_Synth.i_SPI_NSS = 1;
+
 }
 
 Synth::~Synth()
@@ -122,71 +123,83 @@ bool Synth::getNoteOn(uint8_t voiceNum) const
 
 void Synth::spiSendReceive()
 {
-    if (m_SPI_SendQueue.empty())
-    {
-        // Put some dummy values in the queue
-        m_SPI_OutputBuffer = 0;
-    }
-    else
-    {
-        m_SPI_OutputBuffer = m_SPI_SendQueue.front();
-        m_SPI_SendQueue.pop();
-    }
 
-    m_SPI_InputBuffer = 0;
-    for (int i = 0; i < 16; i++)
+    auto getCommandHalfWord = [this]() -> uint16_t {
+        uint16_t value;
+        if (m_SPI_SendQueue.empty())
+        {
+            value = 0;
+        }
+        else
+        {
+            value = m_SPI_SendQueue.front();
+            m_SPI_SendQueue.pop();
+        }
+        return value;
+    };
+
+    const uint16_t spiRegWriteAddr = getCommandHalfWord();
+    const uint16_t spiRegWriteValue = getCommandHalfWord();
+    uint32_t spiOutputBuffer = (spiRegWriteAddr << 16) | spiRegWriteValue;
+    uint32_t spiInputBuffer = 0;
+
+    m_Synth.i_SPI_NSS = 0;
+    tick();
+
+    for (int i = 0; i < 32; i++)
     {
         // Rising edge of SCK isn't used
-        if (i == 0) m_Synth.i_SPI_NSS = 1;  // The first bit pulses NSS
         m_Synth.i_SPI_SCK = 1;
         tick();
 
         // Output data (MSB out first)
-        m_Synth.i_SPI_MOSI = (m_SPI_OutputBuffer & 0x8000) ? 1 : 0;
-        m_SPI_OutputBuffer = m_SPI_OutputBuffer << 1;
+        m_Synth.i_SPI_MOSI = (spiOutputBuffer & 0x80000000) ? 1 : 0;
+        spiOutputBuffer = spiOutputBuffer << 1;
         tick();
 
         // Data is latched on the falling edge of SCK
         m_Synth.i_SPI_SCK = 0;
         tick();
-        m_Synth.i_SPI_NSS = 0;  // The NSS pulse should be high during the SCK falling edge
 
         // Input the valid slave data (MSB in first)
-        m_SPI_InputBuffer = (m_SPI_InputBuffer << 1) | m_Synth.o_SPI_MISO;
+        spiInputBuffer = (spiInputBuffer << 1) | m_Synth.o_SPI_MISO;
         tick();
     }
 
-    const bool collectNewSample = ++m_SPI_TickCounter >= 16 / 4;
+    m_Synth.i_SPI_NSS = 1;
+    tick();
+
+    const bool collectNewSample = ++m_SPI_TickCounter >= 8 / 4;
     if (collectNewSample)
     {
         m_SPI_TickCounter = 0;
 
         // TODO: REMOVE HACK
-        // m_SPI_InputBuffer = m_SPI_InputBuffer << 1;
+        // spiInputBuffer = spiInputBuffer << 1;
 
-        auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
-        // printf(
-        //     "Collected sample %d (0x%04x) (0b%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n",
-        //     sample,
-        //     m_SPI_InputBuffer,
+        auto sample = static_cast<int16_t>(spiInputBuffer & 0x0000ffff);
+        if (false) printf(
+            "Collected sample %d (0x%04x) (0b%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n",
+            sample,
+            spiInputBuffer,
 
-        //     ((m_SPI_InputBuffer & 0x8000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x4000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x2000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x1000) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0800) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0400) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0200) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0100) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0080) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0040) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0020) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0010) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0008) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0004) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0002) ? '1' : '0'),
-        //     ((m_SPI_InputBuffer & 0x0001) ? '1' : '0')
-        // );
+            ((spiInputBuffer & 0x8000) ? '1' : '0'),
+            ((spiInputBuffer & 0x4000) ? '1' : '0'),
+            ((spiInputBuffer & 0x2000) ? '1' : '0'),
+            ((spiInputBuffer & 0x1000) ? '1' : '0'),
+            ((spiInputBuffer & 0x0800) ? '1' : '0'),
+            ((spiInputBuffer & 0x0400) ? '1' : '0'),
+            ((spiInputBuffer & 0x0200) ? '1' : '0'),
+            ((spiInputBuffer & 0x0100) ? '1' : '0'),
+            ((spiInputBuffer & 0x0080) ? '1' : '0'),
+            ((spiInputBuffer & 0x0040) ? '1' : '0'),
+            ((spiInputBuffer & 0x0020) ? '1' : '0'),
+            ((spiInputBuffer & 0x0010) ? '1' : '0'),
+            ((spiInputBuffer & 0x0008) ? '1' : '0'),
+            ((spiInputBuffer & 0x0004) ? '1' : '0'),
+            ((spiInputBuffer & 0x0002) ? '1' : '0'),
+            ((spiInputBuffer & 0x0001) ? '1' : '0')
+        );
 
         m_SampleBuffer.push_front(sample);
         fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);

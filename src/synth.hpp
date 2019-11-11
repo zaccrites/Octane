@@ -72,8 +72,8 @@ private:
 
     std::queue<uint16_t> m_SPI_SendQueue;
     uint16_t m_SPI_TickCounter;
-    uint16_t m_SPI_OutputBuffer;
-    uint16_t m_SPI_InputBuffer;
+    // uint16_t m_SPI_OutputBuffer;
+    // uint16_t m_SPI_InputBuffer;
 
 };
 
