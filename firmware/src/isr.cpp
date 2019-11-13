@@ -29,6 +29,11 @@ extern "C" void SPI2_IRQHandler()
     }
 }
 
+extern "C" void DMA1_Stream4_IRQHandler()
+{
+
+}
+
 
 
 volatile bool fpgaLedOn = false;

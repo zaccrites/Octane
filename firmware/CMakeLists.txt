@@ -27,6 +27,8 @@ add_executable(firmware
     "src/init.cpp"
     "src/fpga.cpp"
 
+    "src/CriticalSection.cpp"
+
     "src/printf.cpp"
     "src/isr.cpp"
     "src/start.cpp"
@@ -81,10 +83,11 @@ target_compile_definitions(firmware PRIVATE
 target_compile_options(firmware PRIVATE
     -mcpu=cortex-m4
     -mthumb
-    -mthumb-interwork
+    -mabi=aapcs
     # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
     # -mfloat-abi=hard
     -mlong-calls
+    -mno-unaligned-access
 
     -std=gnu++17
     -pedantic
@@ -92,7 +95,6 @@ target_compile_options(firmware PRIVATE
     -Og
     -g3
     # -O2
-    # TODO: debugging symbols?
 
     -fno-rtti
     -fno-exceptions
@@ -105,6 +107,7 @@ target_compile_options(firmware PRIVATE
 
     -Wall
     -Wextra
+    -Weffc++
     -Wold-style-cast
     -Wnull-dereference
     -Wdouble-promotion
@@ -126,11 +129,14 @@ add_library(printf
 target_compile_options(printf PRIVATE
     -mcpu=cortex-m4
     -mthumb
-    -mthumb-interwork
+    -mabi=aapcs
     # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
     # -mfloat-abi=hard
     -mlong-calls
-    -O2
+
+    -Og
+    -g3
+    # -O2
 )
 
 target_include_directories(printf SYSTEM PUBLIC

@@ -69,11 +69,15 @@ extern "C" void _start(void)
 
     // TODO: Init hardware peripherals before even calling static
     // constructors? Could move init.cpp into this file.
+    // This is important because initialization calls like pulling NSS
+    // low in the Fpga static constructor
     octane::init();
-    printf("init done \r\n");
 
+    printf("before init static constructors \r\n");
     InitStaticConstructors();
+    printf("after init static constructors \r\n");
 
 
     main();
 }
+

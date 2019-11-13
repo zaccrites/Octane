@@ -20,7 +20,13 @@ void octane::init()
     RCC->CFGR |=  (0x01 << 0);  // enable HSE oscillator  // RCC_CFGR_SW
 
 
-    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIODEN | RCC_AHB1ENR_GPIOCEN;
+    RCC->AHB1ENR |=
+        RCC_AHB1ENR_GPIOAEN |
+        RCC_AHB1ENR_GPIOBEN |
+        RCC_AHB1ENR_GPIODEN |
+        RCC_AHB1ENR_GPIOCEN |
+        RCC_AHB1ENR_DMA1EN;
+
     RCC->APB1ENR |=
         RCC_APB1ENR_TIM2EN |    // enable TIM2
         RCC_APB1ENR_TIM3EN |    // enable TIM3
@@ -167,6 +173,45 @@ void octane::init()
 
 
 
+    // Use DMA1 to handle SPI2 transmission
+    // (Stream 4, Channel 0 for Tx)
+    // DMA1_Stream4->
+    // (Stream 3, Channel 0 for Rx)
+
+    // Before transfer...
+    // TODO: enable interrupts
+
+    // DMA1_Stream4->NDTR = COUNT;  // half words (commands * 2)
+    // DMA1_Stream4->M0AR = <source buffer>;
+    // DMA1_Stream4->PAR = <peripheral address>;  ?
+    // DMA1_Stream4->PSIZE = <half word>? or <word>, unless address and value writes are separate?
+
+    // DMA1_Stream4->CR |=
+    //     (0b10 << DMA_SxCR_PL) |         // "high priority"
+    //     (0 << DMA_SxCR_CHSEL_Pos) |   // use Channel 0 (SPI Tx)
+    //     (0b01 << DMA_SxCR_DIR_Pos) |  // memory-to-peripheral (SPI Tx)
+
+    //     (0b10 << DMA_SxCR_PSIZE_Pos) |  // use half-word memory data size
+    //     (0b10 << DMA_SxCR_MSIZE_Pos) |  // use half-word memory data size
+    //     DMA_SxCR_MINC |     // increment memory pointer after each data transfer
+
+    //     // I think peripheral increment is wrong, since all writes are done
+    //     // to the DR register.
+
+    //     // ...
+    //     // ...
+    //     DMA_SxCR_EN;                    // enable stream
+
+    // // Note:   Before setting EN bit to '1' to start a new transfer,
+    // // the event flags corresponding to the stream in DMA_LISR or DMA_HISR register must be cleared.
+
+
+
+
+
+
+
+
     // TODO: Use PLL to increase main clock frequency
     const uint32_t MAIN_CLOCK_FREQ = 8000000;
     SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
@@ -185,12 +230,5 @@ void octane::init()
     // actually get called, but we're stuck in SOME interrupt somewhere (I think).
     NVIC_SetPriority(SPI2_IRQn, 1);
     NVIC_EnableIRQ(SPI2_IRQn);
-
-    // __enable_irq();
-
-
-
-
-
 
 }

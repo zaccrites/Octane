@@ -6,57 +6,76 @@
 
 
 
+extern "C" void SPI2_IRQHandler();
+
+
+
 namespace octane
 {
 
 // using FpgaCommand = std::pair<uint16_t, uint16_t>;
 
-struct FpgaCommand
-{
-    uint16_t registerNumber;
-    uint16_t value;
-};
+
+
+// struct FpgaCommand
+// {
+//     uint16_t registerNumber;
+//     uint16_t value;
+// };
+
 
 
 class Fpga
 {
 public:
-
     Fpga();
 
     static Fpga& getInstance();
 
     void reset();
 
-    void onSpiTxComplete();
-    void onSpiRxComplete();
-
     uint16_t getLatestSample() const { return m_LatestSample; }
+    bool getSpiTransferInProgress() const { return m_SpiTransferInProgress; }
 
-    void writeRegister(uint16_t registerNumber, uint16_t value);
-    void writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value);
+    void commitRegisterWrites();
+    bool writeRegister(uint16_t registerNumber, uint16_t value);
+    bool writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value);
 
 
     static const size_t COMMAND_BUFFER_CAPACITY = 1024;
+    static const size_t HALF_WORDS_PER_COMMAND = 2;
+
+private:
+    friend void ::SPI2_IRQHandler();
+
+    // bool getNextCommand(FpgaCommand rCommand);
+
+    void onSpiRxComplete();
+    void onSpiTxComplete();
+    void onSpiTransferComplete();
 
 private:
 
-    bool getNextCommand(FpgaCommand rCommand);
-
-
-private:
-    size_t m_CommandBufferStart;
-    size_t m_CommandBufferCount;
-    FpgaCommand m_CommandBuffer[COMMAND_BUFFER_CAPACITY];
-
-    bool m_HasCurrentCommand;
-    FpgaCommand m_CurrentCommand;
     uint16_t m_LatestSample;
+
+    bool m_SpiTransferInProgress;
+
+    size_t m_CommandTransferProgress;
+    size_t m_NumCommands;
+    uint16_t m_CommandBuffer[COMMAND_BUFFER_CAPACITY * HALF_WORDS_PER_COMMAND];
+
+
+    // size_t m_CommandBufferStart;
+    // size_t m_CommandBufferCount;
+    // FpgaCommand m_CommandBuffer[COMMAND_BUFFER_CAPACITY];
+
+    // bool m_HasCurrentCommand;
+    // FpgaCommand m_CurrentCommand;
 
 
     // TODO: Better way to start the first transaction?
     // Also relevant if disabling SPI between comms
-    bool m_SpiStarted;
+    // bool m_SpiStarted;
 
 };
 

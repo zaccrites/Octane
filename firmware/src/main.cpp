@@ -18,7 +18,7 @@ extern volatile bool newSampleAvailable;
 extern volatile uint16_t currentSample;
 
 
-int main()
+void main()
 {
     // GPIOD->BSRR = GPIO_BSRR_BS12;
 
@@ -60,7 +60,7 @@ int main()
             else counter = 0;
         }
 
-        // if (fpgaLedOn != fpgaLedOnLast)
+        if (fpgaLedOn != fpgaLedOnLast)
         {
             fpgaLedOnLast = fpgaLedOn;
 
@@ -75,10 +75,14 @@ int main()
             //     // fpgaLedOn ? 0xfff0 : 0xff00
             // );
 
+
+
+
             octane::Fpga::getInstance().writeRegister(
                 (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
                 fpgaLedOn ? 0xffff : 0xff0f
             );
+            octane::Fpga::getInstance().commitRegisterWrites();
 
             // SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS
 
