@@ -3,6 +3,8 @@
 #include <printf.h>
 #include <stm32f4xx.h>
 
+#include "fpga.hpp"
+
 
 extern "C" void SysTick_Handler()
 {
@@ -15,22 +17,16 @@ extern "C" void SysTick_Handler()
 
 // volatile uint16_t lastSample;
 // volatile bool fpgaSpiReady = true;
-extern "C" void SPI2_Handler()
+extern "C" void SPI2_IRQHandler()
 {
-    if (SPI2->SR & SPI_SR_RXNE)
+    if (SPI2->SR & SPI_SR_TXE)
     {
-        // lastSample = SPI2->DR;
+        octane::Fpga::getInstance().onSpiTxComplete();
     }
-    else if (SPI2->SR & SPI_SR_TXE)
+    else if (SPI2->SR & SPI_SR_RXNE)
     {
-        // fpgaSpiReady = true;
-
-        // this is wrong
-        GPIOB->BSRR = GPIO_BSRR_BS12;  // pull NSS high
-
+        octane::Fpga::getInstance().onSpiRxComplete();
     }
-
-
 }
 
 
@@ -79,7 +75,7 @@ extern "C" void TIM3_IRQHandler()
 
 
 
-extern "C" void HardFault_Handler()
+extern "C" void Real_HardFault_Handler(uint32_t* registers)
 {
 
     printf("HardFault_Handler \r\n");
@@ -104,7 +100,20 @@ extern "C" void HardFault_Handler()
         if (SCB->CFSR & SCB_CFSR_INVPC_Msk) printf("INVPC \r\n");
         if (SCB->CFSR & SCB_CFSR_INVSTATE_Msk) printf("INVSTATE \r\n");
         if (SCB->CFSR & SCB_CFSR_UNDEFINSTR_Msk) printf("UNDEFINSTR \r\n");
+
     }
+
+    // The Cortex-M exception system provides a set of registers to
+    // the handler function.
+    printf("r0  = 0x%08x \r\n", registers[0]);
+    printf("r1  = 0x%08x \r\n", registers[1]);
+    printf("r2  = 0x%08x \r\n", registers[2]);
+    printf("r3  = 0x%08x \r\n", registers[3]);
+    printf("r12 = 0x%08x \r\n", registers[4]);
+    printf("lr  = 0x%08x \r\n", registers[5]);
+    printf("pc  = 0x%08x \r\n", registers[6]);
+    printf("psr = 0x%08x \r\n", registers[7]);
+
 
     while(true);
 }
@@ -127,3 +136,19 @@ extern "C" void UsageFault_Handler()
     printf("UsageFault_Handler \r\n");
     while(true);
 }
+
+
+
+
+
+// // Listed below are the "unused" interrupt handlers.
+// // The standard way to handle this is to use a weak assocaition to a
+// // default handler defined in vectors.s, but this is a problem if
+// // you add a real handler for an interrupt and misspell it.
+// // Rather than the linker or compiler warning you about undefined or
+// // multiply defined functions, it will instead just silently
+// // not call your interrupt service routine.
+
+// #define DEFAULT_HANDLER(int_name)  extern "C" void ...
+
+// TODO: Define them in the cpp file to prevent this issue?

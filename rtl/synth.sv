@@ -89,7 +89,7 @@ end
 
 
 logic w_SPI_RegisterWriteEnable;
-logic [14:0] w_RegisterWriteNumber;
+logic [15:0] w_RegisterWriteNumber;
 logic [15:0] w_RegisterWriteValue;
 
 spi spi0 (
@@ -125,6 +125,7 @@ assign w_RegisterWriteEnable = w_SPI_RegisterWriteEnable && ! r_SPI_RegisterWrit
 //
 
 
+// TODO: Use full 16 bits for register numbers
 logic [5:0] w_VoiceOperatorRegisterWriteParameter;
 logic [7:0] w_VoiceOperatorRegisterWriteAddress;
 assign w_VoiceOperatorRegisterWriteParameter = w_RegisterWriteNumber[13:8];

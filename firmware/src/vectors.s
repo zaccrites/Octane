@@ -20,6 +20,19 @@ Reset_Handler:
     b .
 
 
+// https://blog.frankvh.com/2011/12/07/cortex-m3-m4-hard-fault-handler/
+.extern Real_HardFault_Handler
+.section .text.HardFault_Handler
+.global HardFault_Handler
+.thumb_func
+HardFault_Handler:
+    tst lr, #4
+    ite eq
+    mrseq r0, msp
+    mrsne r0, psp
+    b Real_HardFault_Handler
+
+
 .section .isr_vector_table,"a"
 
     .word _stack_start
@@ -131,8 +144,7 @@ Reset_Handler:
     .weak NMI_Handler
     .thumb_set NMI_Handler,Default_Handler
 
-    .weak HardFault_Handler
-    .thumb_set HardFault_Handler,Default_Handler
+    // HardFault_Handler omitted intentionally
 
     .weak MemManage_Handler
     .thumb_set MemManage_Handler,Default_Handler

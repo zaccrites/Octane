@@ -57,11 +57,23 @@ static void InitDataSection()
 }
 
 
+#include <stm32f4xx.h>
+
+#include "init.hpp"
+#include <printf.h>
+
 extern "C" void _start(void)
 {
     InitBssSection();
     InitDataSection();
+
+    // TODO: Init hardware peripherals before even calling static
+    // constructors? Could move init.cpp into this file.
+    octane::init();
+    printf("init done \r\n");
+
     InitStaticConstructors();
+
 
     main();
 }

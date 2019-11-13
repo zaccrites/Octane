@@ -1,6 +1,11 @@
 
 #include <array>
 
+
+// TODO: remove
+#include <printf.h>
+
+
 #include "fpga.hpp"
 
 // TODO: Generate sine table at boot instead
@@ -15,6 +20,116 @@
 
 uint16_t lastSample;
 // bool fpgaSpiReady = true;
+
+
+namespace octane
+{
+
+static Fpga f_FpgaInstance;
+
+
+Fpga::Fpga() :
+    m_CommandBufferStart {0},
+    m_CommandBufferCount {0},
+    m_HasCurrentCommand {false},
+    m_SpiStarted {false}
+{
+}
+
+
+Fpga& Fpga::getInstance()
+{
+    return f_FpgaInstance;
+}
+
+
+void Fpga::reset()
+{
+    // Set NSS high until a write is requested
+    GPIOB->BSRR = GPIO_BSRR_BS12;
+}
+
+
+void Fpga::onSpiTxComplete()
+{
+    if ( ! m_HasCurrentCommand)
+    {
+        GPIOD->BSRR = GPIO_BSRR_BS12;
+
+
+        GPIOB->BSRR = GPIO_BSRR_BR12;
+        m_HasCurrentCommand = true;
+        m_CurrentCommand = getNextCommand();
+        SPI2->DR = m_CurrentCommand.registerNumber;
+    }
+    else
+    {
+
+        SPI2->DR = m_CurrentCommand.value;
+        m_HasCurrentCommand = false;
+
+        // TODO: only release this after the second half finishes,
+        // and only if there isn't another command to send
+        GPIOB->BSRR = GPIO_BSRR_BS12;
+    }
+
+    SPI2->CR2 |= SPI_CR2_TXEIE;  // do I need to only set this AFTER setting DR?
+}
+
+void Fpga::onSpiRxComplete()
+{
+    m_LatestSample = SPI2->DR;
+}
+
+
+void Fpga::writeRegister(uint16_t registerNumber, uint16_t value)
+{
+    // TODO: Error if buffer is full?
+    if (m_CommandBufferCount < COMMAND_BUFFER_CAPACITY)
+    {
+        const size_t index = (m_CommandBufferStart + m_CommandBufferCount++) % COMMAND_BUFFER_CAPACITY;
+        m_CommandBuffer[index] = {registerNumber, value};
+
+        if ( ! m_SpiStarted)
+        {
+            SPI2->DR = 0x0000;
+            SPI2->CR2 |= SPI_CR2_TXEIE;  // do I need to only set this AFTER setting DR?
+
+            // dummy write to kick it off?
+            // Should be ignored since NSS is high.
+            // TODO: Find a better way once DMA is implemented
+            m_SpiStarted = true;
+        }
+    }
+}
+
+
+bool Fpga::getNextCommand(FpgaCommand& rCommand)
+{
+    if (m_CommandBufferCount > 0)
+    {
+        const size_t index = m_CommandBufferStart;
+        m_CommandBufferStart = (m_CommandBufferStart + 1) % COMMAND_BUFFER_CAPACITY;
+        m_CommandBufferCount -= 1;
+        rCommand = m_CommandBuffer[index];
+    }
+}
+
+
+void Fpga::writeOperatorRegister(uint8_t voiceNum, uint8_t operatorNum, uint8_t parameter, uint16_t value)
+{
+    voiceNum = voiceNum % 32;  // 5 bits
+    operatorNum = operatorNum % 8;  // 3 bits
+    parameter = parameter % 64;  // 6 bits
+
+    const uint16_t registerNumber = (0b10 << 14) | (parameter << 8) | (operatorNum << 5) | voiceNum;
+    writeRegister(registerNumber, value);
+}
+
+
+
+}
+
 
 
 

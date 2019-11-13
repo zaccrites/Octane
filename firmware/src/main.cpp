@@ -20,9 +20,9 @@ extern volatile uint16_t currentSample;
 
 int main()
 {
-    GPIOD->BSRR = GPIO_BSRR_BS12;
+    // GPIOD->BSRR = GPIO_BSRR_BS12;
 
-    octane::init();
+    // octane::init();
     printf("\r\n======================== OCTANE ======================== \r\n\r\n");
 
     printf("Starting FPGA initialization \r\n");
@@ -42,6 +42,7 @@ int main()
 
 
     SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
+    // octane::Fpga::getInstance().writeRegister(0x0000, 0x0000);  // start comms
 
 
     // int i = 0;
@@ -64,15 +65,21 @@ int main()
             fpgaLedOnLast = fpgaLedOn;
 
             // SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
-            octane::fpga::writeRegister(
-                (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
-                // 0x0001,
-                // fpgaLedOn ? 0x0001 : 0x0000,
-                // fpgaLedOn ? 0xf731 : 0xf730
+            // octane::fpga::writeRegister(
+            //     (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
+            //     // 0x0001,
+            //     // fpgaLedOn ? 0x0001 : 0x0000,
+            //     // fpgaLedOn ? 0xf731 : 0xf730
 
+            //     fpgaLedOn ? 0xffff : 0xff0f
+            //     // fpgaLedOn ? 0xfff0 : 0xff00
+            // );
+
+            octane::Fpga::getInstance().writeRegister(
+                (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
                 fpgaLedOn ? 0xffff : 0xff0f
-                // fpgaLedOn ? 0xfff0 : 0xff00
             );
+
             // SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS
 
         }

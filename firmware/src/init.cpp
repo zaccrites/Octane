@@ -151,10 +151,15 @@ void octane::init()
         SPI_CR1_CPHA |
         SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
 
-    SPI2->CR2 =
+    // The interrupts aren't enabled
+    SPI2->CR2 = 0;
+
+        // SPI_CR2_TXEIE;
+
         // SPI_CR2_FRF |  // use TI mode
         // SPI_CR2_SSOE |  // drive NSS low when communicating with slave
-        SPI_CR2_RXNEIE;  // trigger interrupt when data is received
+        // SPI_CR2_TXEIE | // trigger interrupt when data is transmitted
+        // SPI_CR2_RXNEIE;  // trigger interrupt when data is received
         // TODO: Use TX/RX buffer DMA enable
 
     // Data is valid on the falling edge of SCK
@@ -162,15 +167,26 @@ void octane::init()
 
 
 
-
+    // TODO: Use PLL to increase main clock frequency
     const uint32_t MAIN_CLOCK_FREQ = 8000000;
     SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
 
-    NVIC_EnableIRQ(TIM2_IRQn);
-    NVIC_EnableIRQ(TIM3_IRQn);
-    // NVIC_EnableIRQ(SPI2_IRQn);
+    // TODO: NVIC_SetPriotityGroup, NVIC_EncodePriority?
+    // https://www.keil.com/pack/doc/cmsis/Core/html/group__NVIC__gr.html
 
-    __enable_irq();
+    NVIC_SetPriority(TIM2_IRQn, 2);
+    NVIC_EnableIRQ(TIM2_IRQn);
+
+    NVIC_SetPriority(TIM3_IRQn, 2);
+    NVIC_EnableIRQ(TIM3_IRQn);
+
+    // Just enabling this causes the system to hang for some reason.
+    // None of the SPI2 interrupts are enabled. The ISR itself doesn't
+    // actually get called, but we're stuck in SOME interrupt somewhere (I think).
+    NVIC_SetPriority(SPI2_IRQn, 1);
+    NVIC_EnableIRQ(SPI2_IRQn);
+
+    // __enable_irq();
 
 
 

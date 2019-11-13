@@ -89,7 +89,9 @@ target_compile_options(firmware PRIVATE
     -std=gnu++17
     -pedantic
 
-    -O2
+    -Og
+    -g3
+    # -O2
     # TODO: debugging symbols?
 
     -fno-rtti
