@@ -152,7 +152,7 @@ void octane::init()
     SPI2->CR1 =
         SPI_CR1_MSTR |  // act as SPI master
         // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
-        (0b011 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 16
+        (0b100 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 32  (slow way down until I can shorten these flying wires, or make a PCB)
         SPI_CR1_DFF |   // use 16 bit frame, MSB out first
         SPI_CR1_CPHA |
         SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
@@ -219,16 +219,16 @@ void octane::init()
     // TODO: NVIC_SetPriotityGroup, NVIC_EncodePriority?
     // https://www.keil.com/pack/doc/cmsis/Core/html/group__NVIC__gr.html
 
-    NVIC_SetPriority(TIM2_IRQn, 2);
+    // NVIC_SetPriority(TIM2_IRQn, 2);
+    NVIC_SetPriority(TIM2_IRQn, 1);
     NVIC_EnableIRQ(TIM2_IRQn);
 
-    NVIC_SetPriority(TIM3_IRQn, 2);
+    // NVIC_SetPriority(TIM3_IRQn, 2);
+    NVIC_SetPriority(TIM3_IRQn, 1);
     NVIC_EnableIRQ(TIM3_IRQn);
 
-    // Just enabling this causes the system to hang for some reason.
-    // None of the SPI2 interrupts are enabled. The ISR itself doesn't
-    // actually get called, but we're stuck in SOME interrupt somewhere (I think).
-    NVIC_SetPriority(SPI2_IRQn, 1);
+    // NVIC_SetPriority(SPI2_IRQn, 1);
+    NVIC_SetPriority(SPI2_IRQn, 2);
     NVIC_EnableIRQ(SPI2_IRQn);
 
 }

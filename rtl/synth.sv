@@ -132,14 +132,6 @@ assign w_VoiceOperatorRegisterWriteParameter = w_RegisterWriteNumber[13:8];
 assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[7:0];
 
 
-always_ff @ (posedge i_Clock) begin
-    if (w_PhaseStepWriteEnable) begin
-        $display("Wrote phase step = %d", w_RegisterWriteValue);
-    end
-end
-
-
-
 function voiceOpRegWriteEnable;
     input logic [5:0] parameterBits;
 begin

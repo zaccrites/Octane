@@ -34,16 +34,7 @@ void main()
     printf("Finished FPGA initialization \r\n");
 
 
-    // bool fpgaLedOn = true;
-    // octane::fpga::writeRegister(
-    //     (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
-    //     fpgaLedOn ? 0x0001 : 0x0000
-    // );
-
-
     SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
-    // octane::Fpga::getInstance().writeRegister(0x0000, 0x0000);  // start comms
-
 
     // int i = 0;
     bool fpgaLedOnLast = false;
@@ -51,7 +42,6 @@ void main()
     int counter = 0;
     while (true)
     {
-        // printf("Hello World! %d \r\n", i++);
 
         if (newSampleAvailable)
         {
@@ -64,18 +54,7 @@ void main()
         {
             fpgaLedOnLast = fpgaLedOn;
 
-            // SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
-            // octane::fpga::writeRegister(
-            //     (0b10 << 14) | (0x12 << 8) | (0 << 5) | 0,
-            //     // 0x0001,
-            //     // fpgaLedOn ? 0x0001 : 0x0000,
-            //     // fpgaLedOn ? 0xf731 : 0xf730
-
-            //     fpgaLedOn ? 0xffff : 0xff0f
-            //     // fpgaLedOn ? 0xfff0 : 0xff00
-            // );
-
-
+            GPIOD->BSRR = fpgaLedOn ? GPIO_BSRR_BS13 : GPIO_BSRR_BR13;
 
 
             octane::Fpga::getInstance().writeRegister(
@@ -84,7 +63,8 @@ void main()
             );
             octane::Fpga::getInstance().commitRegisterWrites();
 
-            // SPI2->CR1 &= ~SPI_CR1_SPE;    // disable SPI to release NSS
+
+            printf("Current sample: 0x%04x \r\n", octane::Fpga::getInstance().getLatestSample());
 
         }
 

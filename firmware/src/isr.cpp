@@ -23,7 +23,7 @@ extern "C" void SPI2_IRQHandler()
     {
         octane::Fpga::getInstance().onSpiTxComplete();
     }
-    else if (SPI2->SR & SPI_SR_RXNE)
+    if (SPI2->SR & SPI_SR_RXNE)
     {
         octane::Fpga::getInstance().onSpiRxComplete();
     }
@@ -42,7 +42,7 @@ extern "C" void TIM2_IRQHandler()
 {
     if (TIM2->SR & TIM_SR_CC1IF)
     {
-        GPIOD->BSRR = GPIO_BSRR_BS13;
+        // GPIOD->BSRR = GPIO_BSRR_BS13;
         TIM2->SR &= ~TIM_SR_CC1IF;
     }
     else if (TIM2->SR & TIM_SR_CC2IF)
@@ -52,7 +52,7 @@ extern "C" void TIM2_IRQHandler()
     }
     else if (TIM2->SR & TIM_SR_CC3IF)
     {
-        GPIOD->BSRR = GPIO_BSRR_BR13;
+        // GPIOD->BSRR = GPIO_BSRR_BR13;
         TIM2->SR &= ~TIM_SR_CC3IF;
     }
     else if (TIM2->SR & TIM_SR_UIF)

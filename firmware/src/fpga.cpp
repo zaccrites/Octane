@@ -87,6 +87,10 @@ void Fpga::onSpiTxComplete()
 
     if (m_CommandTransferProgress == m_NumCommands * HALF_WORDS_PER_COMMAND)
     {
+        // Wait for the final transfer to complete.
+        // TXE will be deasserted a few SPI cycles before the data is
+        // actually finished transmitting to the slave.
+        while (SPI2->SR & SPI_SR_BSY);
         onSpiTransferComplete();
     }
     else
@@ -101,9 +105,10 @@ void Fpga::onSpiTxComplete()
 void Fpga::onSpiTransferComplete()
 {
     // Disable SPI? Must wait until TXE=1 and then BSY=0
+    // printf("onSpiTransferComplete \r\n");
 
     SPI2->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_RXNEIE);  // disable interrupts
-    GPIOD->BSRR = GPIO_BSRR_BS12;  // release NSS when transfer completes
+    GPIOB->BSRR = GPIO_BSRR_BS12;  // release NSS when transfer completes
     m_SpiTransferInProgress = false;
     m_NumCommands = 0;
 }
@@ -118,9 +123,11 @@ void Fpga::commitRegisterWrites()
 
         // Enable SPI?
 
-        GPIOD->BSRR = GPIO_BSRR_BR12;  // pull NSS low during DMA transfer
+        GPIOB->BSRR = GPIO_BSRR_BR12;  // pull NSS low during DMA transfer
         SPI2->DR = m_CommandBuffer[m_CommandTransferProgress];  // begin transfer
         SPI2->CR2 |= SPI_CR2_TXEIE | SPI_CR2_RXNEIE;  // enable interrupts
+
+        // printf("commitRegisterWrites \r\n");
     }
 }
 

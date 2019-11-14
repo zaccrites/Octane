@@ -25,47 +25,6 @@ Synth::~Synth()
 }
 
 
-// void Synth::spiTick()
-// {
-
-//     m_Synth.i_SPI_NSS = 1;
-//     m_Synth.i_SPI_SCK = 1;
-//     tick();
-
-//     m_Synth.i_SPI_NSS = 0;
-
-
-//     // The FPGA clock runs 4x as fast as the SPI clock
-//     // in order to avoid missing SCK edges.
-
-//     m_Synth.i_SPI_SCK = 0;
-//     tick();
-
-//     // Output the MSB first
-//     m_Synth.i_SPI_MOSI = (m_SPI_OutputBuffer & 0x8000) ? 1 : 0;
-//     m_SPI_OutputBuffer = m_SPI_OutputBuffer << 1;
-//     tick();
-
-//     m_Synth.i_SPI_SCK = 1;
-//     tick();
-
-//     // Input the MSB first
-//     m_SPI_InputBuffer = (m_SPI_InputBuffer << 1) | (m_Synth.o_SPI_MISO != 0);
-//     tick();
-
-//     const bool collectNewSample = ++m_SPI_TickCounter >= 256 / 4;
-//     if (collectNewSample)
-//     {
-//         m_SPI_TickCounter = 0;
-
-//         auto sample = static_cast<int16_t>(m_SPI_InputBuffer);
-
-//         m_SampleBuffer.push_front(sample);
-//         fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
-//     }
-// }
-
-
 void Synth::tick()
 {
     m_Synth.i_Clock = 0;
@@ -173,9 +132,6 @@ void Synth::spiSendReceive()
     if (collectNewSample)
     {
         m_SPI_TickCounter = 0;
-
-        // TODO: REMOVE HACK
-        // spiInputBuffer = spiInputBuffer << 1;
 
         auto sample = static_cast<int16_t>(spiInputBuffer & 0x0000ffff);
         if (false) printf(
