@@ -29,9 +29,11 @@ module spi (
 
 
 logic r_SPI_SCK_last;
-logic w_SPI_SCK_falling;
 always_ff @ (posedge i_Clock) r_SPI_SCK_last <= i_SPI_SCK;
+logic w_SPI_SCK_falling;
 assign w_SPI_SCK_falling = r_SPI_SCK_last && ! i_SPI_SCK;
+logic w_SPI_SCK_rising;
+assign w_SPI_SCK_rising = ! r_SPI_SCK_last && i_SPI_SCK;
 
 logic [15:0] r_NextSample;
 logic [15:0] r_CurrentSample;
@@ -76,8 +78,10 @@ always_ff @ (posedge i_Clock) begin
             // We output the same sample twice for each command
             r_CurrentSample <= {r_CurrentSample[14:0], r_CurrentSample[15]};
         end
+    end
+    else if (w_SPI_SCK_rising) begin
+        // Prepare the output for the next SCK falling edge
         o_SPI_MISO <= r_CurrentSample[15];
-
     end
 
 end
