@@ -8,10 +8,6 @@
 module spi (
     input i_Clock,
 
-    // verilator lint_off UNUSED
-    input i_Reset,
-    // verilator lint_on UNUSED
-
     input logic i_SampleReady,
     input logic [15:0] i_SampleToOutput,
 
@@ -20,7 +16,7 @@ module spi (
     output logic [15:0] o_RegisterWriteValue,
 
     // The SPI SCK must be 8x slower than the internal clock!
-    input logic i_SPI_NSS,
+    input logic i_SPI_CS,
     input logic i_SPI_SCK,
     input logic i_SPI_MOSI,
     output logic o_SPI_MISO
@@ -28,12 +24,34 @@ module spi (
 );
 
 
+logic w_SPI_CS;
+double_register SPI_CS_sync (
+    .i_Clock (i_Clock),
+    .i_Input (i_SPI_CS),
+    .o_Output(w_SPI_CS)
+);
+
+logic w_SPI_SCK;
+double_register SPI_SCK_sync (
+    .i_Clock (i_Clock),
+    .i_Input (i_SPI_SCK),
+    .o_Output(w_SPI_SCK)
+);
+
+logic w_SPI_MOSI;
+double_register SPI_MOSI_sync (
+    .i_Clock (i_Clock),
+    .i_Input (i_SPI_MOSI),
+    .o_Output(w_SPI_MOSI)
+);
+
+
 logic r_SPI_SCK_last;
-always_ff @ (posedge i_Clock) r_SPI_SCK_last <= i_SPI_SCK;
+always_ff @ (posedge i_Clock) r_SPI_SCK_last <= w_SPI_SCK;
 logic w_SPI_SCK_falling;
-assign w_SPI_SCK_falling = r_SPI_SCK_last && ! i_SPI_SCK;
+assign w_SPI_SCK_falling = r_SPI_SCK_last && ! w_SPI_SCK;
 logic w_SPI_SCK_rising;
-assign w_SPI_SCK_rising = ! r_SPI_SCK_last && i_SPI_SCK;
+assign w_SPI_SCK_rising = ! r_SPI_SCK_last && w_SPI_SCK;
 
 logic [15:0] r_NextSample;
 logic [15:0] r_CurrentSample;
@@ -50,13 +68,11 @@ assign o_RegisterWriteValue = r_InputBuffer[15:0];
 
 always_ff @ (posedge i_Clock) begin
 
-    // TODO: Reset
-
     if (i_SampleReady) begin
         r_NextSample <= i_SampleToOutput;
     end
 
-    if (i_SPI_NSS) begin
+    if (w_SPI_CS) begin
         // Clear away any progress (no valid bits yet)
         r_InputBuffer <= 33'b1;
 
@@ -66,7 +82,7 @@ always_ff @ (posedge i_Clock) begin
     else if (w_SPI_SCK_falling) begin
         if (r_InputBuffer[32]) begin
             // Start a new command
-            r_InputBuffer <= {32'b1, i_SPI_MOSI};
+            r_InputBuffer <= {32'b1, w_SPI_MOSI};
 
             // New command, new output sample
             r_CurrentSample <= r_NextSample;

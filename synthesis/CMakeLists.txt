@@ -9,6 +9,7 @@ add_custom_command(
     #
     # See docs for the COMMAND argument: https://cmake.org/cmake/help/latest/command/add_custom_command.html
     COMMAND yosys
+        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/double_register.sv\""
         -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/spi.sv\""
         -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/stage_envelope_attenuator.sv\""
         -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/stage_modulator.sv\""

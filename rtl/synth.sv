@@ -9,7 +9,7 @@ module synth (
     input logic i_Clock,
     input logic i_Reset,
 
-    input logic i_SPI_NSS,
+    input logic i_SPI_CS,
     input logic i_SPI_SCK,
     input logic i_SPI_MOSI,
     output logic o_SPI_MISO,
@@ -94,10 +94,9 @@ logic [15:0] w_RegisterWriteValue;
 
 spi spi0 (
     .i_Clock              (i_Clock),
-    .i_Reset              (i_Reset),
     .i_SampleReady        (w_SampleReady),
     .i_SampleToOutput     (w_Sample),
-    .i_SPI_NSS            (i_SPI_NSS),
+    .i_SPI_CS            (i_SPI_CS),
     .i_SPI_SCK            (i_SPI_SCK),
     .i_SPI_MOSI           (i_SPI_MOSI),
     .o_SPI_MISO           (o_SPI_MISO),
@@ -168,23 +167,6 @@ always_comb begin
     w_FeedbackLevelConfigWriteEnable = voiceOpRegWriteEnable(6'h07);
 
 end
-
-
-
-// TODO: Remove
-`ifdef YOSYS
-
-logic w_SampleReady;
-logic signed [15:0] w_Sample;
-assign w_SampleReady = 1;
-assign w_Sample = 16'h1234;
-
-endmodule
-
-
-
-
-`else
 
 
 /// Track the currently active voice operator
@@ -318,5 +300,3 @@ stage_sample_generator sample_generator (
 
 
 endmodule
-
-`endif

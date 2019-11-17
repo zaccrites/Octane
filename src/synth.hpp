@@ -60,6 +60,8 @@ public:
     static const uint8_t PARAM_NOTEON_BANK0  { 0x10 };
     static const uint8_t PARAM_NOTEON_BANK1  { 0x11 };
 
+    static const uint8_t PARAM_LED_CONFIG  { 0x12 };
+
 
 private:
     Vsynth m_Synth;

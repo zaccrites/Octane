@@ -15,7 +15,7 @@ Synth::Synth() :
 {
     std::fill_n(m_NoteOnState, 32, false);
 
-    m_Synth.i_SPI_NSS = 1;
+    m_Synth.i_SPI_CS = 1;
 
 }
 
@@ -82,7 +82,6 @@ bool Synth::getNoteOn(uint8_t voiceNum) const
 
 void Synth::spiSendReceive()
 {
-
     auto getCommandHalfWord = [this]() -> uint16_t {
         uint16_t value;
         if (m_SPI_SendQueue.empty())
@@ -102,7 +101,7 @@ void Synth::spiSendReceive()
     uint32_t spiOutputBuffer = (spiRegWriteAddr << 16) | spiRegWriteValue;
     uint32_t spiInputBuffer = 0;
 
-    m_Synth.i_SPI_NSS = 0;
+    m_Synth.i_SPI_CS = 0;
     tick();
 
     for (int i = 0; i < 32; i++)
@@ -125,7 +124,7 @@ void Synth::spiSendReceive()
         tick();
     }
 
-    m_Synth.i_SPI_NSS = 1;
+    m_Synth.i_SPI_CS = 1;
     tick();
 
     const bool collectNewSample = ++m_SPI_TickCounter >= 8 / 4;
@@ -134,29 +133,6 @@ void Synth::spiSendReceive()
         m_SPI_TickCounter = 0;
 
         auto sample = static_cast<int16_t>(spiInputBuffer & 0x0000ffff);
-        if (false) printf(
-            "Collected sample %d (0x%04x) (0b%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c)\n",
-            sample,
-            spiInputBuffer,
-
-            ((spiInputBuffer & 0x8000) ? '1' : '0'),
-            ((spiInputBuffer & 0x4000) ? '1' : '0'),
-            ((spiInputBuffer & 0x2000) ? '1' : '0'),
-            ((spiInputBuffer & 0x1000) ? '1' : '0'),
-            ((spiInputBuffer & 0x0800) ? '1' : '0'),
-            ((spiInputBuffer & 0x0400) ? '1' : '0'),
-            ((spiInputBuffer & 0x0200) ? '1' : '0'),
-            ((spiInputBuffer & 0x0100) ? '1' : '0'),
-            ((spiInputBuffer & 0x0080) ? '1' : '0'),
-            ((spiInputBuffer & 0x0040) ? '1' : '0'),
-            ((spiInputBuffer & 0x0020) ? '1' : '0'),
-            ((spiInputBuffer & 0x0010) ? '1' : '0'),
-            ((spiInputBuffer & 0x0008) ? '1' : '0'),
-            ((spiInputBuffer & 0x0004) ? '1' : '0'),
-            ((spiInputBuffer & 0x0002) ? '1' : '0'),
-            ((spiInputBuffer & 0x0001) ? '1' : '0')
-        );
-
         m_SampleBuffer.push_front(sample);
         fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
     }
