@@ -29,10 +29,6 @@ extern "C" void SPI2_IRQHandler()
     }
 }
 
-extern "C" void DMA1_Stream4_IRQHandler()
-{
-
-}
 
 
 
@@ -63,16 +59,13 @@ extern "C" void TIM2_IRQHandler()
 }
 
 
-extern uint16_t lastSample;
-volatile bool newSampleAvailable = false;
-volatile uint16_t currentSample;
+
+volatile bool updateSample;
 extern "C" void TIM3_IRQHandler()
 {
     if (TIM3->SR & TIM_SR_UIF)
     {
-        newSampleAvailable = true;
-        currentSample = lastSample;
-        // DAC1->DHR12R2 = currentSample >> 8;
+        updateSample = true;
         TIM3->SR &= ~TIM_SR_UIF;
     }
 }

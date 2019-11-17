@@ -92,7 +92,7 @@ int main(int argc, const char** argv)
 
 
 
-    for (uint16_t voiceNum = 0; voiceNum < 32; voiceNum++)
+    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
         // if (voiceNum < 16)
@@ -103,7 +103,7 @@ int main(int argc, const char** argv)
         // else
         {
             // noteBaseFrequency = 1000.0;
-            noteBaseFrequency = 523.251;  // C5
+            // noteBaseFrequency = 523.251;  // C5
         }
         // noteBaseFrequency = 100.0 * (1 + voiceNum);
         // noteBaseFrequency = 440.0;
@@ -114,7 +114,7 @@ int main(int argc, const char** argv)
             //       7654321
             //xxxxxx mmmmmmm nnn c
             0b000000'0000000'000'0,  // OP1
-            0b000000'0000001'000'1,  // OP2
+            0b000000'0000000'000'1,  // OP2
             0b000000'0000000'000'0,  // OP3
             0b000000'0000000'000'0,  // OP4
             0b000000'0000000'000'0,  // OP5
@@ -125,18 +125,20 @@ int main(int argc, const char** argv)
 
         synth.setNoteOn(voiceNum, false);
 
-        for (uint16_t opNum = 0; opNum < 8; opNum++)
+        for (uint8_t opNum = 0; opNum < 8; opNum++)
         {
             auto opConfig = patchConfig.getOperatorConfig(opNum);
 
             // TODO: Use JSON
-            uint8_t feedbackLevel = (opNum == 0) ? 255 : 0;
+            // uint8_t feedbackLevel = (opNum == 0) ? 255 : 0;
+            uint8_t feedbackLevel = 0;
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_FEEDBACK_LEVEL, feedbackLevel);
 
             // TODO: Use JSON
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM, algorithmWords[opNum]);
 
-            uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
+            // uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
+            uint16_t phaseStep = 1398;
             synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
 
             bool isCarrier = algorithmWords[opNum] & 0x0001;
@@ -186,12 +188,17 @@ int main(int argc, const char** argv)
                 }
             };
 
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, fixOperatorLevel(opConfig.getAttackLevel()));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, fixOperatorLevel(opConfig.getSustainLevel()));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, fixOperatorRate(opConfig.getAttackRate()));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, fixOperatorRate(opConfig.getDecayRate()));
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, fixOperatorRate(opConfig.getReleaseRate()));
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, fixOperatorLevel(opConfig.getAttackLevel()));
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, fixOperatorLevel(opConfig.getSustainLevel()));
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, fixOperatorRate(opConfig.getAttackRate()));
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, fixOperatorRate(opConfig.getDecayRate()));
+            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, fixOperatorRate(opConfig.getReleaseRate()));
 
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, 0xffff);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, 0xffff);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, 0xffff);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, 0xffff);
+            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, 0xffff);
 
         }
     }
@@ -206,12 +213,17 @@ int main(int argc, const char** argv)
 
     // Add some overhead for setting up the sine table
     double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
+    // seconds *= 10;
+
     // double seconds = 0.005;
     // double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
     auto& rBuffer = synth.getSampleBuffer();
 
     // double noteOn = false;
-    while (rBuffer.size() < static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds))
+    const size_t samplesNeeded { static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds) };
+    double t_last = 0.0;
+    bool ledOn = false;
+    while (rBuffer.size() < samplesNeeded)
     {
         double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
         // double onTime = seconds * 0.0;
@@ -248,10 +260,20 @@ int main(int argc, const char** argv)
         // }
 
 
+        // TODO: fix
+        const double period = 0.01;
+        if (std::fmod(t_last, period) < (period / 2) && std::fmod(t, period) > (period / 2))
+        {
+            ledOn = ! ledOn;
+            synth.writeOperatorRegister(0, 0, Synth::PARAM_LED_CONFIG, ledOn ? 0xffff : 0xff0f);
+        }
+
+
         synth.spiSendReceive();
 
         // printf("rBuffer.size() = %d \n", rBuffer.size());
 
+        t_last = t;
     }
 
 

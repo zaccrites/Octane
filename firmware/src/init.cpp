@@ -73,7 +73,8 @@ void octane::init()
         (0x01 << 0);
 
 
-    TIM2->PSC = 4000 - 1;
+    // TIM2->PSC = 4000 - 1;
+    TIM2->PSC = 8000 - 1;
     TIM2->CCR1 = 250;
     TIM2->CCR2 = 500;
     TIM2->CCR3 = 750;
@@ -149,13 +150,16 @@ void octane::init()
     //     // TODO: Use TX/RX buffer DMA enable
 
 
+    // The glitchiness seems to just get WORSE the slower the SPI clock is!
     SPI2->CR1 =
         SPI_CR1_MSTR |  // act as SPI master
-        // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)
-        (0b100 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 32  (slow way down until I can shorten these flying wires, or make a PCB)
+        (0b011 << SPI_CR1_BR_Pos) |
+        // (0b010 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 8 (500 kHz)
+        // (0b001 << SPI_CR1_BR_Pos) |  // set baud rate to f_PCLK / 4 (2 MHz)  // HARD FAULT, for some reason (PRECISERR, BFARVALID)
         SPI_CR1_DFF |   // use 16 bit frame, MSB out first
         SPI_CR1_CPHA |
         SPI_CR1_SSI | SPI_CR1_SSM;    // software slave management
+
 
     // The interrupts aren't enabled
     SPI2->CR2 = 0;
