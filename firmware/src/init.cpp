@@ -100,7 +100,8 @@ void octane::init()
     GPIOA->MODER |=
         (0b11 << GPIO_MODER_MODER5_Pos);  // DAC2_OUT=PA5
     DAC1->DHR12R2 = 0;
-    DAC1->CR = DAC_CR_EN2 | DAC_CR_BOFF2;
+    // DAC1->CR = DAC_CR_EN2 | DAC_CR_BOFF2;
+    DAC1->CR = DAC_CR_EN2;
 
 
     // Setup SPI2 to talk to FPGA

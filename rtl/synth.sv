@@ -132,10 +132,10 @@ logic [15:0] w_SineTableOutput;
 always_ff @ (posedge i_Clock) begin
     if (r_SineTablePhase[7:0] == 0) begin
         // o_LEDWord <= w_SineTableOutput[15:8];
-        o_LEDWord[7:4] <= w_SineTableOutput[15:12];
+        // o_LEDWord[7:4] <= w_SineTableOutput[15:12];
     end
 end
-assign o_LEDWord[3:0] = w_SINE_TABLE_OUTPUT[15:12];
+// assign o_LEDWord[3:0] = w_SINE_TABLE_OUTPUT[15:12];
 
 
 logic [13:0] w_SineTableIndex;
@@ -144,9 +144,12 @@ assign w_SineTableIndex = w_SineTableWriteEnable ? w_RegisterWriteNumber[13:0] :
 
 `else
 
-assign o_LEDWord = 8'b01011010;
+// assign o_LEDWord = 8'b01011010;
 
 `endif
+
+assign o_LEDWord[7:0] = w_ModulatedPhase[7:0];
+
 
 
 
@@ -305,8 +308,8 @@ logic signed [15:0] w_RawWaveform;
 
 stage_waveform_generator waveform_generator (
     .i_Clock  (i_Clock),
-    // .i_Phase   (w_ModulatedPhase),
-    .i_Phase   ({1'b0, r_SineTablePhase}),
+    .i_Phase   (w_ModulatedPhase),
+    // .i_Phase   ({1'b0, r_SineTablePhase}),
     .o_Waveform(w_RawWaveform),
 
     .o_SINE_TABLE_OUTPUT    (w_SINE_TABLE_OUTPUT),

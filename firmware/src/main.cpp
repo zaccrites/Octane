@@ -85,6 +85,8 @@ void initFpga(octane::Fpga& rFpga)
             while (rFpga.getSpiTransferInProgress());  // wait
 
             uint16_t phaseStep = 1398;  // 1 kHz tone at 12 MHz / 256 = 46.875 kHz sample freq
+            // uint16_t phaseStep = 100;  // 1 kHz tone at 12 MHz / 256 = 46.875 kHz sample freq
+            // uint16_t phaseStep = 500;  // 1 kHz tone at 12 MHz / 256 = 46.875 kHz sample freq
             rFpga.writeOperatorRegister(voiceNum, opNum, octane::Fpga::OP_PARAM_PHASE_STEP, phaseStep);
             rFpga.commitRegisterWrites();
             while (rFpga.getSpiTransferInProgress());  // wait
@@ -144,8 +146,9 @@ void main()
     {
         // TODO: Ensure that the sample does not overflow.
         // I'm just disabling one voice until I can get that working.
-        if (voiceNum == 31) continue;
-
+        // if (voiceNum != 31) continue;
+        // if (voiceNum < 16)
+        if (voiceNum < 2)
         rFpga.setNoteOn(voiceNum, true);
     }
 
@@ -178,7 +181,8 @@ void main()
             while (rFpga.getSpiTransferInProgress());  // wait
 
 
-            printf("Current sample: 0x%04x \r\n", octane::Fpga::getInstance().getLatestSample());
+            uint16_t sample = octane::Fpga::getInstance().getLatestSample();
+            printf("Current sample: 0x%04x  (%d) \r\n", sample, static_cast<int16_t>(sample));
 
         }
 
