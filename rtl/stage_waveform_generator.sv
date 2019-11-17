@@ -25,6 +25,8 @@ module stage_waveform_generator (
     input logic signed [16:0] i_Phase,
     // verilator lint_on UNUSED
 
+    output logic [15:0] o_SINE_TABLE_OUTPUT,
+
     output logic signed [15:0] o_Waveform
 );
 
@@ -42,15 +44,18 @@ assign w_SineTableIndex = i_SineTableWriteEnable ? i_SineTableWriteAddress : r_P
 
 `ifdef YOSYS
 
+logic [3:0] w_MaskWREN;
+assign w_MaskWREN = i_SineTableWriteEnable ? 4'b1111 : 4'b0000;
+
 SB_SPRAM256KA sine_spram (
     .CLOCK(i_Clock),
     .ADDRESS(w_SineTableIndex),
     .DATAIN(i_SineTableWriteValue),
-    .MASKWREN(4'b1111),
+    .MASKWREN(w_MaskWREN),
     .WREN(i_SineTableWriteEnable),
     .CHIPSELECT(1'b1),
     .STANDBY(1'b0),
-    .POWEROFF(1'b0),
+    .POWEROFF(1'b1),
     .SLEEP(1'b0),
     .DATAOUT(w_SineTableOutput)
 );
@@ -120,6 +125,7 @@ always_ff @ (posedge i_Clock) begin
     // Clock 3
     // ----------------------------------------------------------
     o_Waveform <= r_NegateOutput[1] ? ~w_QuarterWaveSine : w_QuarterWaveSine;
+    o_SINE_TABLE_OUTPUT <= w_QuarterWaveSine;
 
     o_VoiceOperator <= r_VoiceOperator[1];
     o_AlgorithmWord <= r_AlgorithmWord[1];

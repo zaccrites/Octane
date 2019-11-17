@@ -25,3 +25,12 @@ set_io o_SPI_MISO  36     # 48B
 
 set_io o_LED 25   # 36B
 
+
+set_io o_LEDWord[7]  6  # 13B
+set_io o_LEDWord[6]  9  # 16A
+set_io o_LEDWord[5]  10  # 18A
+set_io o_LEDWord[4]  11  # 20A
+set_io o_LEDWord[3]  18  # 31B
+set_io o_LEDWord[2]  19  # 29B
+set_io o_LEDWord[1]  13  # 24A
+set_io o_LEDWord[0]  21  # 23B

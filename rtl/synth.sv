@@ -14,6 +14,8 @@ module synth (
     input logic i_SPI_MOSI,
     output logic o_SPI_MISO,
 
+    output logic [7:0] o_LEDWord,
+
     // output [2:0] o_RGB
     output logic o_LED
 );
@@ -81,6 +83,70 @@ end
 
 
 
+
+// logic [15:0] r_SampleCounter;
+// always_ff @ (posedge i_Clock) begin
+//     if (r_SampleCounter >= 4688) begin
+//         r_SampleCounter <= 0;
+//         o_LEDWord <= w_Sample[15:8];
+//     end
+//     else if (w_SampleReady) begin
+//         r_SampleCounter <= r_SampleCounter + 1;
+//     end
+// end
+
+// initial o_LEDWord = 8'b11001100;
+// always_ff @ (posedge i_Clock) begin
+//     if (w_SampleReady) begin
+//         o_LEDWord <= w_Sample[15:8];
+//     end
+// end
+
+
+
+
+logic [13:0] r_SineTablePhase;
+always_ff @ (posedge i_Clock) begin
+    r_SineTablePhase <= r_SineTablePhase + 1;
+end
+
+`ifdef YOSYS
+
+SB_SPRAM256KA sine_spram2 (
+    .CLOCK(i_Clock),
+    .ADDRESS(w_SineTableIndex),
+    .DATAIN(w_RegisterWriteValue),
+    .MASKWREN(w_MaskWREN),
+    .WREN(w_SineTableWriteEnable),
+    .CHIPSELECT(1'b1),
+    .STANDBY(1'b0),
+    .POWEROFF(1'b1),
+    .SLEEP(1'b0),
+    .DATAOUT(w_SineTableOutput)
+);
+
+logic [3:0] w_MaskWREN;
+assign w_MaskWREN = w_SineTableWriteEnable ? 4'b1111 : 4'b0000;
+
+logic [15:0] w_SineTableOutput;
+always_ff @ (posedge i_Clock) begin
+    if (r_SineTablePhase[7:0] == 0) begin
+        // o_LEDWord <= w_SineTableOutput[15:8];
+        o_LEDWord[7:4] <= w_SineTableOutput[15:12];
+    end
+end
+assign o_LEDWord[3:0] = w_SINE_TABLE_OUTPUT[15:12];
+
+
+logic [13:0] w_SineTableIndex;
+assign w_SineTableIndex = w_SineTableWriteEnable ? w_RegisterWriteNumber[13:0] : r_SineTablePhase;
+
+
+`else
+
+assign o_LEDWord = 8'b01011010;
+
+`endif
 
 
 
@@ -238,8 +304,11 @@ logic signed [15:0] w_RawWaveform;
 
 stage_waveform_generator waveform_generator (
     .i_Clock  (i_Clock),
-    .i_Phase   (w_ModulatedPhase),
+    // .i_Phase   (w_ModulatedPhase),
+    .i_Phase   ({3'b000, r_SineTablePhase}),
     .o_Waveform(w_RawWaveform),
+
+    .o_SINE_TABLE_OUTPUT    (w_SINE_TABLE_OUTPUT),
 
     .i_NoteOn      (r_NoteOn[1]),
     .o_NoteOn      (r_NoteOn[2]),
@@ -254,6 +323,8 @@ stage_waveform_generator waveform_generator (
     .i_AlgorithmWord(r_AlgorithmWord[2]),
     .o_AlgorithmWord(r_AlgorithmWord[3])
 );
+
+logic [15:0] w_SINE_TABLE_OUTPUT;
 
 
 logic signed [15:0] w_AttenuatedWaveform;
