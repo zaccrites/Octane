@@ -25,7 +25,8 @@ project(octane_firmware VERSION 0.1.0 LANGUAGES CXX C ASM)
 add_executable(firmware
     "src/main.cpp"
     "src/init.cpp"
-    "src/fpga.cpp"
+    "src/Fpga.cpp"
+    "src/AudioOut.cpp"
 
     "src/CriticalSection.cpp"
 

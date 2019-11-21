@@ -3,7 +3,7 @@
 #include <printf.h>
 #include <stm32f4xx.h>
 
-#include "fpga.hpp"
+#include "Fpga.hpp"
 
 
 extern "C" void SysTick_Handler()

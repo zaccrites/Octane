@@ -12,6 +12,9 @@ const uint32_t GPIO_MODER_ANALOG = 0b11;
 
 
 
+// This is the ultimate BSP function. The assigned pins will not be
+// the same for the development board as they will be on the real board.
+// Similarly, the exact peripheral may not be the same either.
 void octane::init()
 {
     // Init external clock and wait for external crystal to stabilize
@@ -23,15 +26,17 @@ void octane::init()
     RCC->AHB1ENR |=
         RCC_AHB1ENR_GPIOAEN |
         RCC_AHB1ENR_GPIOBEN |
-        RCC_AHB1ENR_GPIODEN |
         RCC_AHB1ENR_GPIOCEN |
+        RCC_AHB1ENR_GPIODEN |
         RCC_AHB1ENR_DMA1EN;
 
     RCC->APB1ENR |=
         RCC_APB1ENR_TIM2EN |    // enable TIM2
         RCC_APB1ENR_TIM3EN |    // enable TIM3
         RCC_APB1ENR_USART2EN |  // enable USART2
+        RCC_APB1ENR_I2C1EN |
         RCC_APB1ENR_SPI2EN |
+        RCC_APB1ENR_SPI3EN |  // for I2S3
         RCC_APB1ENR_DACEN;
 
 
@@ -62,17 +67,6 @@ void octane::init()
 
 
 
-    // Configure LEDs as outputs
-    GPIOD->MODER |=
-        (0x01 << 24) |
-        (0x01 << 26) |
-        (0x01 << 28) |
-        (0x01 << 30);
-
-    GPIOD->MODER |=
-        (0x01 << 0);
-
-
     // TIM2->PSC = 4000 - 1;
     TIM2->PSC = 8000 - 1;
     TIM2->CCR1 = 250;
@@ -86,7 +80,7 @@ void octane::init()
         TIM_DIER_CC3IE |
         TIM_DIER_UIE;
 
-    TIM2->CR1 |= TIM_CR1_CEN;  // Start timer
+    TIM2->CR1 = TIM_CR1_CEN;  // Start timer
 
 
     // TIM3 will just trigger its interrupt at 46.875 kHz (though this comes to more like 46.516 kHz)
@@ -97,36 +91,69 @@ void octane::init()
 
 
     // Setup DAC2  (PA5)
-    GPIOA->MODER |=
-        (0b11 << GPIO_MODER_MODER5_Pos);  // DAC2_OUT=PA5
+    GPIOA->MODER =
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER4) |  // CS43L22 - I2S3 - WS
+
+        (GPIO_MODER_ANALOG << GPIO_MODER_MODER5_Pos);  // DAC2_OUT=PA5
     DAC1->DHR12R2 = 0;
     // DAC1->CR = DAC_CR_EN2 | DAC_CR_BOFF2;
     DAC1->CR = DAC_CR_EN2;
 
 
+    GPIOA->AFR[0] =
+        (6 << GPIO_AFRL_AFSEL4_Pos);  // I2S3
+
+
     // Setup SPI2 to talk to FPGA
-    // For now just bit-bang it
     // SPI2_SCK = PB13
     // SPI2_MISO = PB14
     // SPI2_MOSI = PB15
     //
     // TODO: Use alternate function for these pins so that the SPI hardware takes over
-    GPIOB->MODER |=
-        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER12_Pos) |  // NSS
-        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER13_Pos) |  // SCK
-        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER14_Pos) |  // MISO
-        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER15_Pos) |  // MOSI
-        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER8_Pos);  // FPGA_RESET is an output
+    GPIOB->MODER =
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER6) |  // CS43L22 - I2C1 - SCL
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER9) |  // CS43L22 - I2C1 - SDA
 
-    // GPIOB->OTYPER |=
-    //     GPIO_OTYPER_OT12;  // Set NSS as open-drain pin, pulled up by external resistor
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER12_Pos) |     // FPGA - SPI2 NSS
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER13_Pos) |  // FPGA - SPI2 SCK
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER14_Pos) |  // FPGA - SPI2 MISO
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER15_Pos) |  // FPGA - SPI2 MOSI
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER8_Pos);       // FPGA - RESET
 
-    GPIOB->AFR[1] |=
-        // (5 << GPIO_AFRH_AFSEL12_Pos) |
-        (5 << GPIO_AFRH_AFSEL13_Pos) |
-        (5 << GPIO_AFRH_AFSEL14_Pos) |
-        (5 << GPIO_AFRH_AFSEL15_Pos);
+    GPIOB->AFR[0] =
+        (4 << GPIO_AFRL_AFSEL6_Pos);    // I2C1
 
+    GPIOB->AFR[1] =
+        (4 << GPIO_AFRH_AFSEL9_Pos)  |  // I2C1
+        (5 << GPIO_AFRH_AFSEL13_Pos) |  // SPI2
+        (5 << GPIO_AFRH_AFSEL14_Pos) |  // SPI2
+        (5 << GPIO_AFRH_AFSEL15_Pos);   // SPI2
+
+
+
+    GPIOC->MODER =
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER7)  |  // CS43L22 - I2S3 - MCLK
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER10) |  // CS43L22 - I2S3 - SCLK
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER12);   // CS43L22 - I2S3 - SDIN
+
+    GPIOC->AFR[0] =
+        (6 << GPIO_AFRL_AFSEL7_Pos);  // I2S3
+
+    GPIOC->AFR[1] =
+        (6 << GPIO_AFRH_AFSEL10_Pos) |  // I2S3
+        (6 << GPIO_AFRH_AFSEL12_Pos);   // I2S3
+
+
+
+
+    GPIOD->MODER =
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER4_Pos) |  // CS43L22 - RESET
+
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER0_Pos)  |  // SysTick toggle pin
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER12_Pos) |  // Green LED
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER13_Pos) |  // Orange LED
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER14_Pos) |  // Red LED
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER15_Pos);   // Blue LED
 
 
     // The FPGA acts on a rising SCK edge, both outputting the next MISO
@@ -176,6 +203,10 @@ void octane::init()
     // Data is valid on the falling edge of SCK
     // Synchronize on the falling edge of SCK when NSS is high
 
+    // TODO: Should this be shutdown between comms?
+    SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
+
+
 
 
     // Use DMA1 to handle SPI2 transmission
@@ -210,6 +241,15 @@ void octane::init()
     // // Note:   Before setting EN bit to '1' to start a new transfer,
     // // the event flags corresponding to the stream in DMA_LISR or DMA_HISR register must be cleared.
 
+
+
+
+    // TODO: Should this be shutdown between comms?
+    I2C1->CR2 =
+        (8 << I2C_CR2_FREQ_Pos);  // 8 MHz ?
+
+
+    I2C1->CR1 = I2C_CR1_PE;
 
 
 

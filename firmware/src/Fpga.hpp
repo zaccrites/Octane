@@ -13,18 +13,6 @@ extern "C" void SPI2_IRQHandler();
 namespace octane
 {
 
-// using FpgaCommand = std::pair<uint16_t, uint16_t>;
-
-
-
-// struct FpgaCommand
-// {
-//     uint16_t registerNumber;
-//     uint16_t value;
-// };
-
-
-
 class Fpga
 {
 public:

@@ -2,7 +2,8 @@
 #include "init.hpp"
 #include <printf.h>
 
-#include "fpga.hpp"
+#include "Fpga.hpp"
+#include "AudioOut.hpp"
 
 
 #include <stdint.h>
@@ -133,7 +134,11 @@ void main()
     printf("\r\n======================== OCTANE ======================== \r\n\r\n");
 
 
-    SPI2->CR1 |= SPI_CR1_SPE;    // enable SPI before comms
+
+    //
+    octane::AudioOut::getInstance().init();
+
+
 
 
 

@@ -6,7 +6,7 @@
 #include <printf.h>
 
 
-#include "fpga.hpp"
+#include "Fpga.hpp"
 #include "CriticalSection.hpp"
 
 
