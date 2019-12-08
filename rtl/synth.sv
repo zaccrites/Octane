@@ -14,11 +14,11 @@ module synth (
     input logic i_SPI_MOSI,
     output logic o_SPI_MISO,
 
-    output logic [7:0] o_LEDWord,
+    output logic [7:0] o_LED,
 
-    // output [2:0] o_RGB
-    output logic o_LED
+    output [2:0] o_RGB
 );
+
 
 
 
@@ -26,11 +26,6 @@ module synth (
 logic w_LedConfigWriteEnable;
 logic [15:0] r_LedConfig;
 // verilator lint_on UNUSED
-
-assign o_LED = | r_LedConfig[7:4];
-// assign o_LED = 1;
-
-// logic [2:0] r_LedEnable;  // TODO: Use LEDDA PWM IP
 
 always_ff @ (posedge i_Clock) begin
     if (i_Reset)
@@ -47,7 +42,11 @@ end
 
 
 
-// `ifdef YOSYS
+// `ifdef VERILATOR
+
+// assign o_RGB = 3'b000;
+
+// `else
 
 // // TODO: Use another module (and figure out LEDDA registers)
 
@@ -76,8 +75,6 @@ end
 // defparam led_driver.RGB1_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so)
 // defparam led_driver.RGB2_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so, even indirectly)
 
-// `else
-// assign o_RGB = 3'b000;
 // `endif
 
 
@@ -88,17 +85,17 @@ end
 // always_ff @ (posedge i_Clock) begin
 //     if (r_SampleCounter >= 4688) begin
 //         r_SampleCounter <= 0;
-//         o_LEDWord <= w_Sample[15:8];
+//         o_LED <= w_Sample[15:8];
 //     end
 //     else if (w_SampleReady) begin
 //         r_SampleCounter <= r_SampleCounter + 1;
 //     end
 // end
 
-// initial o_LEDWord = 8'b11001100;
+// initial o_LED = 8'b11001100;
 // always_ff @ (posedge i_Clock) begin
 //     if (w_SampleReady) begin
-//         o_LEDWord <= w_Sample[15:8];
+//         o_LED <= w_Sample[15:8];
 //     end
 // end
 
@@ -110,20 +107,27 @@ always_ff @ (posedge i_Clock) begin
     r_SineTablePhase <= r_SineTablePhase + 1;
 end
 
-`ifdef YOSYS
+`ifdef VERILATOR
 
-SB_SPRAM256KA sine_spram2 (
-    .CLOCK(i_Clock),
-    .ADDRESS(w_SineTableIndex),
-    .DATAIN(w_RegisterWriteValue),
-    .MASKWREN(w_MaskWREN),
-    .WREN(w_SineTableWriteEnable),
-    .CHIPSELECT(1'b1),
-    .STANDBY(1'b0),
-    .POWEROFF(1'b1),
+// assign o_LED = 8'b01011010;
+
+
+`else
+
+
+SP256K sine_spram2 (
+    .CK(i_Clock),
+    .AD(w_SineTableIndex),
+    .DI(w_RegisterWriteValue),
+    .MASKWE(w_MaskWREN),
+    .WE(w_SineTableWriteEnable),
+    .CS(1'b1),
+    .STDBY(1'b0),
+    .PWROFF_N(1'b1),
     .SLEEP(1'b0),
-    .DATAOUT(w_SineTableOutput)
+    .DO(w_SineTableOutput)
 );
+
 
 logic [3:0] w_MaskWREN;
 assign w_MaskWREN = w_SineTableWriteEnable ? 4'b1111 : 4'b0000;
@@ -131,24 +135,21 @@ assign w_MaskWREN = w_SineTableWriteEnable ? 4'b1111 : 4'b0000;
 logic [15:0] w_SineTableOutput;
 always_ff @ (posedge i_Clock) begin
     if (r_SineTablePhase[7:0] == 0) begin
-        // o_LEDWord <= w_SineTableOutput[15:8];
-        // o_LEDWord[7:4] <= w_SineTableOutput[15:12];
+        // o_LED <= w_SineTableOutput[15:8];
+        // o_LED[7:4] <= w_SineTableOutput[15:12];
     end
 end
-// assign o_LEDWord[3:0] = w_SINE_TABLE_OUTPUT[15:12];
+// assign o_LED[3:0] = w_SINE_TABLE_OUTPUT[15:12];
 
 
 logic [13:0] w_SineTableIndex;
 assign w_SineTableIndex = w_SineTableWriteEnable ? w_RegisterWriteNumber[13:0] : r_SineTablePhase[13:0];
 
 
-`else
-
-// assign o_LEDWord = 8'b01011010;
 
 `endif
 
-assign o_LEDWord[7:0] = w_ModulatedPhase[7:0];
+assign o_LED[7:0] = w_ModulatedPhase[7:0];
 
 
 

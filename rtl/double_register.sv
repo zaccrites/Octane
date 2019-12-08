@@ -3,8 +3,8 @@
 
 module double_register (
     input i_Clock,
-    input i_Input,
-    output o_Output
+    input logic i_Input,
+    output logic o_Output
 );
 
 logic r_Register;

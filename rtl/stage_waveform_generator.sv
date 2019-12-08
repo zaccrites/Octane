@@ -4,8 +4,8 @@
 module stage_waveform_generator (
     input i_Clock,
 
-    input `VOICE_OPERATOR_ID i_VoiceOperator,
-    output `VOICE_OPERATOR_ID o_VoiceOperator,
+    input logic `VOICE_OPERATOR_ID i_VoiceOperator,
+    output logic `VOICE_OPERATOR_ID o_VoiceOperator,
 
     input logic `ALGORITHM_WORD i_AlgorithmWord,
     output logic `ALGORITHM_WORD o_AlgorithmWord,
@@ -42,25 +42,7 @@ logic [13:0] w_SineTableIndex;
 assign w_SineTableIndex = i_SineTableWriteEnable ? i_SineTableWriteAddress : r_PhaseArgument;
 
 
-`ifdef YOSYS
-
-logic [3:0] w_MaskWREN;
-assign w_MaskWREN = i_SineTableWriteEnable ? 4'b1111 : 4'b0000;
-
-SB_SPRAM256KA sine_spram (
-    .CLOCK(i_Clock),
-    .ADDRESS(w_SineTableIndex),
-    .DATAIN(i_SineTableWriteValue),
-    .MASKWREN(w_MaskWREN),
-    .WREN(i_SineTableWriteEnable),
-    .CHIPSELECT(1'b1),
-    .STANDBY(1'b0),
-    .POWEROFF(1'b1),
-    .SLEEP(1'b0),
-    .DATAOUT(w_SineTableOutput)
-);
-
-`else
+`ifdef VERILATOR
 
 logic [15:0] r_SineTable[16 * 1024];
 assign w_SineTableOutput = r_SineTable[r_PhaseArgument];
@@ -69,6 +51,24 @@ always_ff @ (posedge i_Clock) begin
     if (i_SineTableWriteEnable)
         r_SineTable[w_SineTableIndex] <= i_SineTableWriteValue;
 end
+
+`else
+
+logic [3:0] w_MaskWREN;
+assign w_MaskWREN = i_SineTableWriteEnable ? 4'b1111 : 4'b0000;
+
+SP256K sine_spram (
+    .CK(i_Clock),
+    .AD(w_SineTableIndex),
+    .DI(i_SineTableWriteValue),
+    .MASKWE(w_MaskWREN),
+    .WE(i_SineTableWriteEnable),
+    .CS(1'b1),
+    .STDBY(1'b0),
+    .PWROFF_N(1'b1),
+    .SLEEP(1'b0),
+    .DO(w_SineTableOutput)
+);
 
 `endif
 
