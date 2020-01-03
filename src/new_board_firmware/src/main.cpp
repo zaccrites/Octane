@@ -14,6 +14,12 @@ const uint32_t GPIO_MODER_ANALOG = 0b11;
 void init()
 {
 
+    // Init external clock and wait for external crystal to stabilize
+    RCC->CR |= RCC_CR_HSEON;
+    while ( ! (RCC->CR & RCC_CR_HSERDY));
+    RCC->CFGR |=  (0x01 << 0);  // enable HSE oscillator  // RCC_CFGR_SW
+
+
     RCC->AHB1ENR |=
         RCC_AHB1ENR_GPIOCEN |
         RCC_AHB1ENR_GPIOBEN;
@@ -31,9 +37,8 @@ void init()
 
 
     // TODO: Use PLL to increase main clock frequency
-    const uint32_t MAIN_CLOCK_FREQ = 8000000;
     // SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
-    SysTick_Config(250 * MAIN_CLOCK_FREQ / 1000);  // 250ms ticks
+    SysTick_Config(MAIN_CLOCK_FREQ / 4);  // 250ms ticks
 
 }
 

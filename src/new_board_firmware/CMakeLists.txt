@@ -78,6 +78,7 @@ add_custom_target(flash
 
 target_compile_definitions(firmware PRIVATE
     STM32F410Rx
+    MAIN_CLOCK_FREQ=24000000
 )
 
 
