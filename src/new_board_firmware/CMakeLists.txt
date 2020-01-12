@@ -30,7 +30,7 @@ add_executable(firmware
 
     # "src/CriticalSection.cpp"
 
-    # "src/printf.cpp"
+    "src/printf.cpp"
     "src/isr.cpp"
     "src/start.cpp"
     "src/vectors.s"
@@ -43,7 +43,7 @@ target_include_directories(firmware SYSTEM PRIVATE
 )
 
 target_link_libraries(firmware
-    # printf
+    printf
 )
 
 
@@ -123,24 +123,24 @@ target_compile_options(firmware PRIVATE
 
 
 
-# add_library(printf
-#     "../vendor/printf/printf.c"
-# )
+add_library(printf
+    "../vendor/printf/printf.c"
+)
 
-# # TODO: Address this. Do I need some common options?
-# target_compile_options(printf PRIVATE
-#     -mcpu=cortex-m4
-#     -mthumb
-#     -mabi=aapcs
-#     # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
-#     # -mfloat-abi=hard
-#     -mlong-calls
+# TODO: Address this. Do I need some common options?
+target_compile_options(printf PRIVATE
+    -mcpu=cortex-m4
+    -mthumb
+    -mabi=aapcs
+    # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
+    # -mfloat-abi=hard
+    -mlong-calls
 
-#     -Og
-#     -g3
-#     # -O2
-# )
+    -Og
+    -g3
+    # -O2
+)
 
-# target_include_directories(printf SYSTEM PUBLIC
-#     "../vendor/printf"
-# )
+target_include_directories(printf SYSTEM PUBLIC
+    "../vendor/printf"
+)
