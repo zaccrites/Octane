@@ -1,87 +1,67 @@
 
+# set (rtl_sources
 
-add_custom_target(synthesis DEPENDS octane.json)
+# )
+
+
+# TODO: Move into own file
+
+# TODO: Add Verilator as a first step to lint SystemVerilog source files
+
+# TODO: Use configure_file to inject the paths to source files instead?
+
+# TODO: Read stdout of all of these to find errors? Tee them to log files?
+# Or are they already duplicated in the output?
+
+# add_custom_target(create_radiant_project DEPENDS octane.rdf)
+# add_custom_command(
+#     COMMAND ${CMAKE_COMMAND} -E env "HDL_DIR=${CMAKE_SOURCE_DIR}/hdl" radiantc ${CMAKE_CURRENT_SOURCE_DIR}/create_project.tcl
+#     DEPENDS create_project.tcl
+#     OUTPUT octane.rdf
+#     COMMENT "Creating Lattice Radiant project"
+#     USES_TERMINAL
+# )
+
+# # TODO: Read and check .srf log file for errors
+# add_custom_target(synthesize_design DEPENDS octane_impl_1_syn.udb)
+# add_custom_command(
+#     COMMAND radiantc ${CMAKE_CURRENT_SOURCE_DIR}/synthesize_design.tcl
+#     DEPENDS octane.rdf
+#     OUTPUT octane_impl_1_syn.udb octane_impl_1.srf
+#     COMMENT "Running FPGA synthesis"
+#     USES_TERMINAL
+# )
+
+# # TODO: Read and check .tw1 file for timing errors
+# add_custom_target(map_design DEPENDS octane_impl_1_map.udb)
+# add_custom_command(
+#     COMMAND radiantc ${CMAKE_CURRENT_SOURCE_DIR}/map_design.tcl
+#     DEPENDS octane_impl_1_syn.udb
+#     OUTPUT octane_impl_1_map.udb octane_impl_1.tw1
+#     COMMENT "Running FPGA map"
+#     USES_TERMINAL
+# )
+
+# add_custom_target(place_and_route_design DEPENDS octane_impl_1_par.udb)
+# add_custom_command(
+#     COMMAND radiantc ${CMAKE_CURRENT_SOURCE_DIR}/place_and_route_design.tcl
+#     DEPENDS octane_impl_1_map.udb
+#     OUTPUT octane_impl_1_par.udb
+#     COMMENT "Running FPGA place-and-route"
+#     USES_TERMINAL
+# )
+
+# Why duplicate work that Radiant keeps track of itself?
+add_custom_target(fpga_synthesis DEPENDS idk)
 add_custom_command(
-    # TODO: Use configure_file to create a Yosys script with the right paths
-    # and execute it. Might even be able to make al ist of verilog sources
-    # and use it to generate the Yosys script, set DEPENDS of this command,
-    # and run Verilator without wrapping in a Python script.
-    #
-    # See docs for the COMMAND argument: https://cmake.org/cmake/help/latest/command/add_custom_command.html
-    COMMAND yosys
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/double_register.sv\""
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/spi.sv\""
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/stage_envelope_attenuator.sv\""
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/stage_modulator.sv\""
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/stage_phase_accumulator.sv\""
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/stage_sample_generator.sv\""
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/stage_waveform_generator.sv\""
-        -p "read_verilog -sv \"${CMAKE_SOURCE_DIR}/rtl/synth.sv\""
-        -p "synth_ice40 -top synth -json octane.json"
-        2>&1 | tee yosys.log
+    COMMAND
+        ${CMAKE_COMMAND}
+        -E env "HDL_DIR=${CMAKE_SOURCE_DIR}/hdl" "SYNTHESIS_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+        radiantc ${CMAKE_CURRENT_SOURCE_DIR}/generate_bitstream.tcl
 
-    OUTPUT octane.json
-    DEPENDS
-        "${CMAKE_SOURCE_DIR}/rtl/spi.sv"
-        "${CMAKE_SOURCE_DIR}/rtl/stage_envelope_attenuator.sv"
-        "${CMAKE_SOURCE_DIR}/rtl/stage_modulator.sv"
-        "${CMAKE_SOURCE_DIR}/rtl/stage_phase_accumulator.sv"
-        "${CMAKE_SOURCE_DIR}/rtl/stage_sample_generator.sv"
-        "${CMAKE_SOURCE_DIR}/rtl/stage_waveform_generator.sv"
-        "${CMAKE_SOURCE_DIR}/rtl/synth.sv"
-        "${CMAKE_SOURCE_DIR}/rtl/synth.svh"
+    # DEPENDS
 
-    COMMENT "Running FPGA design synthesis"
-    USES_TERMINAL
-)
-
-
-add_custom_target(implementation DEPENDS octane.asc)
-add_custom_command(
-    # TODO: --freq option?
-    COMMAND nextpnr-ice40
-        --up5k --package sg48
-        --pcf "${CMAKE_CURRENT_LIST_DIR}/octane.pcf" --json octane.json
-        --asc octane.asc
-        2>&1 | tee nextpnr.log
-
-    OUTPUT octane.asc
-    DEPENDS
-        octane.json
-        octane.pcf
-    COMMENT "Running FPGA design implementation"
-    USES_TERMINAL
-)
-
-
-# TODO: Better way?
-add_custom_target(timing
-
-    # Current timing target: 35 MHz (subject to change)
-    # That would be enough for two pipeline stalls at 44.1 kHz output
-    COMMAND icetime -mit octane.asc -c 35 | tee icetime.log
-
-    DEPENDS octane.asc
-    COMMENT "Running FPGA implementation timing"
-    USES_TERMINAL
-)
-
-
-add_custom_target(bitstream DEPENDS octane.bin)
-add_custom_command(
-    COMMAND icepack octane.asc octane.bin | tee icepack.log
-
-    OUTPUT octane.bin
-    DEPENDS octane.asc
-
-    COMMENT "Generating FPGA bitstream"
-    USES_TERMINAL
-)
-
-
-add_custom_target(program
-    COMMAND iceprog octane.bin
-    DEPENDS bitstream
-    COMMENT "Programming development board"
+    OUTPUT idk
+    COMMENT "Generating FPGA design"
     USES_TERMINAL
 )
