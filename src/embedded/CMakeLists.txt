@@ -1,5 +1,4 @@
 
-cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 # TODO: Rearrange CMakeLists
 # https://stackoverflow.com/questions/9542971/using-cmake-with-multiple-compilers-for-the-same-language
@@ -83,6 +82,8 @@ target_compile_definitions(firmware PRIVATE
 
 
 target_compile_options(firmware PRIVATE
+    ${COMMON_COMPILE_OPTIONS}
+
     -mcpu=cortex-m4
     -mthumb
     -mabi=aapcs
@@ -91,56 +92,17 @@ target_compile_options(firmware PRIVATE
     -mlong-calls
     -mno-unaligned-access
 
-    -std=gnu++17
-    -pedantic
-
-    -Og
-    -g3
-    # -O2
-
     -fno-rtti
     -fno-exceptions
     -fno-non-call-exceptions
     -fno-use-cxa-atexit
-    -fdiagnostics-color
     -ffunction-sections
     -fdata-sections
     -ffreestanding
 
-    -Wall
-    -Wextra
-    -Weffc++
-    -Wold-style-cast
-    -Wnull-dereference
-    -Wdouble-promotion
-    -Wlogical-op
-    -Wuseless-cast
-    -Wshadow
-    -Werror=switch
 )
 
 
 
 
 
-add_library(printf
-    "../vendor/printf/printf.c"
-)
-
-# TODO: Address this. Do I need some common options?
-target_compile_options(printf PRIVATE
-    -mcpu=cortex-m4
-    -mthumb
-    -mabi=aapcs
-    # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
-    # -mfloat-abi=hard
-    -mlong-calls
-
-    -Og
-    -g3
-    # -O2
-)
-
-target_include_directories(printf SYSTEM PUBLIC
-    "../vendor/printf"
-)

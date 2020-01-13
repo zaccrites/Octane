@@ -44,7 +44,7 @@ end
 
 // `ifdef VERILATOR
 
-// assign o_RGB = 3'b000;
+assign o_RGB = 3'b000;
 
 // `else
 

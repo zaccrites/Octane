@@ -26,6 +26,10 @@ TODO
     sudo apt install build-essential cmake python3-venv
 
 
+    cmake -S src -B ~/octane-sim-build -G Ninja
+    cmake -S src -B ~/octane-fw-build -G Ninja -DCMAKE_TOOLCHAIN_FILE=src/arm_toolchain.cmake
+
+
 ### Simulator
 
     sudo apt install build-essential verilator libsdl2-dev
