@@ -29,6 +29,8 @@ add_executable(firmware
 
     # "src/CriticalSection.cpp"
 
+    "src/DeviceId.cpp"
+
     "src/printf.cpp"
     "src/isr.cpp"
     "src/start.cpp"

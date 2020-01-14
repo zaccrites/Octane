@@ -19,6 +19,7 @@ set(COMMON_COMPILE_FLAGS
     -Wuseless-cast
     -Wshadow
     -Werror=switch
+    -Werror=return-type
 
     -Og
     -g3
