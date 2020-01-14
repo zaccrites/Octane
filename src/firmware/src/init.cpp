@@ -1,25 +1,26 @@
 
+#include <cstdint>
 
 #include <stm32f4xx.h>
-
-// TODO: Wrap in a class which abstracts the output USART/SPI/whatever?
-#include <printf.h>
+#include "init.hpp"
 
 
+const std::uint32_t GPIO_MODER_INPUT = 0b00;
+const std::uint32_t GPIO_MODER_OUTPUT = 0b01;
+const std::uint32_t GPIO_MODER_ALTERNATE = 0b10;
+const std::uint32_t GPIO_MODER_ANALOG = 0b11;
 
-const uint32_t GPIO_MODER_INPUT = 0b00;
-const uint32_t GPIO_MODER_OUTPUT = 0b01;
-const uint32_t GPIO_MODER_ALTERNATE = 0b10;
-const uint32_t GPIO_MODER_ANALOG = 0b11;
+
+namespace octane
+{
 
 
 void init()
 {
-
     // Init external clock and wait for external crystal to stabilize
     RCC->CR |= RCC_CR_HSEON;
     while ( ! (RCC->CR & RCC_CR_HSERDY));
-    RCC->CFGR |=  (0x01 << 0);  // enable HSE oscillator  // RCC_CFGR_SW
+    RCC->CFGR |= (0x01 << 0);  // enable HSE oscillator  // RCC_CFGR_SW
 
 
     RCC->AHB1ENR |=
@@ -70,50 +71,5 @@ void init()
 
 }
 
-
-
-volatile uint32_t counter = 0;
-extern "C" void SysTick_Handler()
-{
-    counter = (counter + 1) % 4;
-    if      (counter == 0) GPIOC->BSRR = GPIO_BSRR_BS0 | GPIO_BSRR_BR1 | GPIO_BSRR_BR2 | GPIO_BSRR_BR3;
-    else if (counter == 1) GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BS1 | GPIO_BSRR_BR2 | GPIO_BSRR_BR3;
-    else if (counter == 2) GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BR1 | GPIO_BSRR_BS2 | GPIO_BSRR_BR3;
-    else                   GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BR1 | GPIO_BSRR_BR2 | GPIO_BSRR_BS3;
-}
-
-
-
-
-
-void main()
-{
-
-
-
-    init();
-
-
-    printf("Hello World! \r\n");
-
-
-    bool ready = true;
-    while (true)
-    {
-
-        if (counter == 0)
-        {
-            if (ready)
-            {
-                printf("Another cycle! \r\n");
-                ready = false;
-            }
-        }
-        else
-        {
-            ready = true;
-        }
-
-    }
 
 }

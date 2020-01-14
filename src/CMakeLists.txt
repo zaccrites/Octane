@@ -5,7 +5,7 @@ project(octane VERSION 0.1.0
         DESCRIPTION "An eight-operator FM synthesizer"
         LANGUAGES C CXX)
 
-set(COMMON_COMPILE_OPTIONS
+set(COMMON_COMPILE_FLAGS
     -std=gnu++17
     -pedantic
 
@@ -27,8 +27,12 @@ set(COMMON_COMPILE_OPTIONS
     -fdiagnostics-color
 )
 
-add_subdirectory(simulator)
-add_subdirectory(embedded)
+add_subdirectory(firmware)
 add_subdirectory(shared)
 add_subdirectory(vendor)
+
+# Don't even try to build these in the embedded configuration
+if (NOT ${CMAKE_SYSTEM_PROCESSOR} STREQUAL arm)
+add_subdirectory(simulator)
 add_subdirectory(hdl)
+endif()

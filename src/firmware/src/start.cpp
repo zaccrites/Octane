@@ -1,6 +1,7 @@
 
-#include <stdint.h>
-#include <stddef.h>
+#include <cstdint>
+
+#include "init.hpp"
 
 
 void main(void);
@@ -10,12 +11,12 @@ void main(void);
 // but represent actual words in memory. You have to take their
 // addresses in C++ before treating them like pointers.
 
-extern uint32_t _sidata;
-extern uint32_t _sdata;
-extern uint32_t _edata;
+extern std::uint32_t _sidata;
+extern std::uint32_t _sdata;
+extern std::uint32_t _edata;
 
-extern uint32_t _sbss;
-extern uint32_t _ebss;
+extern std::uint32_t _sbss;
+extern std::uint32_t _ebss;
 
 
 
@@ -24,7 +25,7 @@ extern uint32_t _ebss;
 extern void (*_sinit_array[1])();
 extern void (*_einit_array[1])();
 
-void InitStaticConstructors()
+static void InitStaticConstructors()
 {
     // Follow list of init functions, calling all.
     for (auto pInitFunc = _sinit_array; pInitFunc != _einit_array; pInitFunc++)
@@ -37,7 +38,7 @@ void InitStaticConstructors()
 static void InitBssSection()
 {
     // .bss section is aligned to 4 bytes, so we can init four bytes at a time
-    uint32_t* pDest = &_sbss;
+    std::uint32_t* pDest = &_sbss;
     while (pDest != &_ebss)
     {
         *pDest++ = 0x00000000;
@@ -48,19 +49,14 @@ static void InitBssSection()
 static void InitDataSection()
 {
     // .data section is aligned to 4 bytes, so we can init four bytes at a time
-    uint32_t* pSrc = &_sidata;
-    uint32_t* pDest = &_sdata;
+    std::uint32_t* pSrc = &_sidata;
+    std::uint32_t* pDest = &_sdata;
     while (pDest != &_edata)
     {
         *pDest++ = *pSrc++;
     }
 }
 
-
-#include <stm32f4xx.h>
-
-// #include "init.hpp"
-// #include <printf.h>
 
 extern "C" void _start(void)
 {
@@ -71,12 +67,9 @@ extern "C" void _start(void)
     // constructors? Could move init.cpp into this file.
     // This is important because initialization calls like pulling NSS
     // low in the Fpga static constructor
-    // octane::init();
+    octane::init();
 
-    // printf("before init static constructors \r\n");
     InitStaticConstructors();
-    // printf("after init static constructors \r\n");
-
 
     main();
 }

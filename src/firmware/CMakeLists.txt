@@ -23,7 +23,7 @@ project(octane_firmware VERSION 0.1.0 LANGUAGES CXX C ASM)
 
 add_executable(firmware
     "src/main.cpp"
-    # "src/init.cpp"
+    "src/init.cpp"
     # "src/Fpga.cpp"
     # "src/AudioOut.cpp"
 
@@ -68,8 +68,8 @@ add_custom_command(
 # (if not enough flash inside the microcontroller itself)
 add_custom_target(flash
     COMMAND openocd
-        -f "${CMAKE_SOURCE_DIR}/openocd/stm32f4discovery.cfg"
-        -c "program ${CMAKE_BINARY_DIR}/firmware.bin reset exit 0x08000000"
+        -f "${CMAKE_CURRENT_SOURCE_DIR}/openocd/stm32f4discovery.cfg"
+        -c "program ${CMAKE_CURRENT_BINARY_DIR}/firmware.bin reset exit 0x08000000"
     DEPENDS firmware
     COMMENT "Flashing development board"
 )
@@ -82,27 +82,6 @@ target_compile_definitions(firmware PRIVATE
 
 
 target_compile_options(firmware PRIVATE
-    ${COMMON_COMPILE_OPTIONS}
-
-    -mcpu=cortex-m4
-    -mthumb
-    -mabi=aapcs
-    # -mfpu=fpv4-sp-d16       # TODO (these options don't seem to be right)
-    # -mfloat-abi=hard
-    -mlong-calls
-    -mno-unaligned-access
-
-    -fno-rtti
-    -fno-exceptions
-    -fno-non-call-exceptions
-    -fno-use-cxa-atexit
-    -ffunction-sections
-    -fdata-sections
-    -ffreestanding
-
+    ${COMMON_COMPILE_FLAGS}
+    ${TARGET_COMPILE_FLAGS}
 )
-
-
-
-
-

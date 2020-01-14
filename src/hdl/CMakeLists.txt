@@ -49,6 +49,7 @@ add_custom_command(
         "${CMAKE_CURRENT_SOURCE_DIR}/stage_sample_generator.sv"
         "${CMAKE_CURRENT_SOURCE_DIR}/stage_waveform_generator.sv"
         "${CMAKE_CURRENT_SOURCE_DIR}/synth.sv"
+        "${CMAKE_CURRENT_SOURCE_DIR}/synth.svh"
 
     VERBATIM
 )

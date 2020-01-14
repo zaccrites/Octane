@@ -1,6 +1,21 @@
 
 #include <cstdint>
 
+
+#include <stm32f4xx.h>
+
+
+static volatile std::uint32_t counter = 0;
+extern "C" void SysTick_Handler()
+{
+    counter = (counter + 1) % 4;
+    if      (counter == 0) GPIOC->BSRR = GPIO_BSRR_BS0 | GPIO_BSRR_BR1 | GPIO_BSRR_BR2 | GPIO_BSRR_BR3;
+    else if (counter == 1) GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BS1 | GPIO_BSRR_BR2 | GPIO_BSRR_BR3;
+    else if (counter == 2) GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BR1 | GPIO_BSRR_BS2 | GPIO_BSRR_BR3;
+    else                   GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BR1 | GPIO_BSRR_BR2 | GPIO_BSRR_BS3;
+}
+
+
 extern "C" void Real_HardFault_Handler(std::uint32_t* registers)
 {
 

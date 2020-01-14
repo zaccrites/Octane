@@ -4,5 +4,6 @@ add_library(shared
 )
 
 target_compile_options(shared PRIVATE
-    ${COMMON_COMPILE_OPTIONS}
+    ${COMMON_COMPILE_FLAGS}
+    ${TARGET_COMPILE_OPTIONS}
 )

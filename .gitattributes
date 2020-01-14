@@ -1,5 +1,5 @@
 
 # https://github.com/github/linguist#overrides
 
-src/embedded/include/CMSIS/* linguist-vendored
-src/embedded/include/device/* linguist-vendored
+src/firmware/include/CMSIS/* linguist-vendored
+src/firmware/include/device/* linguist-vendored
