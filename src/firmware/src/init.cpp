@@ -24,10 +24,12 @@ void init()
 
 
     RCC->AHB1ENR |=
-        RCC_AHB1ENR_GPIOCEN |
-        RCC_AHB1ENR_GPIOBEN;
+        RCC_AHB1ENR_GPIOAEN |
+        RCC_AHB1ENR_GPIOBEN |
+        RCC_AHB1ENR_GPIOCEN;
 
     RCC->APB2ENR |=
+        RCC_APB2ENR_SPI1EN |
         RCC_APB2ENR_USART1EN;
 
     GPIOC->MODER |=
@@ -47,8 +49,35 @@ void init()
         (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER7_Pos);   // USART1.RX = PB7
 
     GPIOB->AFR[0] =
-        (6 << GPIO_AFRL_AFSEL6_Pos) |  // USART1.TX = PB6
-        (7 << GPIO_AFRL_AFSEL6_Pos);   // USART1.RX = PB7
+        (7 << GPIO_AFRL_AFSEL6_Pos) |  // USART1.TX = PB6
+        (7 << GPIO_AFRL_AFSEL7_Pos);   // USART1.RX = PB7
+
+
+
+    // Set up SPI Flash interface
+
+    // PA4: /FLASH_SPI_CE
+    // PA5: FLASH_SPI_SCK
+    // PA6: FLASH_SPI_MISO
+    // PA7: FLASH_SPI_MOSI
+    // PC4: /FLASH_SPI_WP
+    // PC5: /FLASH_SPI_HOLD
+
+
+    GPIOA->MODER |=
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER4_Pos) |     // /FLASH_SPI_CE = PA4
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER5_Pos) |  // FLASH_SPI_SCK = PA5
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER6_Pos) |  // FLASH_SPI_MISO = PA6
+        (GPIO_MODER_ALTERNATE << GPIO_MODER_MODER7_Pos);   // FLASH_SPI_MOSI = PA7
+
+    GPIOA->AFR[0] |=
+        (5 << GPIO_AFRL_AFSEL5_Pos) |  // SPI1.SCK = PA5
+        (5 << GPIO_AFRL_AFSEL6_Pos) |  // SPI1.MISO = PA6
+        (5 << GPIO_AFRL_AFSEL7_Pos);   // SPI1.MOSI = PA7
+
+    GPIOC->MODER |=
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER4_Pos) |  // /FLASH_SPI_WP = PC4
+        (GPIO_MODER_OUTPUT << GPIO_MODER_MODER5_Pos);   // /FLASH_SPI_HOLD = PC5
 
 
     USART1->CR1 =
@@ -68,6 +97,12 @@ void init()
     // SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
     SysTick_Config(MAIN_CLOCK_FREQ / 4);  // 250ms ticks
     // SysTick_Config(MAIN_CLOCK_FREQ / 20);  // 250ms ticks
+
+
+    NVIC_EnableIRQ(SPI1_IRQn);
+    NVIC_EnableIRQ(SPI2_IRQn);
+    NVIC_EnableIRQ(SPI5_IRQn);
+
 
 }
 
