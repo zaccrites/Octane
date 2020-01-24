@@ -29,7 +29,7 @@ void main()
 
     std::uint8_t buffer[32];
     printf("reading some flash... ");
-    flash.readBytes(buffer, 0x0123, 32);
+    flash.readBytes(buffer, 0x010307, 32);
     // while (flash.readInProgress());  // wait
     printf("done! \r\n\r\n");
 

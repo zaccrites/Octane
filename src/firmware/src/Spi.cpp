@@ -2,6 +2,8 @@
 #include "Spi.hpp"
 #include "isr.hpp"
 
+#include <printf.h>
+
 
 namespace octane
 {
@@ -19,8 +21,9 @@ Spi::Spi(SPI_TypeDef* pRawSpi) :
     m_pSpi->CR1 =
         SPI_CR1_MSTR |                     // act as SPI master
         (0b011 << SPI_CR1_BR_Pos) |        // bitrate
-        // SPI_CR1_DFF |                   // uncomment for 16 bit frame
-        SPI_CR1_CPHA |                     // clock polarity
+        0 /* SPI_CR1_DFF */ |              // 8 bit frame
+        0 /* SPI_CR1_CPHA */ |             // clock phase (rising clock edge captures data)
+        0 /* SPI_CR1_CPOL */ |             // clock polarity (clock to zero when idle)
         SPI_CR1_SSI | SPI_CR1_SSM;         // software slave management
 
     octane::isr::registerSpiHandler(pRawSpi, this);
@@ -42,6 +45,13 @@ void Spi::readBytes(std::uint8_t* pBuffer, std::size_t count)
     m_pRxDestTarget = pBuffer;
     m_RxByteCount = count;
     m_pSpi->CR2 |= SPI_CR2_RXNEIE;
+
+    // TODO: Need to write the next byte,
+    // or write a dummy byte if there isn't
+    // anything to send. Need to write
+    // *something* to keep the clock going.
+    m_pSpi->DR = 0;
+
 }
 
 void Spi::writeByte(std::uint8_t value)
@@ -56,8 +66,8 @@ void Spi::writeBytes(const std::uint8_t* pBuffer, std::size_t count)
     m_TxByteCount = count;
     m_pSpi->CR2 |= SPI_CR2_TXEIE;
 
+    // printf("Sending %x \r\n", *m_pTxSrcTarget);
     m_pSpi->DR = *m_pTxSrcTarget++;
-    m_TxByteCount -= 1;
 }
 
 
@@ -74,20 +84,21 @@ bool Spi::writeInProgress() const
 
 void Spi::onRxComplete()
 {
-    m_RxByteCount -= 1;
-    if (m_RxByteCount > 0)
+
+    // TODO: Need to write the next byte,
+    // or write a dummy byte if there isn't
+    // anything to send. Need to write
+    // *something* to keep the clock going.
+    if ( ! writeInProgress())
     {
-
-        // TODO: Need to write the next byte,
-        // or write a dummy byte if there isn't
-        // anything to send. Need to write
-        // *something* to keep the clock going.
         m_pSpi->DR = 0;
-
-
-        *m_pRxDestTarget++ = m_pSpi->DR;
     }
-    else
+
+    *m_pRxDestTarget++ = m_pSpi->DR;
+    // printf("Got %02x \r\n", *(m_pRxDestTarget - 1));
+
+    m_RxByteCount -= 1;
+    if (m_RxByteCount == 0)
     {
         // The transfer is complete
         m_pSpi->CR2 &= ~SPI_CR2_RXNEIE;
@@ -99,6 +110,7 @@ void Spi::onTxComplete()
     m_TxByteCount -= 1;
     if (m_TxByteCount > 0)
     {
+        // printf("Sending %02x \r\n", *m_pTxSrcTarget);
         m_pSpi->DR = *m_pTxSrcTarget++;
     }
     else

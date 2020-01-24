@@ -92,12 +92,15 @@ static void handleSpiInterrupt(SPI_TypeDef* pRawSpi, Spi* pSpi)
 {
     if (pSpi != nullptr)
     {
-        if (pRawSpi->SR & SPI_SR_TXE)
+        // TODO: Better way?
+        // Maybe just call the function and let it not do anything.
+        // A single interrupt handler for TXE and RXNE?
+        if ((pRawSpi->SR & SPI_SR_TXE) && (pRawSpi->CR2 & SPI_CR2_TXEIE))
         {
             pSpi->onTxComplete();
         }
 
-        if (pRawSpi->SR & SPI_SR_RXNE)
+        if ((pRawSpi->SR & SPI_SR_RXNE) && (pRawSpi->CR2 & SPI_CR2_RXNEIE))
         {
             pSpi->onRxComplete();
         }
