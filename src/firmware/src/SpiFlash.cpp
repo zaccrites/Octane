@@ -50,22 +50,18 @@ void SpiFlash::readBytes(std::uint8_t* pBuffer, std::uint32_t address, std::size
 {
     m_ReadInProgress = true;
 
-    uint8_t commandBytes[] = {
-        0x03,  // READ
+    const uint8_t CHIP_READ_COMMAND { 0x03 };
+    const uint8_t commandBytes[] = {
+        CHIP_READ_COMMAND,
         static_cast<uint8_t>(address >> 16),
         static_cast<uint8_t>(address >> 8),
         static_cast<uint8_t>(address >> 0),
     };
     setChipEnable(true);
-    printf("starting write \r\n");
     m_rSpi.writeBytes(commandBytes, sizeof(commandBytes));
-    printf("waiting \r\n");
     while (m_rSpi.writeInProgress());  // wait
-    printf("starting read \r\n");
     m_rSpi.readBytes(pBuffer, count);
-    printf("waiting 2 \r\n");
     while (m_rSpi.readInProgress());  // wait  (TODO: remove this wait)
-    printf("over \r\n");
     setChipEnable(false);
 }
 
@@ -81,6 +77,47 @@ void SpiFlash::writeBytes(std::uint8_t* pBuffer, std::uint32_t address, std::siz
 
     // TODO
 
+}
+
+void SpiFlash::eraseChip()
+{
+    const uint8_t CHIP_ERASE_COMMAND { 0x60 };  // or 0xc7
+
+    setChipEnable(true);
+    m_rSpi.writeByte(CHIP_ERASE_COMMAND);
+    setChipEnable(false);
+
+    // T_CE = 50 ms
+}
+
+
+void SpiFlash::setWriteEnable(bool value)
+{
+    const uint8_t WRITE_ENABLE_COMMAND { 0x06 };
+    const uint8_t WRITE_DISABLE_COMMAND { 0x04 };
+
+    setChipEnable(true);
+    m_rSpi.writeByte(value ? WRITE_ENABLE_COMMAND : WRITE_DISABLE_COMMAND);
+    setChipEnable(false);
+
+    // TODO: poll status register until operation completes?
+}
+
+
+void SpiFlash::jedecReadId()
+{
+    uint8_t response[3];
+
+    setChipEnable(true);
+    m_rSpi.writeByte(0x9f);
+    while(m_rSpi.writeInProgress());
+    m_rSpi.readBytes(response, sizeof(response));
+    while(m_rSpi.readInProgress());
+    setChipEnable(false);
+
+    printf("JEDEC Manufacturer ID: %02Xh \r\n", response[0]);
+    printf("          Memory Type: %02Xh \r\n", response[1]);
+    printf("      Memory Capacity: %02Xh \r\n", response[2]);
 }
 
 

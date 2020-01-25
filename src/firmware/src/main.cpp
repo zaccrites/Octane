@@ -10,6 +10,19 @@
 #include "SpiFlash.hpp"
 
 
+// TODO: Use a function or class as a timer
+namespace octane::isr {
+    extern volatile std::uint32_t ticks;
+}
+
+
+void waitForMs(std::uint32_t delay)
+{
+    std::uint32_t waitUntil { octane::isr::ticks + delay };
+    while (octane::isr::ticks < waitUntil);
+}
+
+
 void main()
 {
     printf("Hello World! \r\n");
@@ -25,11 +38,21 @@ void main()
     octane::Spi spi1(SPI1);
     octane::SpiFlash flash(spi1);
 
+    // flash.setWriteEnable(true);
+
+    // printf("erasing flash \r\n");
+    // flash.eraseChip();
+    // waitForMs(100);
+
+
+    // waitForMs(10);  // SPI flash needs 100 us to power up
+
+    flash.jedecReadId();
 
 
     std::uint8_t buffer[32];
     printf("reading some flash... ");
-    flash.readBytes(buffer, 0x010307, 32);
+    flash.readBytes(buffer, 0x000000, sizeof(buffer));
     // while (flash.readInProgress());  // wait
     printf("done! \r\n\r\n");
 
@@ -40,8 +63,15 @@ void main()
         if ((i+1) % 8 == 0) printf("\r\n");
     }
 
+    std::uint32_t counter = 0;
     while (true)
     {
+        counter = (counter + 1) % 4;
+        if      (counter == 0) GPIOC->BSRR = GPIO_BSRR_BS0 | GPIO_BSRR_BR1 | GPIO_BSRR_BR2 | GPIO_BSRR_BR3;
+        else if (counter == 1) GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BS1 | GPIO_BSRR_BR2 | GPIO_BSRR_BR3;
+        else if (counter == 2) GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BR1 | GPIO_BSRR_BS2 | GPIO_BSRR_BR3;
+        else                   GPIOC->BSRR = GPIO_BSRR_BR0 | GPIO_BSRR_BR1 | GPIO_BSRR_BR2 | GPIO_BSRR_BS3;
 
+        waitForMs(250);
     }
 }

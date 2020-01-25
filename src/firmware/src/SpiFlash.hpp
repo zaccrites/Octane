@@ -26,6 +26,12 @@ public:
     void readBytes(std::uint8_t* pBuffer, std::uint32_t address, std::size_t count);
     void writeBytes(std::uint8_t* pBuffer, std::uint32_t address, std::size_t count);
 
+    void eraseChip();
+
+    void setWriteEnable(bool value);
+
+    void jedecReadId();
+
     // bool readInProgress() const;
     // bool writeInProgres() const;
 

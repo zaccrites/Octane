@@ -21,6 +21,7 @@ Spi::Spi(SPI_TypeDef* pRawSpi) :
     m_pSpi->CR1 =
         SPI_CR1_MSTR |                     // act as SPI master
         (0b011 << SPI_CR1_BR_Pos) |        // bitrate
+        0 /* SPI_CR1_LSBFIRST */ |         // send MSB first
         0 /* SPI_CR1_DFF */ |              // 8 bit frame
         0 /* SPI_CR1_CPHA */ |             // clock phase (rising clock edge captures data)
         0 /* SPI_CR1_CPOL */ |             // clock polarity (clock to zero when idle)
@@ -84,6 +85,8 @@ bool Spi::writeInProgress() const
 
 void Spi::onRxComplete()
 {
+    *m_pRxDestTarget++ = m_pSpi->DR;
+    // printf("Got %02x \r\n", *(m_pRxDestTarget - 1));
 
     // TODO: Need to write the next byte,
     // or write a dummy byte if there isn't
@@ -94,12 +97,14 @@ void Spi::onRxComplete()
         m_pSpi->DR = 0;
     }
 
-    *m_pRxDestTarget++ = m_pSpi->DR;
-    // printf("Got %02x \r\n", *(m_pRxDestTarget - 1));
 
     m_RxByteCount -= 1;
     if (m_RxByteCount == 0)
     {
+
+        while (m_pSpi->SR & SPI_SR_BSY);
+
+
         // The transfer is complete
         m_pSpi->CR2 &= ~SPI_CR2_RXNEIE;
     }

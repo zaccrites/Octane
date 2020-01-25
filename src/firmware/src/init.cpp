@@ -94,10 +94,7 @@ void init()
 
 
     // TODO: Use PLL to increase main clock frequency
-    // SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
-    SysTick_Config(MAIN_CLOCK_FREQ / 4);  // 250ms ticks
-    // SysTick_Config(MAIN_CLOCK_FREQ / 20);  // 250ms ticks
-
+    SysTick_Config(MAIN_CLOCK_FREQ / 1000);  // 1ms ticks
 
     NVIC_EnableIRQ(SPI1_IRQn);
     NVIC_EnableIRQ(SPI2_IRQn);
