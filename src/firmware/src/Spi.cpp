@@ -8,15 +8,23 @@
 namespace octane
 {
 
+// TODO: Add support for real DMA
+//   This setup is essentially replicating the DMA-to-SPI engine
+//   using the CPU to read and write to memory and interact
+//   with the SPI peripheral.
+//
+//   For small transfers, this is fine. For larger ones
+//   being able to use the real DMA engine will be more
+//   efficient.
+//
+
 
 // Assumes that the GPIO is already set up
 // TODO: Allow for 16 bit version too. (could use a template argument for uint8_t vs uint16_t)
 Spi::Spi(SPI_TypeDef* pRawSpi) :
     m_pSpi {pRawSpi},
-    m_TxByteCount {0},
-    m_RxByteCount {0},
-    m_pTxSrcTarget {nullptr},
-    m_pRxDestTarget {nullptr}
+    m_IsBusy {false},
+    m_CurrentCommand {nullptr, 0, nullptr, 0, 0}
 {
     m_pSpi->CR1 =
         SPI_CR1_MSTR |                     // act as SPI master
@@ -33,101 +41,77 @@ Spi::Spi(SPI_TypeDef* pRawSpi) :
     m_pSpi->CR1 |= SPI_CR1_SPE;
 }
 
-std::uint8_t Spi::readByte()
+
+bool Spi::isBusy() const
 {
-    // ???
-    std::uint8_t result;
-    readBytes(&result, 1);
-    return result;
-}
-
-void Spi::readBytes(std::uint8_t* pBuffer, std::size_t count)
-{
-    m_pRxDestTarget = pBuffer;
-    m_RxByteCount = count;
-    m_pSpi->CR2 |= SPI_CR2_RXNEIE;
-
-    // TODO: Need to write the next byte,
-    // or write a dummy byte if there isn't
-    // anything to send. Need to write
-    // *something* to keep the clock going.
-    m_pSpi->DR = 0;
-
-}
-
-void Spi::writeByte(std::uint8_t value)
-{
-    // ???
-    writeBytes(&value, 1);
-}
-
-void Spi::writeBytes(const std::uint8_t* pBuffer, std::size_t count)
-{
-    m_pTxSrcTarget = pBuffer;
-    m_TxByteCount = count;
-    m_pSpi->CR2 |= SPI_CR2_TXEIE;
-
-    // printf("Sending %x \r\n", *m_pTxSrcTarget);
-    m_pSpi->DR = *m_pTxSrcTarget++;
+    return m_IsBusy;
 }
 
 
-bool Spi::readInProgress() const
+void Spi::execute(const Spi::Command& rCommand)
 {
-    return m_RxByteCount > 0;
+    m_IsBusy = true;
+    m_CurrentCommand = rCommand;
+
+    m_pSpi->CR2 |= SPI_CR2_TXEIE | SPI_CR2_RXNEIE;
+    transmitNextByte();
 }
 
-bool Spi::writeInProgress() const
+
+void Spi::transmitNextByte()
 {
-    return m_TxByteCount > 0;
+    if (m_CurrentCommand.m_NumTransmitWords > 0)
+    {
+        m_pSpi->DR = *m_CurrentCommand.m_pTransmitBuffer++;
+        m_CurrentCommand.m_NumTransmitWords -= 1;
+    }
+    else
+    {
+        m_pSpi->DR = 0;
+    }
+
+    // The transfer is complete
+    if (m_CurrentCommand.m_NumReceiveWords == 0 && m_CurrentCommand.m_NumTransmitWords == 0)
+    {
+        while (m_pSpi->SR & SPI_SR_BSY);
+        m_pSpi->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_RXNEIE);
+        m_IsBusy = false;
+
+        // Throw out any lingering dummy bytes
+        (void)m_pSpi->DR;
+    }
 }
 
 
 void Spi::onRxComplete()
 {
-    *m_pRxDestTarget++ = m_pSpi->DR;
-    // printf("Got %02x \r\n", *(m_pRxDestTarget - 1));
-
-    // TODO: Need to write the next byte,
-    // or write a dummy byte if there isn't
-    // anything to send. Need to write
-    // *something* to keep the clock going.
-    if ( ! writeInProgress())
+    if (m_CurrentCommand.m_NumIgnoreReceiveWords > 0)
     {
-        m_pSpi->DR = 0;
+        // Intentionally ignore this word because we're
+        // not ready to start writing to the buffer.
+        m_CurrentCommand.m_NumIgnoreReceiveWords -= 1;
+
+        // Clear RXNE flag
+        (void)m_pSpi->DR;
     }
-
-
-    m_RxByteCount -= 1;
-    if (m_RxByteCount == 0)
+    else if (m_CurrentCommand.m_NumReceiveWords == 0)
     {
+        // Ignore this word because we're done receiving data.
 
-        while (m_pSpi->SR & SPI_SR_BSY);
-
-
-        // The transfer is complete
-        m_pSpi->CR2 &= ~SPI_CR2_RXNEIE;
-    }
-}
-
-void Spi::onTxComplete()
-{
-    m_TxByteCount -= 1;
-    if (m_TxByteCount > 0)
-    {
-        // printf("Sending %02x \r\n", *m_pTxSrcTarget);
-        m_pSpi->DR = *m_pTxSrcTarget++;
+        // Clear RXNE flag
+        (void)m_pSpi->DR;
     }
     else
     {
-        // Wait for the final transfer to complete.
-        // TXE will be deasserted a few SPI cycles before the data is
-        // actually finished transmitting to the slave.
-        while (m_pSpi->SR & SPI_SR_BSY);
-
-        // The transfer is complete
-        m_pSpi->CR2 &= ~SPI_CR2_TXEIE;
+        *m_CurrentCommand.m_pReceiveBuffer++ = m_pSpi->DR;
+        m_CurrentCommand.m_NumReceiveWords -= 1;
     }
+}
+
+
+void Spi::onTxComplete()
+{
+    transmitNextByte();
 }
 
 

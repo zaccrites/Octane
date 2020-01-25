@@ -51,17 +51,16 @@ void SpiFlash::readBytes(std::uint8_t* pBuffer, std::uint32_t address, std::size
     m_ReadInProgress = true;
 
     const uint8_t CHIP_READ_COMMAND { 0x03 };
-    const uint8_t commandBytes[] = {
+    const uint8_t command[] = {
         CHIP_READ_COMMAND,
         static_cast<uint8_t>(address >> 16),
         static_cast<uint8_t>(address >> 8),
         static_cast<uint8_t>(address >> 0),
     };
+
     setChipEnable(true);
-    m_rSpi.writeBytes(commandBytes, sizeof(commandBytes));
-    while (m_rSpi.writeInProgress());  // wait
-    m_rSpi.readBytes(pBuffer, count);
-    while (m_rSpi.readInProgress());  // wait  (TODO: remove this wait)
+    m_rSpi.execute({command, sizeof(command), pBuffer, count, sizeof(command)});
+    while (m_rSpi.isBusy());
     setChipEnable(false);
 }
 
@@ -82,9 +81,11 @@ void SpiFlash::writeBytes(std::uint8_t* pBuffer, std::uint32_t address, std::siz
 void SpiFlash::eraseChip()
 {
     const uint8_t CHIP_ERASE_COMMAND { 0x60 };  // or 0xc7
+    const uint8_t command[] = {CHIP_ERASE_COMMAND};
 
     setChipEnable(true);
-    m_rSpi.writeByte(CHIP_ERASE_COMMAND);
+    m_rSpi.execute({command, sizeof(command), nullptr, 0, 0});
+    while (m_rSpi.isBusy());
     setChipEnable(false);
 
     // T_CE = 50 ms
@@ -95,9 +96,13 @@ void SpiFlash::setWriteEnable(bool value)
 {
     const uint8_t WRITE_ENABLE_COMMAND { 0x06 };
     const uint8_t WRITE_DISABLE_COMMAND { 0x04 };
+    const uint8_t command[] = {
+        value ? WRITE_ENABLE_COMMAND : WRITE_DISABLE_COMMAND
+    };
 
     setChipEnable(true);
-    m_rSpi.writeByte(value ? WRITE_ENABLE_COMMAND : WRITE_DISABLE_COMMAND);
+    m_rSpi.execute({command, sizeof(command), nullptr, 0, 0});
+    while (m_rSpi.isBusy());
     setChipEnable(false);
 
     // TODO: poll status register until operation completes?
@@ -106,13 +111,13 @@ void SpiFlash::setWriteEnable(bool value)
 
 void SpiFlash::jedecReadId()
 {
+    const uint8_t JEDEC_READ_ID_COMMAND { 0x9f };
+    const uint8_t command[] = { JEDEC_READ_ID_COMMAND };
     uint8_t response[3];
 
     setChipEnable(true);
-    m_rSpi.writeByte(0x9f);
-    while(m_rSpi.writeInProgress());
-    m_rSpi.readBytes(response, sizeof(response));
-    while(m_rSpi.readInProgress());
+    m_rSpi.execute({command, sizeof(command), response, sizeof(response), sizeof(command)});
+    while (m_rSpi.isBusy());
     setChipEnable(false);
 
     printf("JEDEC Manufacturer ID: %02Xh \r\n", response[0]);

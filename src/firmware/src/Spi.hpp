@@ -15,18 +15,33 @@ class Spi
 {
 public:
 
+    struct Command
+    {
+        const std::uint8_t* m_pTransmitBuffer;
+        std::uint32_t m_NumTransmitWords;
+
+        std::uint8_t* m_pReceiveBuffer;
+        std::uint32_t m_NumReceiveWords;
+        std::uint32_t m_NumIgnoreReceiveWords;
+
+        Command(const std::uint8_t* pTransmitBuffer, std::uint32_t numTransmitWords, std::uint8_t* pReceiveBuffer, std::uint32_t NumReceiveWords, std::uint32_t NumIgnoreReceiveWords) :
+            m_pTransmitBuffer {pTransmitBuffer},
+            m_NumTransmitWords {numTransmitWords},
+            m_pReceiveBuffer {pReceiveBuffer},
+            m_NumReceiveWords {NumReceiveWords},
+            m_NumIgnoreReceiveWords {NumIgnoreReceiveWords}
+        {
+        }
+
+    };
+
     // Assumes that the GPIO is already set up
-    // TODO: Allow for 16 bit version too
+    // TODO: Allow for 16 bit version too (probably via template)
     Spi(SPI_TypeDef* pSpi);
 
-    std::uint8_t readByte();
-    void readBytes(std::uint8_t* pBuffer, std::size_t count);
+    void execute(const Command& rCommand);
 
-    void writeByte(std::uint8_t value);
-    void writeBytes(const std::uint8_t* pBuffer, std::size_t count);
-
-    bool readInProgress() const;
-    bool writeInProgress() const;
+    bool isBusy() const;
 
     // TODO: Make these private and use a friend function for the caller?
     void onTxComplete();
@@ -34,18 +49,17 @@ public:
 
 private:
 
+    void transmitNextByte();
 
     SPI_TypeDef* m_pSpi;
 
-    std::size_t m_TxByteCount;
-    std::size_t m_RxByteCount;
-    const std::uint8_t* m_pTxSrcTarget;
-    std::uint8_t* m_pRxDestTarget;
+    bool m_IsBusy;
+    Command m_CurrentCommand;
 
 };
 
-}
 
+}
 
 
 #endif
