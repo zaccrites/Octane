@@ -24,14 +24,21 @@ public:
         std::uint32_t m_NumReceiveWords;
         std::uint32_t m_NumIgnoreReceiveWords;
 
-        Command(const std::uint8_t* pTransmitBuffer, std::uint32_t numTransmitWords, std::uint8_t* pReceiveBuffer, std::uint32_t NumReceiveWords, std::uint32_t NumIgnoreReceiveWords) :
+        Command(const std::uint8_t* pTransmitBuffer, std::uint32_t numTransmitWords, std::uint8_t* pReceiveBuffer, std::uint32_t numReceiveWords, std::uint32_t numIgnoreReceiveWords) :
             m_pTransmitBuffer {pTransmitBuffer},
             m_NumTransmitWords {numTransmitWords},
             m_pReceiveBuffer {pReceiveBuffer},
-            m_NumReceiveWords {NumReceiveWords},
-            m_NumIgnoreReceiveWords {NumIgnoreReceiveWords}
+            m_NumReceiveWords {numReceiveWords},
+            m_NumIgnoreReceiveWords {numIgnoreReceiveWords}
         {
         }
+
+        bool stillReceiving() const;
+        bool stillTransmitting() const;
+
+        std::uint8_t getNextTransmitWord();
+        void handleReceivedWord(std::uint8_t word);
+
 
     };
 
@@ -44,12 +51,10 @@ public:
     bool isBusy() const;
 
     // TODO: Make these private and use a friend function for the caller?
-    void onTxComplete();
-    void onRxComplete();
+    void onTransmitBufferEmpty();
+    void onReceiveBufferNotEmpty();
 
 private:
-
-    void transmitNextByte();
 
     SPI_TypeDef* m_pSpi;
 

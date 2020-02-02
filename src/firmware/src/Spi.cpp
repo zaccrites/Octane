@@ -44,7 +44,9 @@ Spi::Spi(SPI_TypeDef* pRawSpi) :
 
 bool Spi::isBusy() const
 {
-    return m_IsBusy;
+    // return m_IsBusy;
+    // printf("recv=%d, ign=%d, tx=%d \r\n", m_CurrentCommand.m_NumReceiveWords, m_CurrentCommand.m_NumIgnoreReceiveWords, m_CurrentCommand.m_NumTransmitWords);
+    return m_CurrentCommand.stillReceiving() || m_CurrentCommand.stillTransmitting();
 }
 
 
@@ -54,64 +56,89 @@ void Spi::execute(const Spi::Command& rCommand)
     m_CurrentCommand = rCommand;
 
     m_pSpi->CR2 |= SPI_CR2_TXEIE | SPI_CR2_RXNEIE;
-    transmitNextByte();
+    // The TXE interrupt fires immediately, since the transmit buffer is empty.
 }
 
 
-void Spi::transmitNextByte()
+void Spi::onReceiveBufferNotEmpty()
 {
-    if (m_CurrentCommand.m_NumTransmitWords > 0)
+    if (m_CurrentCommand.stillReceiving())
     {
-        m_pSpi->DR = *m_CurrentCommand.m_pTransmitBuffer++;
-        m_CurrentCommand.m_NumTransmitWords -= 1;
+        printf("recv = %d \r\n", m_CurrentCommand.m_NumReceiveWords);
+        m_CurrentCommand.handleReceivedWord(m_pSpi->DR);
     }
     else
-    {
-        m_pSpi->DR = 0;
-    }
-
-    // The transfer is complete
-    if (m_CurrentCommand.m_NumReceiveWords == 0 && m_CurrentCommand.m_NumTransmitWords == 0)
-    {
-        while (m_pSpi->SR & SPI_SR_BSY);
-        m_pSpi->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_RXNEIE);
-        m_IsBusy = false;
-
-        // Throw out any lingering dummy bytes
-        (void)m_pSpi->DR;
-    }
-}
-
-
-void Spi::onRxComplete()
-{
-    if (m_CurrentCommand.m_NumIgnoreReceiveWords > 0)
-    {
-        // Intentionally ignore this word because we're
-        // not ready to start writing to the buffer.
-        m_CurrentCommand.m_NumIgnoreReceiveWords -= 1;
-
-        // Clear RXNE flag
-        (void)m_pSpi->DR;
-    }
-    else if (m_CurrentCommand.m_NumReceiveWords == 0)
     {
         // Ignore this word because we're done receiving data.
+        // m_pSpi->CR2 &= ~(SPI_CR2_RXNEIE | SPI_CR2_TXEIE);
+
+        // while (m_pSpi->SR & SPI_SR_BSY);
+        // m_IsBusy = false;
 
         // Clear RXNE flag
         (void)m_pSpi->DR;
     }
-    else
+}
+
+
+void Spi::onTransmitBufferEmpty()
+{
+    // TODO: The TXE interrupt happens first, so if the last byte is incoming
+    // but hasn't been processed yet, we'll send out a dummy byte.
+    // Somehow we need to prevent doing that. Is this the right way?
+    if ((m_CurrentCommand.m_NumReceiveWords + m_CurrentCommand.m_NumIgnoreReceiveWords) <= 1)
     {
-        *m_CurrentCommand.m_pReceiveBuffer++ = m_pSpi->DR;
-        m_CurrentCommand.m_NumReceiveWords -= 1;
+        // Don't send another byte-- we just have to process the last one,
+        // which is currently incoming.
+        return;
+    }
+
+    if (m_CurrentCommand.stillTransmitting() || m_CurrentCommand.stillReceiving())
+    {
+        printf("tx = %d \r\n", m_CurrentCommand.m_NumTransmitWords);
+        m_pSpi->DR = m_CurrentCommand.getNextTransmitWord();
     }
 }
 
 
-void Spi::onTxComplete()
+bool Spi::Command::stillReceiving() const
 {
-    transmitNextByte();
+    return m_NumReceiveWords + m_NumIgnoreReceiveWords > 0;
+}
+
+
+bool Spi::Command::stillTransmitting() const
+{
+    return m_NumTransmitWords > 0;
+}
+
+std::uint8_t Spi::Command::getNextTransmitWord()
+{
+    if (m_NumTransmitWords > 0)
+    {
+        m_NumTransmitWords -= 1;
+        return *m_pTransmitBuffer++;
+    }
+
+    const std::uint8_t DUMMY_BYTE { 0xff };
+    return DUMMY_BYTE;
+}
+
+void Spi::Command::handleReceivedWord(std::uint8_t word)
+{
+    if (m_NumIgnoreReceiveWords > 0)
+    {
+        m_NumIgnoreReceiveWords -= 1;
+    }
+    else if (m_NumReceiveWords > 0)
+    {
+        m_NumReceiveWords -= 1;
+        *m_pReceiveBuffer++ = word;
+    }
+    else
+    {
+        // Do nothing
+    }
 }
 
 

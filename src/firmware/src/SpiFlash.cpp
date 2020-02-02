@@ -50,9 +50,9 @@ void SpiFlash::readBytes(std::uint8_t* pBuffer, std::uint32_t address, std::size
 {
     m_ReadInProgress = true;
 
-    const uint8_t CHIP_READ_COMMAND { 0x03 };
+    const uint8_t READ_COMMAND { 0x03 };
     const uint8_t command[] = {
-        CHIP_READ_COMMAND,
+        READ_COMMAND,
         static_cast<uint8_t>(address >> 16),
         static_cast<uint8_t>(address >> 8),
         static_cast<uint8_t>(address >> 0),
@@ -72,11 +72,63 @@ void SpiFlash::writeBytes(std::uint8_t* pBuffer, std::uint32_t address, std::siz
     // Write-Status-Register,  or  Chip-Erase  instructions,  the  Write-Enable
     // (WREN)  instruction  must  be  executed first.
 
+
+    // Also, the byte must be erased before it can be written.
+
+
     m_WriteInProgress = true;
 
-    // TODO
+
+    // TODO: Use AAI Word Program instead
+    // const uint8_t AAI_WORD_PROGRAM_COMMAND { 0xad };
+
+    const uint8_t BYTE_PROGRAM_COMMAND { 0x02 };
+
+    for (std::size_t i = 0; i < count; i++)
+    {
+        const uint8_t command[] = {
+            BYTE_PROGRAM_COMMAND,
+            static_cast<uint8_t>((address + i) >> 16),
+            static_cast<uint8_t>((address + i) >> 8),
+            static_cast<uint8_t>((address + i) >> 0),
+            pBuffer[i],
+        };
+        setChipEnable(true);
+        m_rSpi.execute({command, sizeof(command), nullptr, 0, 0});
+        while (m_rSpi.isBusy());
+        setChipEnable(false);
+        while ((readStatusRegister() & SR_BUSY) != 0);
+    }
 
 }
+
+
+
+std::uint8_t SpiFlash::readStatusRegister()
+{
+    const uint8_t READ_STATUS_REGISTER_COMMAND { 0x05 };
+    uint8_t response;
+    setChipEnable(true);
+    m_rSpi.execute({&READ_STATUS_REGISTER_COMMAND, 1, &response, 1, 1});
+    while (m_rSpi.isBusy());
+    setChipEnable(false);
+    return response;
+}
+
+
+std::uint8_t SpiFlash::readSoftwareStatusRegister()
+{
+    const uint8_t READ_SOFTWARE_STATUS_REGISTER { 0x35 };
+    uint8_t response;
+    setChipEnable(true);
+    m_rSpi.execute({&READ_SOFTWARE_STATUS_REGISTER, 1, &response, 1, 1});
+    while (m_rSpi.isBusy());
+    setChipEnable(false);
+    return response;
+}
+
+
+
 
 void SpiFlash::eraseChip()
 {
@@ -87,6 +139,7 @@ void SpiFlash::eraseChip()
     m_rSpi.execute({command, sizeof(command), nullptr, 0, 0});
     while (m_rSpi.isBusy());
     setChipEnable(false);
+    while ((readStatusRegister() & SR_BUSY) != 0);  // wait for erase to complete
 
     // T_CE = 50 ms
 }

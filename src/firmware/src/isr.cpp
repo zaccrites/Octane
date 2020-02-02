@@ -94,12 +94,12 @@ static void handleSpiInterrupt(SPI_TypeDef* pRawSpi, Spi* pSpi)
         // A single interrupt handler for TXE and RXNE?
         if ((pRawSpi->SR & SPI_SR_TXE) && (pRawSpi->CR2 & SPI_CR2_TXEIE))
         {
-            pSpi->onTxComplete();
+            pSpi->onTransmitBufferEmpty();
         }
 
         if ((pRawSpi->SR & SPI_SR_RXNE) && (pRawSpi->CR2 & SPI_CR2_RXNEIE))
         {
-            pSpi->onRxComplete();
+            pSpi->onReceiveBufferNotEmpty();
         }
     }
 }

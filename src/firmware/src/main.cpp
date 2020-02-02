@@ -42,26 +42,57 @@ void main()
 
     // printf("erasing flash \r\n");
     // flash.eraseChip();
-    // waitForMs(100);
-
 
     // waitForMs(10);  // SPI flash needs 100 us to power up
 
     flash.jedecReadId();
 
 
-    std::uint8_t buffer[32];
-    printf("reading some flash... ");
-    flash.readBytes(buffer, 0x000000, sizeof(buffer));
-    // while (flash.readInProgress());  // wait
-    printf("done! \r\n\r\n");
+    // std::uint8_t buffer[32];
 
-    printf("Flash Contents: \r\n");
-    for (int i = 0; i < 32; i++)
-    {
-        printf("%02x ", buffer[i]);
-        if ((i+1) % 8 == 0) printf("\r\n");
-    }
+
+    // // printf("reading some flash... ");
+    // // flash.readBytes(buffer, 0x000000, sizeof(buffer));
+    // // // while (flash.readInProgress());  // wait
+    // // printf("done! \r\n\r\n");
+
+    // // printf("Flash Contents: \r\n");
+    // // for (int i = 0; i < 32; i++)
+    // // {
+    // //     printf("%02x ", buffer[i]);
+    // //     if ((i+1) % 8 == 0) printf("\r\n");
+    // // }
+
+    // printf("writing some flash... ");
+    // for (int i = 0; i < sizeof(buffer); i++)
+    // {
+    //     buffer[i] = i;
+    // }
+    // flash.writeBytes(buffer, 0x000000, sizeof(buffer));
+    // printf("done! \r\n\r\n");
+
+    // for (int i = 0; i < sizeof(buffer); i++)
+    // {
+    //     buffer[i] = 0xcc;
+    // }
+    // printf("reading some flash... ");
+    // flash.readBytes(buffer, 0x000000, sizeof(buffer));
+    // // while (flash.readInProgress());  // wait
+    // printf("done! \r\n\r\n");
+
+    // printf("Flash Contents: \r\n");
+    // for (int i = 0; i < 32; i++)
+    // {
+    //     printf("%02x ", buffer[i]);
+    //     if ((i+1) % 8 == 0) printf("\r\n");
+    // }
+
+
+
+
+
+
+
 
     std::uint32_t counter = 0;
     while (true)
