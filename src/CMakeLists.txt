@@ -28,12 +28,5 @@ set(COMMON_COMPILE_FLAGS
     -fdiagnostics-color
 )
 
-add_subdirectory(firmware)
-add_subdirectory(shared)
-add_subdirectory(vendor)
-
-# Don't even try to build these in the embedded configuration
-if (NOT ${CMAKE_SYSTEM_PROCESSOR} STREQUAL arm)
 add_subdirectory(simulator)
 add_subdirectory(hdl)
-endif()

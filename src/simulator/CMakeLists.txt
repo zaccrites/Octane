@@ -14,5 +14,4 @@ target_compile_options(simulator PRIVATE
 target_link_libraries(simulator
     ${SDL2_LIBRARIES}
     Vsynth
-    shared
 )
