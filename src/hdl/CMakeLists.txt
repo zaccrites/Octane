@@ -11,7 +11,6 @@ set(VSYNTH_SOURCE_FILES
 add_library(Vsynth
     ${VSYNTH_SOURCE_FILES}
     "${VERILATOR_INCLUDE_DIR}/verilated.cpp"
-    "${VERILATOR_INCLUDE_DIR}/verilated_threads.cpp"
 )
 
 target_include_directories(Vsynth SYSTEM PUBLIC
@@ -22,15 +21,6 @@ target_include_directories(Vsynth SYSTEM PUBLIC
 target_compile_options(Vsynth PRIVATE
     -Os
     -fdiagnostics-color
-)
-
-target_compile_definitions(Vsynth PUBLIC
-    VL_THREADED
-    # VL_TRACE_THREADED
-)
-
-target_link_libraries(Vsynth
-    pthread
 )
 
 set_target_properties(Vsynth PROPERTIES
@@ -47,7 +37,7 @@ add_custom_command(
         ${CMAKE_COMMAND} -E make_directory ${VERILATOR_OUTPUT_DIR}
     COMMAND
         verilator_bin -cc "${CMAKE_CURRENT_SOURCE_DIR}/synth.sv"
-        --threads 2 --stats
+        --stats
         --MMD --Mdir ${VERILATOR_OUTPUT_DIR}
         -I${CMAKE_CURRENT_SOURCE_DIR}
         -Wall -Werror-width -Werror-selrange -Werror-implicit -Werror-pinmissing
