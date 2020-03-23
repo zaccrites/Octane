@@ -2,9 +2,6 @@
 `include "synth.svh"
 
 
-
-
-
 module synth (
     input logic i_Clock,
     input logic i_Reset,
@@ -12,155 +9,16 @@ module synth (
     input logic i_SPI_CS,
     input logic i_SPI_SCK,
     input logic i_SPI_MOSI,
-    output logic o_SPI_MISO,
-
-    output logic [7:0] o_LED,
-
-    output [2:0] o_RGB
+    output logic o_SPI_MISO
 );
 
 
-
-
 // verilator lint_off UNUSED
-logic w_LedConfigWriteEnable;
-logic [15:0] r_LedConfig;
-// verilator lint_on UNUSED
-
-always_ff @ (posedge i_Clock) begin
-    if (i_Reset)
-        r_LedConfig <= 0;
-    else if (w_LedConfigWriteEnable)
-        r_LedConfig <= w_RegisterWriteValue;
-end
-
-
-
-
-// verilator lint_off UNUSED
-
-
-
-
-// `ifdef VERILATOR
-
-assign o_RGB = 3'b000;
-
-// `else
-
-// // TODO: Use another module (and figure out LEDDA registers)
-
-// SB_RGBA_DRV
-// led_driver (
-//     .CURREN(1),
-//     // .RGBLEDEN(i_Switch[0]),
-//     .RGBLEDEN(1),
-//     .RGB0PWM(r_LedConfig[0]),
-//     .RGB1PWM(r_LedConfig[1]),
-//     .RGB2PWM(r_LedConfig[2]),
-
-//     .RGB0(o_RGB[0]),
-//     .RGB1(o_RGB[1]),
-//     .RGB2(o_RGB[2])
-// );
-
-// // defparam led_driver.CURRENT_MODE = "0b1";
-// // defparam led_driver.RGB0_CURRENT = "0b000111";
-// // defparam led_driver.RGB1_CURRENT = "0b000111";
-// // defparam led_driver.RGB2_CURRENT = "0b000111";
-
-
-// defparam led_driver.CURRENT_MODE = "0b1";
-// defparam led_driver.RGB0_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so)
-// defparam led_driver.RGB1_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so)
-// defparam led_driver.RGB2_CURRENT = "0b000001";  // full brightness is **VERY** bright (blindingly so, even indirectly)
-
-// `endif
-
-
-
-
-
-// logic [15:0] r_SampleCounter;
-// always_ff @ (posedge i_Clock) begin
-//     if (r_SampleCounter >= 4688) begin
-//         r_SampleCounter <= 0;
-//         o_LED <= w_Sample[15:8];
-//     end
-//     else if (w_SampleReady) begin
-//         r_SampleCounter <= r_SampleCounter + 1;
-//     end
-// end
-
-// initial o_LED = 8'b11001100;
-// always_ff @ (posedge i_Clock) begin
-//     if (w_SampleReady) begin
-//         o_LED <= w_Sample[15:8];
-//     end
-// end
-
-
-
-
-logic [15:0] r_SineTablePhase;
-always_ff @ (posedge i_Clock) begin
-    r_SineTablePhase <= r_SineTablePhase + 1;
-end
-
-`ifdef VERILATOR
-
-// assign o_LED = 8'b01011010;
-
-
-`else
-
-
-SP256K sine_spram2 (
-    .CK(i_Clock),
-    .AD(w_SineTableIndex),
-    .DI(w_RegisterWriteValue),
-    .MASKWE(w_MaskWREN),
-    .WE(w_SineTableWriteEnable),
-    .CS(1'b1),
-    .STDBY(1'b0),
-    .PWROFF_N(1'b1),
-    .SLEEP(1'b0),
-    .DO(w_SineTableOutput)
-);
-
-
-logic [3:0] w_MaskWREN;
-assign w_MaskWREN = w_SineTableWriteEnable ? 4'b1111 : 4'b0000;
-
-logic [15:0] w_SineTableOutput;
-always_ff @ (posedge i_Clock) begin
-    if (r_SineTablePhase[7:0] == 0) begin
-        // o_LED <= w_SineTableOutput[15:8];
-        // o_LED[7:4] <= w_SineTableOutput[15:12];
-    end
-end
-// assign o_LED[3:0] = w_SINE_TABLE_OUTPUT[15:12];
-
-
-logic [13:0] w_SineTableIndex;
-assign w_SineTableIndex = w_SineTableWriteEnable ? w_RegisterWriteNumber[13:0] : r_SineTablePhase[13:0];
-
-
-
-`endif
-
-assign o_LED[7:0] = w_ModulatedPhase[7:0];
-
-
-
-
-
-
-
-
 logic w_SPI_RegisterWriteEnable;
 logic [15:0] w_RegisterWriteNumber;
 logic [15:0] w_RegisterWriteValue;
+// verilator lint_on UNUSED
+
 
 spi spi0 (
     .i_Clock              (i_Clock),
@@ -216,7 +74,6 @@ logic [4:0] w_EnvelopeConfigWriteEnable;
 logic w_AlgorithmWriteEnable;
 logic w_PhaseStepWriteEnable;
 logic w_FeedbackLevelConfigWriteEnable;
-// logic w_LedConfigWriteEnable;
 
 always_comb begin
 
@@ -225,7 +82,6 @@ always_comb begin
     // TODO: Could compress these into a single parameter
     w_NoteOnConfigWriteEnable[0] = voiceOpRegWriteEnable(6'h10);
     w_NoteOnConfigWriteEnable[1] = voiceOpRegWriteEnable(6'h11);
-    w_LedConfigWriteEnable = voiceOpRegWriteEnable(6'h12);
 
     w_PhaseStepWriteEnable = voiceOpRegWriteEnable(6'h00);
     w_AlgorithmWriteEnable = voiceOpRegWriteEnable(6'h01);
@@ -304,16 +160,12 @@ stage_modulator modulator (
 );
 
 
-
 logic signed [15:0] w_RawWaveform;
 
 stage_waveform_generator waveform_generator (
     .i_Clock  (i_Clock),
     .i_Phase   (w_ModulatedPhase),
-    // .i_Phase   ({1'b0, r_SineTablePhase}),
     .o_Waveform(w_RawWaveform),
-
-    .o_SINE_TABLE_OUTPUT    (w_SINE_TABLE_OUTPUT),
 
     .i_NoteOn      (r_NoteOn[1]),
     .o_NoteOn      (r_NoteOn[2]),
@@ -328,8 +180,6 @@ stage_waveform_generator waveform_generator (
     .i_AlgorithmWord(r_AlgorithmWord[2]),
     .o_AlgorithmWord(r_AlgorithmWord[3])
 );
-
-logic [15:0] w_SINE_TABLE_OUTPUT;
 
 
 logic signed [15:0] w_AttenuatedWaveform;

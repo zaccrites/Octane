@@ -25,8 +25,6 @@ module stage_waveform_generator (
     input logic signed [16:0] i_Phase,
     // verilator lint_on UNUSED
 
-    output logic [15:0] o_SINE_TABLE_OUTPUT,
-
     output logic signed [15:0] o_Waveform
 );
 
@@ -125,7 +123,6 @@ always_ff @ (posedge i_Clock) begin
     // Clock 3
     // ----------------------------------------------------------
     o_Waveform <= r_NegateOutput[1] ? ~w_QuarterWaveSine : w_QuarterWaveSine;
-    o_SINE_TABLE_OUTPUT <= w_QuarterWaveSine;
 
     o_VoiceOperator <= r_VoiceOperator[1];
     o_AlgorithmWord <= r_AlgorithmWord[1];
