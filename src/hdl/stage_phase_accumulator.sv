@@ -27,7 +27,7 @@ logic [15:0] r_PhaseAccumulators [`NUM_VOICE_OPERATORS];
 logic [15:0] r_PhaseStepConfig [`NUM_VOICE_OPERATORS];
 
 /// Stored per-voice
-logic [`NUM_VOICES-1:0] r_NoteOnConfig;
+logic [11:0] r_NoteOnConfig;
 
 
 // Pipeline registers
@@ -38,8 +38,7 @@ logic r_NoteOn;
 
 logic signed [15:0] w_SteppedPhase;
 always_comb begin
-    // w_SteppedPhase = r_NoteOn ? (r_AccumulatedPhase + r_PhaseStep) : 0;
-    w_SteppedPhase = r_AccumulatedPhase + r_PhaseStep;
+    w_SteppedPhase = r_NoteOn ? (r_AccumulatedPhase + r_PhaseStep) : 0;
 end
 
 always_ff @ (posedge i_Clock) begin
@@ -47,8 +46,7 @@ always_ff @ (posedge i_Clock) begin
     if (i_PhaseStepConfigWriteEnable)
         r_PhaseStepConfig[i_ConfigWriteAddr] <= i_ConfigWriteData;
 
-    if (i_NoteOnConfigWriteEnable)
-        r_NoteOnConfig[`NUM_VOICES-1:0] <= i_ConfigWriteData[`NUM_VOICES-1:0];
+    if (i_NoteOnConfigWriteEnable) r_NoteOnConfig[11:0] <= i_ConfigWriteData[11:0];
 
     // Clock 1
     // ----------------------------------------------------------

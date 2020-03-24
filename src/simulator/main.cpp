@@ -1,6 +1,7 @@
 
 #include <iostream>
-#include <chrono>
+
+#include <SDL2/SDL.h>
 
 #include "Synth.hpp"
 
@@ -9,7 +10,9 @@
 const uint32_t SAMPLE_FREQUENCY = 44100;
 
 
-int run(double seconds)
+
+
+int main(int argc, char** argv)
 {
 
     std::cout << "Hello World!" << std::endl;
@@ -25,7 +28,13 @@ int run(double seconds)
 
 
 
-    for (uint8_t voiceNum = 0; voiceNum < 8; voiceNum++)
+    const bool playAudio = true;
+
+
+
+
+
+    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         double noteBaseFrequency;
         // if (voiceNum < 16)
@@ -136,7 +145,7 @@ int run(double seconds)
         }
     }
 
-    for (uint8_t voiceNum = 0; voiceNum < 8; voiceNum++)
+    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
     {
         if (voiceNum == 0)
         {
@@ -145,7 +154,7 @@ int run(double seconds)
     }
 
     // Add some overhead for setting up the sine table
-    // double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
+    double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
     // seconds *= 10;
 
     // double seconds = 0.005;
@@ -193,30 +202,65 @@ int run(double seconds)
         // }
 
 
-        synth.sendReceive();
+        // TODO: fix
+        const double period = 0.01;
+        if (std::fmod(t_last, period) < (period / 2) && std::fmod(t, period) > (period / 2))
+        {
+            ledOn = ! ledOn;
+            synth.writeOperatorRegister(0, 0, Synth::PARAM_LED_CONFIG, ledOn ? 0xffff : 0xff0f);
+        }
+
+
+        synth.spiSendReceive();
 
         // printf("rBuffer.size() = %d \n", rBuffer.size());
 
         t_last = t;
     }
 
+
+    if (playAudio)
+    {
+
+        // TODO: Graphics?
+        // if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+        if (SDL_Init(SDL_INIT_AUDIO) != 0)
+        {
+            std::cerr << "Failed to init SDL" << std::endl;
+            return 1;
+        }
+
+        // https://wiki.libsdl.org/SDL_AudioSpec
+        SDL_AudioSpec want, have;
+        SDL_AudioDeviceID device;
+        SDL_memset(&want, 0, sizeof(want));
+        want.freq = SAMPLE_FREQUENCY;
+        want.format = AUDIO_S16;
+        want.channels = 1;
+        want.samples = 1024;
+        want.userdata = &synth;
+        want.callback = [](void* pUserdata, uint8_t* pBuffer, int length) {
+            Synth* pSynth = static_cast<Synth*>(pUserdata);
+            pSynth->writeSampleBytes(pBuffer, length);
+        };
+        device = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+        if (device == 0)
+        {
+            std::cerr << "Failed to init SDL audio" << std::endl;
+            return 1;
+        }
+
+
+        // TODO
+        SDL_PauseAudioDevice(device, 0);
+        SDL_Delay(static_cast<uint32_t>(seconds * 1000));
+
+        SDL_CloseAudio();
+        SDL_Quit();
+
+    }
+
     return 0;
-}
 
 
-int main(int argc, char** argv)
-{
-    // TODO: command line arguments
-    (void)argc;
-    (void)argv;
-
-    double seconds = 1.0;
-
-    auto start = std::chrono::high_resolution_clock::now();
-    auto result = run(seconds);
-    auto finish = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-    std::cout << "Finished in " << duration.count() << " ms" << std::endl;
-
-    return result;
 }

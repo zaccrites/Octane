@@ -44,6 +44,7 @@ add_custom_command(
 
     DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/double_register.sv"
+        "${CMAKE_CURRENT_SOURCE_DIR}/spi.sv"
         "${CMAKE_CURRENT_SOURCE_DIR}/stage_envelope_attenuator.sv"
         "${CMAKE_CURRENT_SOURCE_DIR}/stage_modulator.sv"
         "${CMAKE_CURRENT_SOURCE_DIR}/stage_phase_accumulator.sv"

@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <deque>
 #include <queue>
-#include <utility>
 
 #include "Vsynth.h"
 
@@ -25,7 +24,7 @@ public:
     void reset();
     void writeRegister(uint16_t registerNumber, uint16_t registerValue);
 
-    void sendReceive();
+    void spiSendReceive();
 
     void setNoteOn(uint8_t voiceNum, bool noteOn);
     bool getNoteOn(uint8_t voiceNum) const;
@@ -57,7 +56,9 @@ public:
 
     static const uint8_t OP_PARAM_FEEDBACK_LEVEL   { 0x07 };
 
+
     static const uint8_t PARAM_NOTEON_BANK0  { 0x10 };
+    static const uint8_t PARAM_NOTEON_BANK1  { 0x11 };
 
     static const uint8_t PARAM_LED_CONFIG  { 0x12 };
 
@@ -69,10 +70,12 @@ private:
     size_t m_SampleCounter;
     FILE* m_DataFile;
 
-    bool m_NoteOnState[8];
+    bool m_NoteOnState[32];
 
-    using Command = std::pair<uint16_t, uint16_t>;
-    std::queue<Command> m_CommandQueue;
+    std::queue<uint16_t> m_SPI_SendQueue;
+    uint16_t m_SPI_TickCounter;
+    // uint16_t m_SPI_OutputBuffer;
+    // uint16_t m_SPI_InputBuffer;
 
 };
 
