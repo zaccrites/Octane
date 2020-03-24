@@ -28,7 +28,10 @@ set_target_properties(Vsynth PROPERTIES
     CXX_EXTENSIONS OFF
 )
 
-
+# Performance (to compute 1 second of audio)
+# Single threaded: 1950 ms
+# 2 Threads: 18 seconds
+# 4 Threads: not allowed :(
 add_custom_command(
     COMMAND
         ${CMAKE_COMMAND} -E make_directory ${VERILATOR_OUTPUT_DIR}
