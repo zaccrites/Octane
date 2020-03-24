@@ -54,9 +54,9 @@ assign w_RegisterWriteEnable = w_SPI_RegisterWriteEnable && ! r_SPI_RegisterWrit
 
 // TODO: Use full 16 bits for register numbers
 logic [5:0] w_VoiceOperatorRegisterWriteParameter;
-logic [7:0] w_VoiceOperatorRegisterWriteAddress;
+logic [6:0] w_VoiceOperatorRegisterWriteAddress;
 assign w_VoiceOperatorRegisterWriteParameter = w_RegisterWriteNumber[13:8];
-assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[7:0];
+assign w_VoiceOperatorRegisterWriteAddress = w_RegisterWriteNumber[6:0];
 
 
 function voiceOpRegWriteEnable;
@@ -69,7 +69,7 @@ end
 endfunction
 
 logic w_SineTableWriteEnable;
-logic [1:0] w_NoteOnConfigWriteEnable;
+logic w_NoteOnConfigWriteEnable;
 logic [4:0] w_EnvelopeConfigWriteEnable;
 logic w_AlgorithmWriteEnable;
 logic w_PhaseStepWriteEnable;
@@ -79,9 +79,7 @@ always_comb begin
 
     w_SineTableWriteEnable = w_RegisterWriteEnable && w_RegisterWriteNumber[14] == 1'b1;
 
-    // TODO: Could compress these into a single parameter
-    w_NoteOnConfigWriteEnable[0] = voiceOpRegWriteEnable(6'h10);
-    w_NoteOnConfigWriteEnable[1] = voiceOpRegWriteEnable(6'h11);
+    w_NoteOnConfigWriteEnable = voiceOpRegWriteEnable(6'h10);
 
     w_PhaseStepWriteEnable = voiceOpRegWriteEnable(6'h00);
     w_AlgorithmWriteEnable = voiceOpRegWriteEnable(6'h01);
@@ -101,11 +99,11 @@ always_ff @ (posedge i_Clock) begin
     // The order is the following:
     //
     // |    OP1     |    OP2     | ... |    OP7     |    OP8     |
-    // | V1 ... V32 | V1 ... V32 | ... | V1 ... V32 | V1 ... V32 |
+    // | V1 ... V12 | V1 ... V12 | ... | V1 ... V12 | V1 ... V12 |
     // |            |            |     |            |            |
-    // 0            32           64    192          224          256
+    // 0            12           24    72           84           96
     //
-    if (i_Reset)
+    if (i_Reset || r_VoiceOperator[0] == `NUM_VOICE_OPERATORS - 1)
         r_VoiceOperator[0] <= 0;
     else
         r_VoiceOperator[0] <= r_VoiceOperator[0] + 1;

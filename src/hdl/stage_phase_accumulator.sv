@@ -12,7 +12,7 @@ module stage_phase_accumulator (
 
     output logic o_NoteOn,
 
-    input logic [1:0] i_NoteOnConfigWriteEnable,
+    input logic i_NoteOnConfigWriteEnable,
     input logic i_PhaseStepConfigWriteEnable,
     input logic `VOICE_OPERATOR_ID i_ConfigWriteAddr,
     input logic [15:0] i_ConfigWriteData
@@ -27,7 +27,7 @@ logic [15:0] r_PhaseAccumulators [`NUM_VOICE_OPERATORS];
 logic [15:0] r_PhaseStepConfig [`NUM_VOICE_OPERATORS];
 
 /// Stored per-voice
-logic [31:0] r_NoteOnConfig;
+logic [11:0] r_NoteOnConfig;
 
 
 // Pipeline registers
@@ -46,8 +46,7 @@ always_ff @ (posedge i_Clock) begin
     if (i_PhaseStepConfigWriteEnable)
         r_PhaseStepConfig[i_ConfigWriteAddr] <= i_ConfigWriteData;
 
-    if (i_NoteOnConfigWriteEnable[1]) r_NoteOnConfig[31:16] <= i_ConfigWriteData;
-    if (i_NoteOnConfigWriteEnable[0]) r_NoteOnConfig[15:0] <= i_ConfigWriteData;
+    if (i_NoteOnConfigWriteEnable) r_NoteOnConfig[11:0] <= i_ConfigWriteData[11:0];
 
     // Clock 1
     // ----------------------------------------------------------

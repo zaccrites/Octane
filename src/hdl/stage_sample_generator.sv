@@ -112,7 +112,8 @@ always_ff @ (posedge i_Clock) begin
         r_SampleBuffer <= r_SampleBuffer + w_SignExtendedCarrierOutput;
     end
 
-    o_SampleReady <= r_VoiceOperator[15] == 8'hff;
+    o_SampleReady <= r_VoiceOperator[15] == `NUM_VOICE_OPERATORS - 1;
+    // $display("ID = %d", r_VoiceOperator[15]);
 
     // -------------------------------------------------------
 
