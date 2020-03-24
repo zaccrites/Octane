@@ -28,14 +28,14 @@ function automatic getIsCarrier;
 endfunction
 
 
-`define NUM_VOICES            12
+`define NUM_VOICES            8
 `define NUM_OPERATORS         8
 `define NUM_VOICE_OPERATORS   (`NUM_VOICES * `NUM_OPERATORS)
 
 
-`define VOICE_OPERATOR_ID [6:0]
+`define VOICE_OPERATOR_ID [5:0]
 `define OPERATOR_ID [2:0]
-`define VOICE_ID [3:0]
+`define VOICE_ID [2:0]
 
 
 function automatic `OPERATOR_ID getOperatorID;
@@ -43,7 +43,7 @@ function automatic `OPERATOR_ID getOperatorID;
     input `VOICE_OPERATOR_ID voiceOperator;
     // verilator lint_on UNUSED
 begin
-    getOperatorID = voiceOperator[6:4];
+    getOperatorID = voiceOperator[5:3];
 end
 endfunction
 
@@ -53,7 +53,7 @@ function automatic `VOICE_ID getVoiceID;
     input `VOICE_OPERATOR_ID voiceOperator;
     // verilator lint_on UNUSED
 begin
-    getVoiceID = voiceOperator[3:0];
+    getVoiceID = voiceOperator[2:0];
 end
 endfunction
 

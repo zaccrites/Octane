@@ -10,13 +10,9 @@ Synth::Synth() :
     m_SampleCounter {0},
     m_DataFile { fopen("data.csv", "w") },
     m_NoteOnState {},
-    m_SPI_SendQueue {},
-    m_SPI_TickCounter {0}
+    m_CommandQueue {}
 {
-    std::fill_n(m_NoteOnState, 32, false);
-
-    m_Synth.i_SPI_CS = 1;
-
+    std::fill_n(m_NoteOnState, 8, false);
 }
 
 Synth::~Synth()
@@ -44,106 +40,62 @@ void Synth::reset()
 
 void Synth::setNoteOn(uint8_t voiceNum, bool noteOn)
 {
-    voiceNum = voiceNum % 32;
+    voiceNum = voiceNum % 8;
     if (m_NoteOnState[voiceNum] == noteOn)
     {
         return;
     }
     m_NoteOnState[voiceNum] = noteOn;
 
-    const uint8_t bank = voiceNum / 16;
     uint16_t newRegisterValue = 0;
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < 8; i++)
     {
-        newRegisterValue |= static_cast<uint16_t>(m_NoteOnState[16 * bank + i]) << i;
+        newRegisterValue |= static_cast<uint16_t>(m_NoteOnState[i]) << i;
     }
 
-    if (bank == 0)
-    {
-        // TODO: This isn't really a "voice op" parameter anymore.
-        // Need to reorganize registers now that I need all 14 bits
-        // of a "global" address for the sine table.
-        // If I can write the whole thing at once then this problem
-        // probably goes away (could just have 8 bit addresses, honestly).
-        writeOperatorRegister(0, 0, PARAM_NOTEON_BANK0, newRegisterValue);
-    }
-    else
-    {
-        writeOperatorRegister(0, 0, PARAM_NOTEON_BANK1, newRegisterValue);
-    }
+    // TODO: This isn't really a "voice op" parameter anymore.
+    // Need to reorganize registers now that I need all 14 bits
+    // of a "global" address for the sine table.
+    // If I can write the whole thing at once then this problem
+    // probably goes away (could just have 8 bit addresses, honestly).
+    writeOperatorRegister(0, 0, PARAM_NOTEON_BANK0, newRegisterValue);
 }
 
 
 bool Synth::getNoteOn(uint8_t voiceNum) const
 {
-    return m_NoteOnState[voiceNum % 32];
+    return m_NoteOnState[voiceNum % 8];
 }
 
 
-void Synth::spiSendReceive()
+void Synth::sendReceive()
 {
-    auto getCommandHalfWord = [this]() -> uint16_t {
-        uint16_t value;
-        if (m_SPI_SendQueue.empty())
-        {
-            value = 0;
-        }
-        else
-        {
-            value = m_SPI_SendQueue.front();
-            m_SPI_SendQueue.pop();
-        }
-        return value;
-    };
-
-    const uint16_t spiRegWriteAddr = getCommandHalfWord();
-    const uint16_t spiRegWriteValue = getCommandHalfWord();
-    uint32_t spiOutputBuffer = (spiRegWriteAddr << 16) | spiRegWriteValue;
-    uint32_t spiInputBuffer = 0;
-
-    m_Synth.i_SPI_CS = 0;
-    tick();
-
-    for (int i = 0; i < 32; i++)
+    if (m_CommandQueue.empty())
     {
-        // Rising edge of SCK isn't used
-        m_Synth.i_SPI_SCK = 1;
-        tick();
-
-        // Output data (MSB out first)
-        m_Synth.i_SPI_MOSI = (spiOutputBuffer & 0x80000000) ? 1 : 0;
-        spiOutputBuffer = spiOutputBuffer << 1;
-        tick();
-
-        // Data is latched on the falling edge of SCK
-        m_Synth.i_SPI_SCK = 0;
-        tick();
-
-        // Input the valid slave data (MSB in first)
-        spiInputBuffer = (spiInputBuffer << 1) | m_Synth.o_SPI_MISO;
-        tick();
+        m_Synth.i_RegisterWriteEnable = 0;
     }
-
-    m_Synth.i_SPI_CS = 1;
+    else
+    {
+        auto& command = m_CommandQueue.front();
+        m_Synth.i_RegisterWriteEnable = 1;
+        m_Synth.i_RegisterWriteNumber = command.first;
+        m_Synth.i_RegisterWriteValue = command.second;
+        m_CommandQueue.pop();
+    }
     tick();
 
-    const bool collectNewSample = ++m_SPI_TickCounter >= 8 / 4;
-    if (collectNewSample)
+    if (m_Synth.o_SampleReady)
     {
-        m_SPI_TickCounter = 0;
-
-        auto sample = static_cast<int16_t>(spiInputBuffer & 0x0000ffff);
+        auto sample = static_cast<int16_t>(m_Synth.o_Sample);
         m_SampleBuffer.push_front(sample);
-        fprintf(m_DataFile, "%zu,%d\n", m_SampleCounter++, sample);
+        fprintf(m_DataFile, "%zu,%d\n", ++m_SampleCounter, sample);
     }
-
 }
 
 
 void Synth::writeRegister(uint16_t registerNumber, uint16_t value)
 {
-    m_SPI_SendQueue.push(registerNumber);
-    m_SPI_SendQueue.push(value);
+    m_CommandQueue.push({registerNumber, value});
 }
 
 

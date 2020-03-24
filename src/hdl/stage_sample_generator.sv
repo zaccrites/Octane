@@ -113,7 +113,9 @@ always_ff @ (posedge i_Clock) begin
     end
 
     o_SampleReady <= r_VoiceOperator[15] == `NUM_VOICE_OPERATORS - 1;
-    // $display("ID = %d", r_VoiceOperator[15]);
+    if (r_VoiceOperator[15] == `NUM_VOICE_OPERATORS - 1) begin
+        // $display("Sample ready: %d", r_SampleBuffer);
+    end
 
     // -------------------------------------------------------
 
