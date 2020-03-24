@@ -18,6 +18,8 @@ const uint32_t SAMPLE_FREQUENCY = 44100;
 
 int main(int argc, char** argv)
 {
+    (void)argc;
+    (void)argv;
 
     std::cout << "Hello World!" << std::endl;
 
@@ -31,10 +33,14 @@ int main(int argc, char** argv)
 
     std::queue<TimestampedCommand> commands;
     std::ifstream input("commands.bin", std::ios::binary);
-    while ( ! input.eof())
+    while (true)
     {
         TimestampedCommand command;
         input.read(reinterpret_cast<char*>(&command), sizeof(command));
+        if (input.eof())
+        {
+            break;
+        }
         commands.push(command);
     }
     std::cout << "Read " << commands.size() << " commands." << std::endl;
@@ -50,130 +56,132 @@ int main(int argc, char** argv)
 
 
 
-    const bool playAudio = true;
+    const bool playAudio = false;
 
 
 
 
 
-    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-    {
-        double noteBaseFrequency;
-        // if (voiceNum < 16)
-        // {
-        //     // noteBaseFrequency = 500.0;
-        //     noteBaseFrequency = 350.0;
-        // }
-        // else
-        {
-            // noteBaseFrequency = 1000.0;
-            // noteBaseFrequency = 523.251;  // C5
-        }
-        // noteBaseFrequency = 100.0 * (1 + voiceNum);
-        // noteBaseFrequency = 440.0;
+    // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+    // // uint8_t voiceNum = 31;
+    // {
+    //     double noteBaseFrequency;
+    //     // if (voiceNum < 16)
+    //     // {
+    //     //     // noteBaseFrequency = 500.0;
+    //     //     noteBaseFrequency = 350.0;
+    //     // }
+    //     // else
+    //     {
+    //         // noteBaseFrequency = 1000.0;
+    //         // noteBaseFrequency = 523.251;  // C5
+    //     }
+    //     // noteBaseFrequency = 100.0 * (1 + voiceNum);
+    //     // noteBaseFrequency = 440.0;
 
 
-        // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
-        uint16_t algorithmWords[8] = {
-            //       7654321
-            //xxxxxx mmmmmmm nnn c
-            0b000000'0000000'000'0,  // OP1
-            0b000000'0000000'000'1,  // OP2
-            0b000000'0000000'000'0,  // OP3
-            0b000000'0000000'000'0,  // OP4
-            0b000000'0000000'000'0,  // OP5
-            0b000000'0000000'000'0,  // OP6
-            0b000000'0000000'000'0,  // OP7
-            0b000000'0000000'000'0,  // OP8
-        };
+    //     // auto makeAlgorithmWord = [](uint8_t modulation, bool isCarrier, uint8_t numCarriers)
+    //     uint16_t algorithmWords[8] = {
+    //         //       7654321
+    //         //xxxxxx mmmmmmm nnn c
+    //         0b000000'0000000'000'0,  // OP1
+    //         0b000000'0000000'000'1,  // OP2
+    //         0b000000'0000000'000'0,  // OP3
+    //         0b000000'0000000'000'0,  // OP4
+    //         0b000000'0000000'000'0,  // OP5
+    //         0b000000'0000000'000'0,  // OP6
+    //         0b000000'0000000'000'0,  // OP7
+    //         0b000000'0000000'000'0,  // OP8
+    //     };
 
-        synth.setNoteOn(voiceNum, false);
+    //     synth.setNoteOn(voiceNum, false);
 
-        for (uint8_t opNum = 0; opNum < 8; opNum++)
-        {
-            // auto opConfig = patchConfig.getOperatorConfig(opNum);
+    //     for (uint8_t opNum = 0; opNum < 8; opNum++)
+    //     {
+    //         // auto opConfig = patchConfig.getOperatorConfig(opNum);
 
-            // TODO: Use JSON
-            // uint8_t feedbackLevel = (opNum == 0) ? 255 : 0;
-            uint8_t feedbackLevel = 128;
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_FEEDBACK_LEVEL, feedbackLevel);
+    //         // TODO: Use JSON
+    //         // uint8_t feedbackLevel = (opNum == 0) ? 255 : 0;
+    //         // uint8_t feedbackLevel = 128;
+    //         uint8_t feedbackLevel = 0;
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_FEEDBACK_LEVEL, feedbackLevel);
 
-            // TODO: Use JSON
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM, algorithmWords[opNum]);
+    //         // TODO: Use JSON
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ALGORITHM, algorithmWords[opNum]);
 
-            // uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
-            uint16_t phaseStep = 1398;
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
+    //         // uint16_t phaseStep = phaseStepForFrequency(noteBaseFrequency * opConfig.getFrequencyRatio());
+    //         uint16_t phaseStep = 1398;
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_PHASE_STEP, phaseStep);
 
-            bool isCarrier = algorithmWords[opNum] & 0x0001;
-
-
-            // TODO: Clean this all up. Put into a Patch class that can
-            // do all these calculations and output real values to pass
-            // to the microcontroller after loading the binary configuration.
-
-            auto modulationIndexForLevel = [](uint16_t level) -> double {
-                // Vary linearly up to I=15
-                return level * 15.0 / 1000.0;
-            };
-
-            auto carrierAmplitudeForLevel = [](uint16_t level) -> double {
-                // 1000 is 100% intensity, but 500 is half as loud (10% intensity).
-                // 250 is a quarter as loud (1% intensity), etc.
-                const double exponent = std::log(10) / std::log(2);
-                return std::pow(level, exponent) / std::pow(1000.0, exponent);
-            };
+    //         bool isCarrier = algorithmWords[opNum] & 0x0001;
 
 
-            auto fixOperatorLevel = [carrierAmplitudeForLevel, modulationIndexForLevel, phaseStep, isCarrier](uint16_t level) -> uint16_t {
-                if (isCarrier)
-                {
-                    double multiplier = carrierAmplitudeForLevel(level);
-                    // printf("multiplier for level %d is %f \n", level, multiplier);
-                    return static_cast<uint16_t>(0x3fff * multiplier);
-                }
-                else
-                {
-                    double modulationIndex = modulationIndexForLevel(level);
-                    return static_cast<uint16_t>(modulationIndex * phaseStep);
-                }
-            };
-            auto fixOperatorRate = [carrierAmplitudeForLevel, modulationIndexForLevel, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
+    //         // TODO: Clean this all up. Put into a Patch class that can
+    //         // do all these calculations and output real values to pass
+    //         // to the microcontroller after loading the binary configuration.
 
-                if (isCarrier)
-                {
-                    double multiplier = carrierAmplitudeForLevel(rate);
-                    return static_cast<uint16_t>(0x0fff * multiplier);
-                }
-                else
-                {
-                    double modulationIndex = modulationIndexForLevel(rate);
-                    return static_cast<uint16_t>(modulationIndex * phaseStep) / 4;
-                }
-            };
+    //         auto modulationIndexForLevel = [](uint16_t level) -> double {
+    //             // Vary linearly up to I=15
+    //             return level * 15.0 / 1000.0;
+    //         };
 
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, fixOperatorLevel(opConfig.getAttackLevel()));
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, fixOperatorLevel(opConfig.getSustainLevel()));
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, fixOperatorRate(opConfig.getAttackRate()));
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, fixOperatorRate(opConfig.getDecayRate()));
-            // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, fixOperatorRate(opConfig.getReleaseRate()));
+    //         auto carrierAmplitudeForLevel = [](uint16_t level) -> double {
+    //             // 1000 is 100% intensity, but 500 is half as loud (10% intensity).
+    //             // 250 is a quarter as loud (1% intensity), etc.
+    //             const double exponent = std::log(10) / std::log(2);
+    //             return std::pow(level, exponent) / std::pow(1000.0, exponent);
+    //         };
 
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, 0xffff);
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, 0xffff);
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, 0xffff);
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, 0xffff);
-            synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, 0xffff);
 
-        }
-    }
+    //         auto fixOperatorLevel = [carrierAmplitudeForLevel, modulationIndexForLevel, phaseStep, isCarrier](uint16_t level) -> uint16_t {
+    //             if (isCarrier)
+    //             {
+    //                 double multiplier = carrierAmplitudeForLevel(level);
+    //                 // printf("multiplier for level %d is %f \n", level, multiplier);
+    //                 return static_cast<uint16_t>(0x3fff * multiplier);
+    //             }
+    //             else
+    //             {
+    //                 double modulationIndex = modulationIndexForLevel(level);
+    //                 return static_cast<uint16_t>(modulationIndex * phaseStep);
+    //             }
+    //         };
+    //         auto fixOperatorRate = [carrierAmplitudeForLevel, modulationIndexForLevel, phaseStep, isCarrier](uint16_t rate) -> uint16_t {
 
-    for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-    {
-        if (voiceNum == 0)
-        {
-            synth.setNoteOn(voiceNum, true);
-        }
-    }
+    //             if (isCarrier)
+    //             {
+    //                 double multiplier = carrierAmplitudeForLevel(rate);
+    //                 return static_cast<uint16_t>(0x0fff * multiplier);
+    //             }
+    //             else
+    //             {
+    //                 double modulationIndex = modulationIndexForLevel(rate);
+    //                 return static_cast<uint16_t>(modulationIndex * phaseStep) / 4;
+    //             }
+    //         };
+
+    //         // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, fixOperatorLevel(opConfig.getAttackLevel()));
+    //         // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, fixOperatorLevel(opConfig.getSustainLevel()));
+    //         // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, fixOperatorRate(opConfig.getAttackRate()));
+    //         // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, fixOperatorRate(opConfig.getDecayRate()));
+    //         // synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, fixOperatorRate(opConfig.getReleaseRate()));
+
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_LEVEL, 0xffff);
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, 0xffff);
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_ATTACK_RATE, 0xffff);
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_DECAY_RATE, 0xffff);
+    //         synth.writeOperatorRegister(voiceNum, opNum, Synth::OP_PARAM_ENVELOPE_RELEASE_RATE, 0xffff);
+
+    //     }
+    // }
+
+    // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+    // {
+    //     if (voiceNum == 0)
+    //     {
+    //         synth.setNoteOn(voiceNum, true);
+    //     }
+    // }
 
     // Add some overhead for setting up the sine table
     // double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
@@ -183,68 +191,67 @@ int main(int argc, char** argv)
     double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
 
 
-
     auto& rBuffer = synth.getSampleBuffer();
-    // while ( ! commands.empty())
-    // {
-    //     double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
-    //     while ( ! commands.empty() && commands.front().timestamp <= t)
-    //     {
-    //         synth.writeRegister(commands.front().registerNumber, commands.front().registerValue);
-    //         commands.pop();
-    //     }
-    //     synth.spiSendReceive();
-    // }
-
-
-
-
-    // double noteOn = false;
-    const size_t samplesNeeded { static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds) };
-    double t_last = 0.0;
-    bool ledOn = false;
-    while (rBuffer.size() < samplesNeeded)
+    while ( ! commands.empty())
     {
-        // double onTime = seconds * 0.0;
-        // double offTime = seconds * 0.8;
-        // if ( ! noteOn && t > onTime && t < offTime)
-        // {
-        //     noteOn = true;
-        //     synth.setNoteOn(0, true);
-        // }
-        // else if (noteOn && t > offTime)
-        // {
-        //     noteOn = false;
-        //     synth.setNoteOn(0, false);
-        // }
-
-        // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
-        // {
-        //     double voiceOnTime = voiceNum * (seconds / 32.0);
-        //     if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
-        //     {
-        //         printf("t = %f, setting voice %d on \n", t, voiceNum);
-        //         synth.setNoteOn(voiceNum, true);
-        //     }
-        // }
-
-        // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum += 2)
-        // {
-        //     double voiceOnTime = voiceNum * (seconds / 32.0);
-        //     if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
-        //     {
-        //         synth.setNoteOn(voiceNum, true);
-        //         synth.setNoteOn(voiceNum + 1, true);
-        //     }
-        // }
-
-
-
+        float t = static_cast<float>(rBuffer.size()) / static_cast<float>(SAMPLE_FREQUENCY);
+        if (commands.front().timestamp <= t)
+        {
+            synth.writeRegister(commands.front().registerNumber, commands.front().registerValue);
+            commands.pop();
+        }
         synth.spiSendReceive();
-
-        // printf("rBuffer.size() = %d \n", rBuffer.size());
-
     }
+
+
+
+
+    // // // double noteOn = false;
+    // const size_t samplesNeeded { static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds) };
+    // double t_last = 0.0;
+    // bool ledOn = false;
+    // while (rBuffer.size() < samplesNeeded)
+    // {
+    //     // double onTime = seconds * 0.0;
+    //     // double offTime = seconds * 0.8;
+    //     // if ( ! noteOn && t > onTime && t < offTime)
+    //     // {
+    //     //     noteOn = true;
+    //     //     synth.setNoteOn(0, true);
+    //     // }
+    //     // else if (noteOn && t > offTime)
+    //     // {
+    //     //     noteOn = false;
+    //     //     synth.setNoteOn(0, false);
+    //     // }
+
+    //     // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum++)
+    //     // {
+    //     //     double voiceOnTime = voiceNum * (seconds / 32.0);
+    //     //     if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
+    //     //     {
+    //     //         printf("t = %f, setting voice %d on \n", t, voiceNum);
+    //     //         synth.setNoteOn(voiceNum, true);
+    //     //     }
+    //     // }
+
+    //     // for (uint8_t voiceNum = 0; voiceNum < 32; voiceNum += 2)
+    //     // {
+    //     //     double voiceOnTime = voiceNum * (seconds / 32.0);
+    //     //     if (t > voiceOnTime && ! synth.getNoteOn(voiceNum))
+    //     //     {
+    //     //         synth.setNoteOn(voiceNum, true);
+    //     //         synth.setNoteOn(voiceNum + 1, true);
+    //     //     }
+    //     // }
+
+
+
+    //     synth.spiSendReceive();
+
+    //     // printf("rBuffer.size() = %d \n", rBuffer.size());
+
+    // }
 
 
     if (playAudio)

@@ -189,7 +189,8 @@ void Synth::populateSineTable()
         const uint16_t value = static_cast<uint16_t>(sineValue * MAX_RANGE) & MASK;
 
         uint16_t registerNumber = (0b11 << 14) | i;
-        writeRegister(registerNumber, value);
+        // writeRegister(registerNumber, value);
+        // printf("[sine] Would write %d to register %x \n", value, registerNumber);
     }
 }
 

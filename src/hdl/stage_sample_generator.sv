@@ -101,6 +101,9 @@ always_ff @ (posedge i_Clock) begin
     // If the previous clock output a sample, then this clock should
     // reset the buffer.
     if (o_SampleReady) begin
+
+        // $display("lastSample = %d", r_SampleBuffer);
+
         if (r_IsCarrier[15]) begin
             r_SampleBuffer <= w_SignExtendedCarrierOutput;
         end

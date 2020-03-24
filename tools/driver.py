@@ -33,8 +33,9 @@ def make_operator_command(voice_num, op_num, param, value):
     assert voice_num < 32
     assert op_num < 8
     assert param < 64
-    assert value < 2**16
     register = (0b10 << 14) | (param << 8) | (op_num << 5) | voice_num
+    assert register < 2**16
+    assert value < 2**16
     return Command(register, value)
 
 
@@ -49,18 +50,23 @@ class Operator(object):
     def is_carrier(self):
         return self.data['is_carrier']
 
-    @property
-    def algorithm_word(self):
+    def calc_algorithm_word(self, num_carriers):
         modulators = self.data['modulated_by']
         word = 0b000000  # First six bits are dontcares
         for op_num in [7, 6, 5, 4, 3, 2, 1]:
             word = (word << 1) | (1 if op_num in modulators else 0)
+
+        if not (1 <= num_carriers <= 8):
+            raise ValueError('Must have between 1 and 8 carriers')
+        word = (word << 3) | (num_carriers - 1)
+
         word = (word << 1) | (1 if self.is_carrier else 0)
         assert word < 2**16
         return word
 
-    def encode_algorithm(self, voice_num):
-        yield make_operator_command(voice_num, self.number, OP_PARAM_ALGORITHM, self.algorithm_word)
+    def encode_algorithm(self, voice_num, num_carriers):
+        algorithm_word = self.calc_algorithm_word(num_carriers)
+        yield make_operator_command(voice_num, self.number, OP_PARAM_ALGORITHM, algorithm_word)
 
     def encode_feedback(self, voice_num):
         yield make_operator_command(voice_num, self.number, OP_PARAM_FEEDBACK, self.data['feedback'])
@@ -96,9 +102,10 @@ class Patch(object):
         if voices is None:
             voices = range(32)
 
+        num_carriers = sum(1 for operator in self.operators if operator.is_carrier)
         for voice_num in voices:
             for operator in self.operators:
-                yield from operator.encode_algorithm(voice_num)
+                yield from operator.encode_algorithm(voice_num, num_carriers)
                 yield from operator.encode_feedback(voice_num)
                 yield from operator.encode_levels(voice_num)
 
@@ -108,10 +115,9 @@ class Patch(object):
 
 
 def encode_sine_table_population():
-    TABLE_SIZE = 16 * 1204
+    TABLE_SIZE = 16 * 1024
     BIT_DEPTH = 15
-    MAX_RANGE = 1 << BIT_DEPTH
-    MASK = MAX_RANGE - 1
+    MAX_VALUE = (1 << BIT_DEPTH) - 1
 
     for i in range(TABLE_SIZE):
         # https://zipcpu.com/dsp/2017/08/26/quarterwave.html
@@ -123,7 +129,7 @@ def encode_sine_table_population():
 
         # https://stackoverflow.com/a/12946226
         sine = math.sin(phase)
-        value = int(round(sine * MAX_RANGE)) & MASK
+        value = int(round(sine * MAX_VALUE))
 
         register = (0b11 << 14) | i
         yield Command(register, value)
@@ -133,7 +139,7 @@ def encode_sine_table_population():
 def encode_notes_on(voices):
     def encode_bank(bank_voices):
         value = 0
-        for voice_on in bank_voices:
+        for voice_on in reversed(bank_voices):
             value = (value << 1) | (1 if voice_on else 0)
         return value
     yield make_operator_command(0, 0, PARAM_NOTEON_BANK0, encode_bank(voices[0:16]))
@@ -150,7 +156,8 @@ def get_timestamped_messages(mid):
 
 def midi_note_number_to_frequency(note_number):
     # https://en.wikipedia.org/wiki/MIDI_tuning_standard#Frequency_values
-    return 2.0**(note_number - 69) * 440
+    exponent = (note_number - 69) / 12
+    return 2**exponent * 440
 
 
 def frequency_to_phase_step(frequency):
@@ -159,8 +166,7 @@ def frequency_to_phase_step(frequency):
 
 
 
-def main():
-
+def generate_commands():
     patch = Patch.load('patches/test2.json')
 
     commands = []
@@ -169,7 +175,7 @@ def main():
 
     # Run these commands immediately
     push_commands(0.0, encode_sine_table_population())
-    push_commands(0.0, patch.encode_config())
+    push_commands(0.0, patch.encode_config(voices=None))
 
 
     voices_in_use = [None] * 32
@@ -193,7 +199,9 @@ def main():
             # print(f'[t={t}] note {msg.note} ON')
             voice_num = take_voice(msg.note)
             freq = midi_note_number_to_frequency(msg.note)
+            print(f'note on: {freq} Hz (phase = {frequency_to_phase_step(freq)})')
             push_commands(t, patch.encode_note_change(voice_num, freq))
+
         elif msg.type == 'note_off':
             # print(f'[t={t}] note {msg.note} OFF')
             free_voice(msg.note)
@@ -204,29 +212,67 @@ def main():
         active_voices = [note_number is not None for note_number in voices_in_use]
         push_commands(t, encode_notes_on(active_voices))
 
+        # if msg.type == 'note_off':
+        #     break
+
+
+
+    # notes = [x * 100 for x in range(8, 12)]
+    # for i, freq in enumerate(notes):
+    #     start_t = i + 0.25
+    #     end_t = start_t + 0.50
+
+    #     voice_num = take_voice(i)
+    #     push_commands(start_t, patch.encode_note_change(voice_num, freq))
+    #     push_commands(start_t, encode_notes_on([note_number is not None for note_number in voices_in_use]))
+    #     free_voice(i)
+    #     push_commands(end_t, encode_notes_on([note_number is not None for note_number in voices_in_use]))
+
 
     with open('commands.bin', 'wb') as f:
         for t, cmd in commands:
             cmd_bytes = struct.pack('<fHH', t, cmd.register, cmd.value)
             f.write(cmd_bytes)
 
-    print(f'Wrote {len(commands)} commands')
+    # for t, cmd in commands:
+    #     print(f'[{t:.03f}] reg={cmd.register:04x} val=0x{cmd.value:04x} ({cmd.value})')
+    # print(f'Wrote {len(commands)} commands')
+    # print(f'voice num = {voice_num}')
 
 
 
-    # values = []
-    # with open('data.csv', 'r') as f:
-    #     for line in f:
-    #         i, value = line.split(',')
-    #         values.append(int(value))
 
-    # data = np.asarray(values, dtype=np.uint16)
-    # SAMPLE_RATE = 44100
-    # NUM_CHANNELS = 1
-    # BYTES_PER_SAMPLE = 2
 
-    # play_obj = sa.play_buffer(data, NUM_CHANNELS, BYTES_PER_SAMPLE, SAMPLE_RATE)
-    # play_obj.wait_done()
+def run_synth():
+    import subprocess
+    subprocess.check_call(['/home/zac/synth-build/simulator/simulator'])
+    subprocess.check_call(['python', 'tools/make_plot.py', '25', '30'])
+
+
+
+def play_audio():
+    values = []
+    with open('data.csv', 'r') as f:
+        for line in f:
+            i, value = line.split(',')
+            values.append(int(value) * 2)
+            # values.append(int(value) * 10)
+
+    data = np.asarray(values, dtype=np.uint16)
+    SAMPLE_RATE = 44100
+    NUM_CHANNELS = 1
+    BYTES_PER_SAMPLE = 2
+
+    play_obj = sa.play_buffer(data, NUM_CHANNELS, BYTES_PER_SAMPLE, SAMPLE_RATE)
+    play_obj.wait_done()
+
+
+
+def main():
+    generate_commands()
+    run_synth()
+    # play_audio()
+
 
 
 if __name__ == '__main__':
