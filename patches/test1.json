@@ -1,70 +1,52 @@
 {
-    "name": "Test Patch 1",
-    "algorithm": 2,
-    "comment": "",
-    "lfo": {
-        "comment": "TODO"
-    },
     "operators": [
         {
             "comment": "Operator 1",
             "levels": [850, 850],
             "rates": [1000, 1000, 1000],
-            "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 2",
             "levels": [1000, 1000],
             "rates": [1000, 1000, 250],
-            "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 3",
             "levels": [0, 0],
             "rates": [1000, 500, 250],
-            "waveform": "sine",
             "frequency_ratio": 2.00
         },
-
-
-
         {
             "comment": "Operator 4",
             "levels": [0, 0],
             "rates": [1000, 500, 250],
-            "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 5",
             "levels": [0, 0],
             "rates": [1000, 500, 250],
-            "waveform": "sine",
             "frequency_ratio": 1.00
         },
         {
             "comment": "Operator 6",
             "levels": [0, 0],
             "rates": [1000, 500, 250],
-            "waveform": "sine",
             "frequency_ratio": 2.00
         },
         {
             "comment": "Operator 7",
             "levels": [0, 0],
             "rates": [1000, 500, 250],
-            "waveform": "sine",
             "frequency_ratio": 3.50
         },
         {
             "comment": "Operator 8",
             "levels": [0, 0],
             "rates": [1000, 1000, 1000],
-            "waveform": "sine",
             "frequency_ratio": 4.40
         }
-
     ]
 }

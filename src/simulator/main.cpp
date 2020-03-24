@@ -1,5 +1,9 @@
 
 #include <iostream>
+#include <fstream>
+#include <queue>
+// #include <algorithm>
+// #include <iterator>
 
 #include <SDL2/SDL.h>
 
@@ -16,6 +20,24 @@ int main(int argc, char** argv)
 {
 
     std::cout << "Hello World!" << std::endl;
+
+
+    struct TimestampedCommand
+    {
+        float timestamp;
+        uint16_t registerNumber;
+        uint16_t registerValue;
+    };
+
+    std::queue<TimestampedCommand> commands;
+    std::ifstream input("commands.bin", std::ios::binary);
+    while ( ! input.eof())
+    {
+        TimestampedCommand command;
+        input.read(reinterpret_cast<char*>(&command), sizeof(command));
+        commands.push(command);
+    }
+    std::cout << "Read " << commands.size() << " commands." << std::endl;
 
 
 
@@ -154,12 +176,28 @@ int main(int argc, char** argv)
     }
 
     // Add some overhead for setting up the sine table
-    double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
+    // double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
     // seconds *= 10;
 
     // double seconds = 0.005;
-    // double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
+    double seconds = 0.225 + (playAudio ? 1.0 : 0.3);
+
+
+
     auto& rBuffer = synth.getSampleBuffer();
+    // while ( ! commands.empty())
+    // {
+    //     double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
+    //     while ( ! commands.empty() && commands.front().timestamp <= t)
+    //     {
+    //         synth.writeRegister(commands.front().registerNumber, commands.front().registerValue);
+    //         commands.pop();
+    //     }
+    //     synth.spiSendReceive();
+    // }
+
+
+
 
     // double noteOn = false;
     const size_t samplesNeeded { static_cast<uint32_t>(SAMPLE_FREQUENCY * seconds) };
@@ -167,7 +205,6 @@ int main(int argc, char** argv)
     bool ledOn = false;
     while (rBuffer.size() < samplesNeeded)
     {
-        double t = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
         // double onTime = seconds * 0.0;
         // double offTime = seconds * 0.8;
         // if ( ! noteOn && t > onTime && t < offTime)
@@ -202,20 +239,11 @@ int main(int argc, char** argv)
         // }
 
 
-        // TODO: fix
-        const double period = 0.01;
-        if (std::fmod(t_last, period) < (period / 2) && std::fmod(t, period) > (period / 2))
-        {
-            ledOn = ! ledOn;
-            synth.writeOperatorRegister(0, 0, Synth::PARAM_LED_CONFIG, ledOn ? 0xffff : 0xff0f);
-        }
-
 
         synth.spiSendReceive();
 
         // printf("rBuffer.size() = %d \n", rBuffer.size());
 
-        t_last = t;
     }
 
 
@@ -252,6 +280,7 @@ int main(int argc, char** argv)
 
 
         // TODO
+        // double seconds = static_cast<double>(rBuffer.size()) / static_cast<double>(SAMPLE_FREQUENCY);
         SDL_PauseAudioDevice(device, 0);
         SDL_Delay(static_cast<uint32_t>(seconds * 1000));
 

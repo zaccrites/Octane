@@ -1,0 +1,77 @@
+{
+    "operators": [
+        {
+            "comment": "Operator 1",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": true
+        },
+
+        {
+            "comment": "Operator 2",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": false
+        },
+        {
+            "comment": "Operator 3",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": false
+        },
+        {
+            "comment": "Operator 4",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": false
+        },
+        {
+            "comment": "Operator 5",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": false
+        },
+        {
+            "comment": "Operator 6",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": false
+        },
+        {
+            "comment": "Operator 7",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": false
+        },
+        {
+            "comment": "Operator 8",
+            "levels": [1000, 1000],
+            "rates": [1000, 1000, 1000],
+            "frequency_ratio": 1.00,
+            "feedback": 128,
+            "modulated_by": [],
+            "is_carrier": false
+        }
+    ]
+}
