@@ -80,9 +80,12 @@ class Operator(object):
         # TODO
         yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_ATTACK_LEVEL, 0xffff)
         yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_SUSTAIN_LEVEL, 0xffff)
+        # yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_ATTACK_RATE, 0x8000)   # no output when reduced? wtf?
+        # yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_ATTACK_RATE, 0xf000)   # still no output -- some kind of bug
         yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_ATTACK_RATE, 0xffff)
         yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_DECAY_RATE, 0xffff)
-        yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_RELEASE_RATE, 0xffff)
+        # yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_RELEASE_RATE, 0xffff)
+        yield make_operator_command(voice_num, self.number, OP_PARAM_ENVELOPE_RELEASE_RATE, 0xe000)    # wobble in output level is also probably a bug. may need to only change at zero crossing after all
 
 
 
@@ -166,7 +169,7 @@ def frequency_to_phase_step(frequency):
 
 
 
-def generate_commands():
+def generate_commands(midi_file_path):
     patch = Patch.load('patches/test2.json')
 
     commands = []
@@ -178,14 +181,20 @@ def generate_commands():
     push_commands(0.0, patch.encode_config(voices=None))
 
 
+    # TODO: Try using a different voice for a little while until after
+    # a voice has truly died off. Can use release rate to determine how
+    # long to wait.
+    last_voice_taken = 0
     voices_in_use = [None] * 32
     def take_voice(note_number):
+        nonlocal last_voice_taken
         try:
-            index = voices_in_use.index(None)
+            index = voices_in_use.index(None, (last_voice_taken + 1) % len(voices_in_use))
         except ValueError as exc:
             raise RuntimeError('Out of voices!') from exc
         else:
             voices_in_use[index] = note_number
+            last_voice_taken = index
             return index
 
     def free_voice(note_number):
@@ -193,18 +202,23 @@ def generate_commands():
         voices_in_use[voice_num] = None
 
 
-    mid = mido.MidiFile(sys.argv[1])
+    t_offset = 0
+
+    mid = mido.MidiFile(midi_file_path)
     for t, msg in get_timestamped_messages(mid):
+        t = t + t_offset
+
         if msg.type == 'note_on':
-            # print(f'[t={t}] note {msg.note} ON')
+            print(f'[t={t}] note {msg.note} ON')
             voice_num = take_voice(msg.note)
             freq = midi_note_number_to_frequency(msg.note)
-            print(f'note on: {freq} Hz (phase = {frequency_to_phase_step(freq)})')
+            # print(f'note on: {freq} Hz (phase = {frequency_to_phase_step(freq)}) [voice {voice_num}]')
             push_commands(t, patch.encode_note_change(voice_num, freq))
 
         elif msg.type == 'note_off':
-            # print(f'[t={t}] note {msg.note} OFF')
+            print(f'[t={t}] note {msg.note} OFF')
             free_voice(msg.note)
+            t_offset += 0.25
         else:
             # Skip other messages
             continue
@@ -246,7 +260,8 @@ def generate_commands():
 def run_synth():
     import subprocess
     subprocess.check_call(['/home/zac/synth-build/simulator/simulator'])
-    subprocess.check_call(['python', 'tools/make_plot.py', '25', '30'])
+    # subprocess.check_call(['python', 'tools/make_plot.py', '25', '30'])
+    subprocess.check_call(['python', 'tools/make_plot.py', '65', '67'])
 
 
 
@@ -269,10 +284,17 @@ def play_audio():
 
 
 def main():
-    generate_commands()
-    run_synth()
-    # play_audio()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('midi_file')
+    parser.add_argument('--gen', action='store_true')
+    parser.add_argument('--play', action='store_true')
+    args = parser.parse_args()
 
+    if args.gen:
+        generate_commands(args.midi_file)
+        run_synth()
+    if args.play:
+        play_audio()
 
 
 if __name__ == '__main__':

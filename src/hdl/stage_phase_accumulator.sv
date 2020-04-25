@@ -38,7 +38,11 @@ logic r_NoteOn;
 
 logic signed [15:0] w_SteppedPhase;
 always_comb begin
-    w_SteppedPhase = r_NoteOn ? (r_AccumulatedPhase + r_PhaseStep) : 0;
+    // TODO: If I want to keep doing this (and perhaps should)
+    // then it has to happen when the note is MUTED or explicitly reset,
+    // not when it is released.
+    // w_SteppedPhase = r_NoteOn ? (r_AccumulatedPhase + r_PhaseStep) : 0;
+    w_SteppedPhase = r_AccumulatedPhase + r_PhaseStep;
 end
 
 always_ff @ (posedge i_Clock) begin

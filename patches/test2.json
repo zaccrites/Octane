@@ -1,30 +1,32 @@
 {
     "operators": [
         {
-            "comment": "Operator 1",
+            "comment": "Operator 1. For some reason using this instead of OP2 produces garbage output",
             "levels": [1000, 1000],
             "rates": [1000, 1000, 1000],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
-            "is_carrier": true
+            "is_carrier": false
         },
 
         {
             "comment": "Operator 2",
             "levels": [1000, 1000],
-            "rates": [1000, 1000, 1000],
+            "rates": [500, 800, 900],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
-            "is_carrier": false
+            "is_carrier": true
         },
+
+
         {
             "comment": "Operator 3",
             "levels": [1000, 1000],
             "rates": [1000, 1000, 1000],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
             "is_carrier": false
         },
@@ -33,7 +35,7 @@
             "levels": [1000, 1000],
             "rates": [1000, 1000, 1000],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
             "is_carrier": false
         },
@@ -42,7 +44,7 @@
             "levels": [1000, 1000],
             "rates": [1000, 1000, 1000],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
             "is_carrier": false
         },
@@ -51,7 +53,7 @@
             "levels": [1000, 1000],
             "rates": [1000, 1000, 1000],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
             "is_carrier": false
         },
@@ -60,7 +62,7 @@
             "levels": [1000, 1000],
             "rates": [1000, 1000, 1000],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
             "is_carrier": false
         },
@@ -69,7 +71,7 @@
             "levels": [1000, 1000],
             "rates": [1000, 1000, 1000],
             "frequency_ratio": 1.00,
-            "feedback": 128,
+            "feedback": 0,
             "modulated_by": [],
             "is_carrier": false
         }
